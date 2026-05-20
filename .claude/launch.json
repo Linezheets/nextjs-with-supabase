@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "linezheets-express",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/server.js"],
+      "port": 4000
+    },
+    {
+      "name": "linezheets-nextjs",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/.bin/next", "dev", "--port", "3001"],
+      "port": 3001,
+      "autoPort": false
+    }
+  ]
+}

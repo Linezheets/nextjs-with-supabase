@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-black text-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linezheets — Wholesale Access</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    body { background:#0A0A0F; font-family:'Inter',sans-serif; }
+    .font-luxury { font-family:'Cormorant Garamond',serif; }
+    .font-mono-dm { font-family:'DM Mono',monospace; }
+
+    /* animated gradient orb */
+    .orb { position:absolute; border-radius:50%; filter:blur(120px); animation:drift 12s ease-in-out infinite; pointer-events:none; }
+    @keyframes drift { 0%,100%{transform:translate(0,0);} 50%{transform:translate(40px,-30px);} }
+
+    /* product cards */
+    .prod-card { border:1px solid #1a1a1a; transition:border-color .25s, transform .25s; }
+    .prod-card:hover { border-color:#C9A84C; transform:translateY(-3px); }
+
+    /* login modal */
+    .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px; }
+    .input-field { width:100%;background:transparent;border:1px solid #2a2a2a;color:#fff;padding:12px 16px;font-size:14px;outline:none;transition:border-color .2s; }
+    .input-field:focus { border-color:#C9A84C; }
+    .input-field::placeholder { color:#555; }
+
+    /* fade-in animation */
+    .fade-up { opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease; }
+    .fade-up.visible { opacity:1;transform:translateY(0); }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        'gold-500':'#C9A84C','gold-400':'#E8D5A3','gold-600':'#a8893d'
+      }}}
+    };
+  </script>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<!-- ── Background orbs ───────────────────────────────────────────────────── -->
+<div class="orb w-96 h-96 top-[-100px] left-[-80px]" style="background:rgba(201,168,76,0.06)"></div>
+<div class="orb w-80 h-80 bottom-[-60px] right-[-60px]" style="background:rgba(139,26,47,0.05);animation-delay:6s"></div>
+
+<!-- ── Sticky Nav ─────────────────────────────────────────────────────────── -->
+<nav class="fixed top-0 left-0 right-0 z-40 border-b border-zinc-900/60 bg-[#0A0A0F]/90 backdrop-blur-md px-8 py-4 flex items-center justify-between">
+  <a href="/" class="font-luxury text-xl tracking-[0.2em] text-[#C9A84C] uppercase">Linezheets</a>
+  <button onclick="openLogin()" class="border border-zinc-700 px-5 py-2 text-[10px] uppercase tracking-widest hover:border-[#C9A84C] hover:text-[#C9A84C] transition-colors">
+    Log In
+  </button>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+<section class="min-h-screen flex flex-col items-center justify-center px-8 pt-24 pb-16 text-center relative">
+  <div id="hero-content">
+    <p class="font-mono-dm text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6 fade-up">Exclusive Wholesale Access</p>
+    <h1 class="font-luxury text-6xl md:text-8xl uppercase tracking-widest mb-4 fade-up" style="transition-delay:.1s">
+      <span id="brand-name-hero">Linezheets</span>
+    </h1>
+    <p id="hero-sub" class="text-zinc-400 text-sm md:text-base max-w-lg mx-auto mb-10 fade-up leading-relaxed" style="transition-delay:.2s">
+      You've been invited to browse and order directly from this brand's wholesale collection.
+    </p>
+    <button onclick="openLogin()" class="bg-[#C9A84C] text-black text-xs font-semibold uppercase tracking-widest px-10 py-4 hover:bg-[#E8D5A3] transition-colors fade-up" style="transition-delay:.3s">
+      Access Collection →
+    </button>
+    <p class="text-zinc-700 text-[10px] mt-4 fade-up" style="transition-delay:.4s">New buyer? Your login details were sent by email.</p>
+  </div>
+
+  <!-- Scroll cue -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 fade-up" style="transition-delay:.6s">
+    <div class="w-px h-12 bg-gradient-to-b from-transparent to-zinc-700 mx-auto mb-2"></div>
+    <p class="font-mono-dm text-[9px] text-zinc-700 uppercase tracking-widest">Preview below</p>
+  </div>
+</section>
+
+<!-- ── Brand intro strip ──────────────────────────────────────────────────── -->
+<section id="brand-strip" class="border-y border-zinc-900 px-8 py-10 flex flex-wrap gap-8 items-center justify-center text-center hidden">
+  <div class="fade-up">
+    <p class="font-mono-dm text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Brand</p>
+    <p id="strip-brand" class="font-luxury text-2xl tracking-wide"></p>
+  </div>
+  <div class="w-px h-10 bg-zinc-800 hidden md:block"></div>
+  <div class="fade-up" style="transition-delay:.1s">
+    <p class="font-mono-dm text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Season</p>
+    <p id="strip-season" class="font-mono-dm text-base text-[#C9A84C]">—</p>
+  </div>
+  <div class="w-px h-10 bg-zinc-800 hidden md:block"></div>
+  <div class="fade-up" style="transition-delay:.2s">
+    <p class="font-mono-dm text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Styles Available</p>
+    <p id="strip-count" class="font-mono-dm text-base text-white">—</p>
+  </div>
+  <div class="w-px h-10 bg-zinc-800 hidden md:block"></div>
+  <div class="fade-up" style="transition-delay:.3s">
+    <p class="font-mono-dm text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Wholesale Range</p>
+    <p id="strip-range" class="font-mono-dm text-base text-white">—</p>
+  </div>
+</section>
+
+<!-- ── Product Preview ────────────────────────────────────────────────────── -->
+<section class="px-8 py-20 max-w-7xl mx-auto">
+  <div class="flex justify-between items-end mb-12">
+    <div class="fade-up">
+      <p class="font-mono-dm text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-2">Featured Styles</p>
+      <h2 class="font-luxury text-4xl uppercase tracking-widest">Preview Collection</h2>
+    </div>
+    <button onclick="openLogin()" class="text-[10px] uppercase tracking-widest text-[#C9A84C] hover:text-white transition-colors border-b border-[#C9A84C] pb-0.5 fade-up">
+      View All →
+    </button>
+  </div>
+
+  <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <!-- Skeleton placeholders -->
+    <div class="prod-card p-0 animate-pulse"><div class="aspect-[3/4] bg-zinc-900"></div><div class="p-4 space-y-2"><div class="h-3 bg-zinc-800 rounded w-3/4"></div><div class="h-2 bg-zinc-900 rounded w-1/2"></div></div></div>
+    <div class="prod-card p-0 animate-pulse"><div class="aspect-[3/4] bg-zinc-900"></div><div class="p-4 space-y-2"><div class="h-3 bg-zinc-800 rounded w-3/4"></div><div class="h-2 bg-zinc-900 rounded w-1/2"></div></div></div>
+    <div class="prod-card p-0 animate-pulse hidden md:block"><div class="aspect-[3/4] bg-zinc-900"></div><div class="p-4 space-y-2"><div class="h-3 bg-zinc-800 rounded w-3/4"></div><div class="h-2 bg-zinc-900 rounded w-1/2"></div></div></div>
+    <div class="prod-card p-0 animate-pulse hidden lg:block"><div class="aspect-[3/4] bg-zinc-900"></div><div class="p-4 space-y-2"><div class="h-3 bg-zinc-800 rounded w-3/4"></div><div class="h-2 bg-zinc-900 rounded w-1/2"></div></div></div>
+  </div>
+</section>
+
+<!-- ── Value props ────────────────────────────────────────────────────────── -->
+<section class="border-t border-zinc-900 px-8 py-20">
+  <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+    <div class="fade-up">
+      <p class="font-mono-dm text-[#C9A84C] text-2xl mb-3">01</p>
+      <p class="font-luxury text-xl uppercase tracking-widest mb-3">Browse & Order</p>
+      <p class="text-zinc-500 text-xs leading-relaxed">Full collection at wholesale prices. Filter by category, season, and availability.</p>
+    </div>
+    <div class="fade-up" style="transition-delay:.1s">
+      <p class="font-mono-dm text-[#C9A84C] text-2xl mb-3">02</p>
+      <p class="font-luxury text-xl uppercase tracking-widest mb-3">Flexible Terms</p>
+      <p class="text-zinc-500 text-xs leading-relaxed">Choose from prepayment, deposit, or Net terms — agreed directly with the brand.</p>
+    </div>
+    <div class="fade-up" style="transition-delay:.2s">
+      <p class="font-mono-dm text-[#C9A84C] text-2xl mb-3">03</p>
+      <p class="font-luxury text-xl uppercase tracking-widest mb-3">Discover More</p>
+      <p class="text-zinc-500 text-xs leading-relaxed">Once logged in, explore the full Linezheets marketplace — thousands of curated brands.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────────────────────── -->
+<section class="border-t border-zinc-900 px-8 py-24 text-center">
+  <p class="font-mono-dm text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6 fade-up">Ready to browse?</p>
+  <h2 class="font-luxury text-5xl uppercase tracking-widest mb-8 fade-up" style="transition-delay:.1s">Access Your Account</h2>
+  <button onclick="openLogin()" class="bg-[#C9A84C] text-black text-xs font-semibold uppercase tracking-widest px-12 py-4 hover:bg-[#E8D5A3] transition-colors fade-up" style="transition-delay:.2s">
+    Log In Now →
+  </button>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="border-t border-zinc-900 px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
+  <p class="font-luxury text-lg tracking-widest text-[#C9A84C]">Linezheets</p>
+  <p class="text-zinc-700 text-[10px] uppercase tracking-widest">Where Fashion Meets Intelligence</p>
+  <p class="text-zinc-700 text-[9px]">© 2026 Linezheets. All rights reserved.</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LOGIN MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="login-modal" class="modal-backdrop hidden">
+  <div style="background:#0A0A0F;border:1px solid #1a1a1a;width:min(480px,100%);max-height:90vh;overflow-y:auto">
+    <!-- Header -->
+    <div style="padding:28px 32px;border-bottom:1px solid #141414;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <p class="font-luxury text-2xl tracking-widest text-white">Welcome Back</p>
+        <p class="font-mono-dm text-[10px] text-zinc-600 mt-1 uppercase tracking-widest">Enter your buyer credentials</p>
+      </div>
+      <button onclick="closeLogin()" style="background:none;border:1px solid #222;color:#666;width:30px;height:30px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+
+    <!-- Form -->
+    <div style="padding:32px">
+      <div class="space-y-5">
+        <div>
+          <label class="font-mono-dm text-[10px] uppercase tracking-widest text-zinc-500 block mb-2">Email Address</label>
+          <input type="email" id="login-email" placeholder="buyer@yourbrand.com"
+            class="input-field" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div>
+          <label class="font-mono-dm text-[10px] uppercase tracking-widest text-zinc-500 block mb-2">Password</label>
+          <input type="password" id="login-password" placeholder="Your password"
+            class="input-field" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+
+        <div id="login-error" class="hidden border border-red-900/50 bg-red-950/20 px-4 py-3 text-[10px] text-red-400 uppercase tracking-widest"></div>
+
+        <button id="login-btn" onclick="doLogin()"
+          style="width:100%;background:#C9A84C;color:#000;border:none;padding:14px;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;cursor:pointer;transition:background .2s"
+          onmouseover="this.style.background='#E8D5A3'" onmouseout="this.style.background='#C9A84C'">
+          Access My Account →
+        </button>
+
+        <p class="text-center text-zinc-700 text-[10px]">
+          Don't have credentials? Contact the brand directly — they'll set up your account.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API      = '/api';
+const BRAND_Q  = new URLSearchParams(location.search).get('brand') || '';
+let   products = [];
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // If already logged in, redirect to shop
+  const tok = localStorage.getItem('lz_token') || localStorage.getItem('lz_buyer_token');
+  if (tok) { window.location.href = '/pages/buyer-shop.html'; return; }
+
+  // Animate elements
+  setTimeout(() => {
+    document.querySelectorAll('.fade-up').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 80);
+    });
+  }, 100);
+
+  // Load brand info + products
+  loadBrandData();
+});
+
+async function loadBrandData() {
+  try {
+    const url = BRAND_Q
+      ? `${API}/marketplace/trending?brand=${encodeURIComponent(BRAND_Q)}&limit=8`
+      : `${API}/marketplace/trending?limit=8`;
+
+    const res  = await fetch(url);
+    const data = await res.json();
+    products   = data.trending || data.products || [];
+
+    if (BRAND_Q) {
+      document.getElementById('brand-name-hero').textContent = BRAND_Q;
+      document.title = `${BRAND_Q} — Wholesale Access | Linezheets`;
+      document.getElementById('strip-brand').textContent = BRAND_Q;
+      document.getElementById('brand-strip').classList.remove('hidden');
+    }
+
+    if (products.length) {
+      const seasons  = [...new Set(products.map(p => p.season).filter(Boolean))];
+      const wspList  = products.map(p => p.wsp_usd || p.wholesale_price || 0).filter(Boolean);
+      const wspMin   = Math.min(...wspList), wspMax = Math.max(...wspList);
+      document.getElementById('strip-season').textContent = seasons.slice(0,2).join(' / ') || '—';
+      document.getElementById('strip-count').textContent  = products.length + '+';
+      document.getElementById('strip-range').textContent  = wspList.length
+        ? `$${Math.round(wspMin)} – $${Math.round(wspMax)} WSP` : '—';
+    }
+
+    renderProducts(products.slice(0, 8));
+  } catch (err) {
+    console.warn('Product load error:', err);
+    renderProducts([]);
+  }
+}
+
+function renderProducts(items) {
+  const grid = document.getElementById('product-grid');
+  if (!items.length) {
+    grid.innerHTML = '<p class="col-span-4 text-center text-zinc-700 py-12 font-mono-dm text-[10px] uppercase tracking-widest">No products available for preview</p>';
+    return;
+  }
+
+  grid.innerHTML = items.map(p => {
+    const wsp   = p.wsp_usd || p.wholesale_price || 0;
+    const srp   = p.srp_usd || p.retail_price || 0;
+    const img   = (p.image_urls || [])[0] || p.image || '';
+    const mPct  = srp > 0 && wsp > 0 ? Math.round((srp - wsp) / srp * 100) : 0;
+    const esc   = s => String(s||'').replace(/</g,'&lt;');
+    return `
+    <div class="prod-card cursor-pointer" onclick="openLogin()">
+      <div class="aspect-[3/4] bg-zinc-900 overflow-hidden relative">
+        ${img
+          ? `<img src="${img}" alt="${esc(p.description||p.name)}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">`
+          : `<div class="w-full h-full bg-zinc-900 flex items-center justify-center"><p class="text-zinc-800 font-luxury text-3xl">${esc((p.description||p.name||'')[0])}</p></div>`}
+        ${mPct > 0 ? `<span class="absolute top-3 right-3 font-mono-dm text-[9px] px-2 py-1" style="background:rgba(10,10,15,0.9);color:#C9A84C;border:1px solid rgba(201,168,76,0.3)">${mPct}% margin</span>` : ''}
+        <!-- Blur overlay to tease, not fully reveal -->
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-transparent to-transparent opacity-60"></div>
+      </div>
+      <div class="p-4">
+        <p class="font-luxury text-base leading-tight mb-1">${esc(p.description||p.name||'Untitled')}</p>
+        <p class="font-mono-dm text-[9px] text-zinc-600 uppercase tracking-widest mb-2">${esc(p.category||'')}</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-mono-dm text-[10px] text-zinc-600 uppercase">WSP</p>
+            <p class="font-mono-dm text-white text-sm">$${Number(wsp).toFixed(0)}</p>
+          </div>
+          ${srp > 0 ? `<div class="text-right"><p class="font-mono-dm text-[10px] text-zinc-700 uppercase">SRP</p><p class="font-mono-dm text-zinc-500 text-sm">$${Number(srp).toFixed(0)}</p></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Login Modal ───────────────────────────────────────────────────────────────
+function openLogin()  { document.getElementById('login-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('login-email').focus(),100); }
+function closeLogin() { document.getElementById('login-modal').classList.add('hidden'); clearLoginError(); }
+
+document.getElementById('login-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('login-modal')) closeLogin();
+});
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function clearLoginError() { document.getElementById('login-error').classList.add('hidden'); }
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showLoginError('Please enter your email and password'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  clearLoginError();
+
+  try {
+    const res  = await fetch(`${API}/buyers/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) { showLoginError(data.error || 'Login failed'); btn.textContent = 'Access My Account →'; btn.disabled = false; return; }
+
+    // Store token + buyer info
+    localStorage.setItem('lz_token', data.token);
+    localStorage.setItem('lz_buyer_info', JSON.stringify(data.buyer));
+
+    if (data.needs_onboard) {
+      // First login — must set password + complete profile
+      const dest = BRAND_Q ? `/pages/buyer-onboard.html?brand=${encodeURIComponent(BRAND_Q)}` : '/pages/buyer-onboard.html';
+      window.location.href = dest;
+    } else {
+      // Returning buyer — go straight to shop
+      window.location.href = '/pages/buyer-shop.html';
+    }
+  } catch (err) {
+    showLoginError('Network error — please try again');
+    btn.textContent = 'Access My Account →'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

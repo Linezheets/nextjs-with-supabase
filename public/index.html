@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <title>Linezheets — The Intelligence Layer for Fashion Commerce</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E8D5A3;
+      --obsidian: #0A0A0F;
+      --navy: #080B1A;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--obsidian); color: #fff; }
+    body { font-family: 'Inter', sans-serif; background: var(--obsidian); overflow-x: hidden; }
+    .font-luxury { font-family: 'Cormorant Garamond', serif; }
+    .font-mono-dm { font-family: 'DM Mono', monospace; }
+
+    /* Nav scroll effect */
+    #main-nav { transition: background 0.4s, border-color 0.4s; }
+    #main-nav.scrolled { background: rgba(10,10,15,0.97); border-color: rgba(255,255,255,0.06); }
+
+    /* Hero canvas */
+    #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* Gradient orbs */
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orbFloat 10s ease-in-out infinite; pointer-events: none; }
+    @keyframes orbFloat {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(-40px) scale(1.08); }
+    }
+
+    /* Typewriter cursor */
+    .cursor { display: inline-block; width: 2px; height: 1em; background: var(--gold); margin-left: 3px; animation: blink 0.9s step-end infinite; vertical-align: text-bottom; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Stat cards */
+    .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); }
+
+    /* Gold border on hover cards */
+    .ai-card { border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s; }
+    .ai-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 0 30px rgba(201,168,76,0.12); }
+
+    /* Product card */
+    .pcard img { transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94); }
+    .pcard:hover img { transform: scale(1.06); }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* Number counters */
+    .counter { font-family: 'DM Mono', monospace; }
+
+    /* Category pill */
+    .cat-pill { border: 1px solid rgba(255,255,255,0.1); transition: border-color 0.2s, color 0.2s, background 0.2s; cursor: pointer; }
+    .cat-pill:hover, .cat-pill.active { border-color: var(--gold); color: var(--gold); }
+
+    /* Tab */
+    .sol-tab { border-bottom: 2px solid transparent; transition: border-color 0.2s, color 0.2s; cursor: pointer; }
+    .sol-tab.active { border-color: var(--gold); color: #fff; }
+
+    /* Integration logo tile */
+    .int-tile { border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s, background 0.2s; }
+    .int-tile:hover { border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.04); }
+
+    /* Pricing card */
+    .price-card { border: 1px solid rgba(255,255,255,0.08); transition: border-color 0.3s, box-shadow 0.3s; }
+    .price-card.featured { border-color: var(--gold); box-shadow: 0 0 40px rgba(201,168,76,0.08); }
+    .price-card:hover { border-color: rgba(201,168,76,0.5); }
+
+    /* Section divider */
+    .sec-divider { border-top: 1px solid rgba(255,255,255,0.06); }
+
+    /* Gold text */
+    .text-gold { color: var(--gold); }
+    .text-gold-light { color: var(--gold-light); }
+    .bg-gold { background: var(--gold); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--obsidian); }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    /* Loading skeleton */
+    .skeleton { background: linear-gradient(90deg, #1a1a1f 25%, #222228 50%, #1a1a1f 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════════ -->
+<nav id="main-nav" class="fixed w-full z-50 py-5 border-b border-transparent">
+  <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+    <a href="/" class="font-luxury text-[1.6rem] tracking-tighter text-white">Linezheets</a>
+    <div class="hidden md:flex items-center gap-8 text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+      <a href="#marketplace" class="hover:text-white transition-colors">Marketplace</a>
+      <a href="#ai-studio" class="hover:text-white transition-colors">AI Studio</a>
+      <a href="#solutions" class="hover:text-white transition-colors">Solutions</a>
+      <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/pages/auth.html?mode=login" class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors px-4 py-2">Log In</a>
+      <a href="/pages/auth.html?mode=register" class="text-[10px] uppercase tracking-[0.2em] bg-gold text-black px-5 py-2.5 hover:bg-[#E8D5A3] transition-colors">Start Free Trial</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════ -->
+<section id="hero" class="relative min-h-screen flex items-center overflow-hidden bg-[#060609]">
+  <canvas id="hero-canvas"></canvas>
+
+  <!-- Orbs -->
+  <div class="orb w-[600px] h-[600px] bg-[#C9A84C]/8 top-[-100px] left-[-100px]" style="animation-delay:0s"></div>
+  <div class="orb w-[400px] h-[400px] bg-[#8B1A2F]/12 bottom-[-50px] right-[10%]" style="animation-delay:3s"></div>
+  <div class="orb w-[300px] h-[300px] bg-[#C9A84C]/5 top-[40%] right-[30%]" style="animation-delay:6s"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-24 w-full">
+    <div class="max-w-3xl">
+      <p class="font-mono-dm text-[10px] text-gold tracking-[0.3em] uppercase mb-6">AI-Powered Wholesale Platform</p>
+
+      <h1 class="font-luxury text-6xl md:text-8xl leading-[0.95] mb-8 text-white">
+        The Intelligence Layer<br>
+        for <span id="typewriter" class="text-gold"></span><span class="cursor"></span>
+      </h1>
+
+      <p class="text-zinc-400 font-light text-lg leading-relaxed max-w-xl mb-10">
+        AI-powered wholesale platform connecting fashion brands, showrooms, and verified retailers — with predictive analytics, smart inventory, and style matching built in.
+      </p>
+
+      <div class="flex flex-wrap gap-4 mb-20">
+        <a href="/pages/auth.html?mode=register" class="bg-gold text-black text-[10px] uppercase tracking-[0.22em] px-8 py-4 hover:bg-[#E8D5A3] transition-colors">Book a Demo</a>
+        <a href="#ai-studio" class="border border-zinc-700 text-[10px] uppercase tracking-[0.22em] px-8 py-4 hover:border-white transition-colors">See AI Features</a>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="flex flex-wrap gap-4">
+        <div class="stat-card px-5 py-3 rounded-sm">
+          <p class="font-mono-dm text-gold text-lg">40%</p>
+          <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Faster order cycles</p>
+        </div>
+        <div class="stat-card px-5 py-3 rounded-sm">
+          <p class="font-mono-dm text-gold text-lg">22%</p>
+          <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Higher payment rates</p>
+        </div>
+        <div class="stat-card px-5 py-3 rounded-sm">
+          <p class="font-mono-dm text-gold text-lg">3×</p>
+          <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Buyer engagement</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll hint -->
+  <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-600">
+    <span class="text-[9px] uppercase tracking-[0.3em]">Scroll</span>
+    <div class="w-px h-8 bg-zinc-800"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     TRENDING NOW  — /api/marketplace/trending
+════════════════════════════════════════════════════ -->
+<section id="marketplace" class="py-24 max-w-7xl mx-auto px-6">
+  <div class="flex justify-between items-end mb-14 reveal">
+    <div>
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-3">This Week</p>
+      <h2 class="font-luxury text-5xl">Trending Now</h2>
+    </div>
+    <a href="/pages/buyer-shop.html" class="hidden md:block text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-gold transition-colors border-b border-zinc-800 pb-0.5">View All Products →</a>
+  </div>
+
+  <div id="trending-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Skeletons -->
+    <div class="pcard"><div class="aspect-[3/4] skeleton mb-5"></div><div class="skeleton h-3 w-3/4 mb-2"></div><div class="skeleton h-2 w-1/2"></div></div>
+    <div class="pcard"><div class="aspect-[3/4] skeleton mb-5"></div><div class="skeleton h-3 w-3/4 mb-2"></div><div class="skeleton h-2 w-1/2"></div></div>
+    <div class="pcard"><div class="aspect-[3/4] skeleton mb-5"></div><div class="skeleton h-3 w-3/4 mb-2"></div><div class="skeleton h-2 w-1/2"></div></div>
+    <div class="pcard"><div class="aspect-[3/4] skeleton mb-5"></div><div class="skeleton h-3 w-3/4 mb-2"></div><div class="skeleton h-2 w-1/2"></div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     CATEGORIES  — /api/marketplace/categories
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-16 max-w-7xl mx-auto px-6 reveal">
+  <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-6">Browse by Category</p>
+  <div id="categories-row" class="flex flex-wrap gap-2">
+    <!-- Static defaults, replaced by API -->
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Womenswear</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Menswear</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Accessories</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Footwear</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Luxury</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Denim</span>
+    <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400">Activewear</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FEATURED  — /api/marketplace/featured
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 max-w-7xl mx-auto px-6">
+  <div class="flex justify-between items-end mb-14 reveal">
+    <div>
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-3">Editor's Selection</p>
+      <h2 class="font-luxury text-5xl">Featured Collection</h2>
+    </div>
+  </div>
+  <div id="featured-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6">
+    <div class="aspect-[3/4] skeleton"></div>
+    <div class="aspect-[3/4] skeleton"></div>
+    <div class="aspect-[3/4] skeleton"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     MARKETPLACE STATS
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4 text-center reveal">The Numbers</p>
+    <h2 class="font-luxury text-5xl text-center mb-16 reveal">Curated, Not Crowded</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-zinc-900 reveal">
+      <div class="bg-[#06060A] px-10 py-12 text-center">
+        <p class="font-luxury text-6xl text-gold mb-2"><span class="counter" data-target="8400">0</span>+</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-[0.25em]">Brands</p>
+      </div>
+      <div class="bg-[#06060A] px-10 py-12 text-center border-x border-zinc-900">
+        <p class="font-luxury text-6xl text-gold mb-2"><span class="counter" data-target="62000">0</span>+</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-[0.25em]">Verified Buyers</p>
+      </div>
+      <div class="bg-[#06060A] px-10 py-12 text-center">
+        <p class="font-luxury text-6xl text-gold mb-2">$<span class="counter" data-target="2.4" data-decimal="true">0</span>B</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-[0.25em]">Orders Processed</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     BRANDS  — /api/marketplace/brands
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 max-w-7xl mx-auto px-6">
+  <div class="flex justify-between items-end mb-14 reveal">
+    <div>
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-3">On The Platform</p>
+      <h2 class="font-luxury text-5xl">Featured Brands</h2>
+    </div>
+    <a href="/pages/buyer-shop.html" class="hidden md:block text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-gold transition-colors border-b border-zinc-800">Explore All Brands →</a>
+  </div>
+  <div id="brands-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="aspect-square skeleton"></div>
+    <div class="aspect-square skeleton"></div>
+    <div class="aspect-square skeleton"></div>
+    <div class="aspect-square skeleton"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     AI STUDIO
+════════════════════════════════════════════════════ -->
+<section id="ai-studio" class="sec-divider py-24 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-16 reveal">
+      <p class="font-mono-dm text-[10px] text-gold uppercase tracking-[0.3em] mb-4">Proprietary Technology</p>
+      <h2 class="font-luxury text-5xl md:text-6xl max-w-xl">AI Studio — Built for Fashion</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal">
+        <div class="text-gold text-2xl mb-5">◈</div>
+        <h3 class="font-luxury text-2xl mb-3">AI Style Matcher</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">Upload a lookbook — our AI matches your collection to the right retail buyers by style DNA, price point, and sell-through history.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ Try It Free</p>
+      </div>
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal" style="transition-delay:0.1s">
+        <div class="text-gold text-2xl mb-5">⟳</div>
+        <h3 class="font-luxury text-2xl mb-3">Predictive Reorder</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">Never stockout again. AI analyzes sell-through velocity and buyer patterns to suggest reorder quantities before they're needed.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ See How It Works</p>
+      </div>
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal" style="transition-delay:0.2s">
+        <div class="text-gold text-2xl mb-5">⬡</div>
+        <h3 class="font-luxury text-2xl mb-3">Smart Inventory Sync</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">AI monitors your stock levels across all channels and automatically flags oversell risks 72 hours in advance.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ Connect Channels</p>
+      </div>
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal" style="transition-delay:0s">
+        <div class="text-gold text-2xl mb-5">↗</div>
+        <h3 class="font-luxury text-2xl mb-3">Trend Forecasting</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">Season-ahead trend signals pulled from runway data, social velocity, and retail sell-through — personalized to your category.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ View Forecasts</p>
+      </div>
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal" style="transition-delay:0.1s">
+        <div class="text-gold text-2xl mb-5">⬟</div>
+        <h3 class="font-luxury text-2xl mb-3">Buyer Intelligence</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">Score and rank your buyers by LTV, payment reliability, and growth potential — focus your team on the right accounts.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ Score My Buyers</p>
+      </div>
+
+      <div class="ai-card bg-[#0A0A0F] p-8 reveal" style="transition-delay:0.2s">
+        <div class="text-gold text-2xl mb-5">◎</div>
+        <h3 class="font-luxury text-2xl mb-3">Dynamic Pricing Advisor</h3>
+        <p class="text-zinc-500 font-light text-sm leading-relaxed">AI suggests optimal price windows per SKU based on demand signals, competitive landscape, and your margin targets.</p>
+        <p class="font-mono-dm text-[10px] text-gold mt-6 uppercase tracking-widest">→ Optimize Pricing</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 max-w-7xl mx-auto px-6">
+  <div class="mb-16 reveal">
+    <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4">The Process</p>
+    <h2 class="font-luxury text-5xl">How Linezheets Works</h2>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <div class="reveal">
+      <p class="font-mono-dm text-gold text-5xl mb-6">01</p>
+      <h3 class="font-luxury text-2xl mb-3">Connect Your Catalog</h3>
+      <p class="text-zinc-500 font-light text-sm leading-relaxed">Sync products, imagery, and inventory in minutes via API or CSV upload.</p>
+    </div>
+    <div class="reveal" style="transition-delay:0.1s">
+      <p class="font-mono-dm text-gold text-5xl mb-6">02</p>
+      <h3 class="font-luxury text-2xl mb-3">Reach Qualified Buyers</h3>
+      <p class="text-zinc-500 font-light text-sm leading-relaxed">AI-matched marketplace, showroom tools, and digital line sheets reach the right retailers.</p>
+    </div>
+    <div class="reveal" style="transition-delay:0.2s">
+      <p class="font-mono-dm text-gold text-5xl mb-6">03</p>
+      <h3 class="font-luxury text-2xl mb-3">Close & Collect</h3>
+      <p class="text-zinc-500 font-light text-sm leading-relaxed">Orders, invoices, payments, and shipment tracking — all in one seamless flow.</p>
+    </div>
+    <div class="reveal" style="transition-delay:0.3s">
+      <p class="font-mono-dm text-gold text-5xl mb-6">04</p>
+      <h3 class="font-luxury text-2xl mb-3">Learn & Optimize</h3>
+      <p class="text-zinc-500 font-light text-sm leading-relaxed">AI turns every transaction into intelligence for your next season.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SOLUTIONS TABS
+════════════════════════════════════════════════════ -->
+<section id="solutions" class="sec-divider py-24 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 reveal">
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4">Built For Everyone</p>
+      <h2 class="font-luxury text-5xl">Solutions</h2>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-8 border-b border-zinc-800 mb-12 reveal">
+      <button class="sol-tab active pb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-400" data-tab="brands">Brands</button>
+      <button class="sol-tab pb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-400" data-tab="showrooms">Showrooms</button>
+      <button class="sol-tab pb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-400" data-tab="retailers">Retailers</button>
+      <button class="sol-tab pb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-400" data-tab="teams">Multi-Brand Teams</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="tab-brands" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h3 class="font-luxury text-4xl mb-6">For Brands</h3>
+        <p class="text-zinc-400 font-light leading-relaxed mb-8">Distribute wholesale across every channel — independent retailers, department stores, and global showrooms — with AI doing the heavy lifting.</p>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">AI-powered line sheets</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Buyer intelligence scoring</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Order & invoice management</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Inventory sync across channels</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Payment tracking & net terms</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Trend & reorder forecasting</span></div>
+        </div>
+        <a href="/pages/auth.html?mode=register&type=brand" class="inline-block bg-gold text-black text-[10px] uppercase tracking-[0.2em] px-7 py-3.5 hover:bg-[#E8D5A3] transition-colors">Start as a Brand →</a>
+      </div>
+      <div class="aspect-[4/3] bg-zinc-900 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60">
+      </div>
+    </div>
+
+    <div id="tab-showrooms" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h3 class="font-luxury text-4xl mb-6">For Showrooms</h3>
+        <p class="text-zinc-400 font-light leading-relaxed mb-8">Manage multiple brand lines in one platform. AI tools handle appointment scheduling, buyer matching, and commission tracking automatically.</p>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Multi-brand management</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Appointment scheduling</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Commission automation</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Shared buyer network</span></div>
+        </div>
+        <a href="/pages/auth.html?mode=register&type=brand" class="inline-block bg-gold text-black text-[10px] uppercase tracking-[0.2em] px-7 py-3.5 hover:bg-[#E8D5A3] transition-colors">Start as a Showroom →</a>
+      </div>
+      <div class="aspect-[4/3] bg-zinc-900 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60">
+      </div>
+    </div>
+
+    <div id="tab-retailers" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h3 class="font-luxury text-4xl mb-6">For Retailers</h3>
+        <p class="text-zinc-400 font-light leading-relaxed mb-8">Discover the right brands for your store. AI matches your customer profile to emerging and established wholesale collections you'll actually sell.</p>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">AI brand discovery</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">One-click ordering</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Net terms & payment plans</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Order history & reorder</span></div>
+        </div>
+        <a href="/pages/auth.html?mode=register&type=buyer" class="inline-block bg-gold text-black text-[10px] uppercase tracking-[0.2em] px-7 py-3.5 hover:bg-[#E8D5A3] transition-colors">Start as a Retailer →</a>
+      </div>
+      <div class="aspect-[4/3] bg-zinc-900 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60">
+      </div>
+    </div>
+
+    <div id="tab-teams" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h3 class="font-luxury text-4xl mb-6">For Multi-Brand Teams</h3>
+        <p class="text-zinc-400 font-light leading-relaxed mb-8">Built for agencies, buying groups, and enterprise portfolios managing dozens of lines and thousands of SKUs across markets.</p>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Unified dashboard</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Team permissions</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">Cross-brand analytics</span></div>
+          <div class="flex items-start gap-3"><span class="text-gold mt-0.5">✓</span><span class="text-sm text-zinc-400">ERP & PIM integrations</span></div>
+        </div>
+        <a href="/pages/auth.html?mode=register" class="inline-block bg-gold text-black text-[10px] uppercase tracking-[0.2em] px-7 py-3.5 hover:bg-[#E8D5A3] transition-colors">Talk to Enterprise Sales →</a>
+      </div>
+      <div class="aspect-[4/3] bg-zinc-900 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     LINE SHEETS FEATURE
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 max-w-7xl mx-auto px-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+    <div class="reveal">
+      <p class="font-mono-dm text-[10px] text-gold uppercase tracking-[0.3em] mb-4">Core Feature</p>
+      <h2 class="font-luxury text-5xl mb-8">Beautiful Line Sheets,<br>Built by AI</h2>
+      <div class="space-y-4 mb-10">
+        <div class="flex items-start gap-4">
+          <span class="text-gold mt-1 text-sm">◈</span>
+          <div>
+            <p class="text-sm font-medium mb-1">AI-curated product selection</p>
+            <p class="text-zinc-500 text-sm font-light">AI picks your strongest SKUs for each buyer segment automatically.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <span class="text-gold mt-1 text-sm">◈</span>
+          <div>
+            <p class="text-sm font-medium mb-1">Instant PDF + interactive web version</p>
+            <p class="text-zinc-500 text-sm font-light">Share a link or send a PDF — both update in real time from your catalog.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <span class="text-gold mt-1 text-sm">◈</span>
+          <div>
+            <p class="text-sm font-medium mb-1">Buyer-specific pricing tiers</p>
+            <p class="text-zinc-500 text-sm font-light">Each buyer sees the price they're entitled to — no manual customization needed.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <span class="text-gold mt-1 text-sm">◈</span>
+          <div>
+            <p class="text-sm font-medium mb-1">Real-time availability badges</p>
+            <p class="text-zinc-500 text-sm font-light">Stock status updates live so buyers always see accurate inventory.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4">
+          <span class="text-gold mt-1 text-sm">◈</span>
+          <div>
+            <p class="text-sm font-medium mb-1">One-click ordering</p>
+            <p class="text-zinc-500 text-sm font-light">Buyers go from line sheet to order in seconds, no back-and-forth needed.</p>
+          </div>
+        </div>
+      </div>
+      <a href="/pages/brand-dashboard.html" class="inline-block border border-zinc-700 text-[10px] uppercase tracking-[0.2em] px-7 py-3.5 hover:border-gold hover:text-gold transition-all">Open Line Sheet Builder →</a>
+    </div>
+    <div class="reveal bg-zinc-900 aspect-[4/3] relative overflow-hidden">
+      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-30">
+      <!-- Mockup overlay -->
+      <div class="absolute inset-0 p-8 flex flex-col justify-end">
+        <div class="bg-black/60 backdrop-blur-sm border border-zinc-800 p-5">
+          <p class="font-mono-dm text-[9px] text-gold uppercase tracking-widest mb-3">SS27 Collection — Buyer Preview</p>
+          <div class="grid grid-cols-3 gap-2 mb-4">
+            <div class="aspect-square bg-zinc-800 skeleton"></div>
+            <div class="aspect-square bg-zinc-800 skeleton"></div>
+            <div class="aspect-square bg-zinc-800 skeleton"></div>
+          </div>
+          <div class="flex justify-between items-center">
+            <p class="font-mono-dm text-[9px] text-zinc-500">12 of 48 products selected by AI</p>
+            <span class="bg-gold text-black text-[9px] px-3 py-1 uppercase tracking-widest">Order Now</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     INTEGRATIONS
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-14 reveal text-center">
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4">Works With Your Stack</p>
+      <h2 class="font-luxury text-5xl">Your Stack, Supercharged</h2>
+    </div>
+    <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-8 reveal">
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Shopify</p><p class="text-[9px] text-zinc-600 mt-1">Sync</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">NetSuite</p><p class="text-[9px] text-zinc-600 mt-1">ERP</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Stripe</p><p class="text-[9px] text-zinc-600 mt-1">Payments</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Shippo</p><p class="text-[9px] text-zinc-600 mt-1">Shipping</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">QuickBooks</p><p class="text-[9px] text-zinc-600 mt-1">Accounting</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Salesforce</p><p class="text-[9px] text-zinc-600 mt-1">CRM</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">A2000</p><p class="text-[9px] text-zinc-600 mt-1">ERP</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">ApparelMagic</p><p class="text-[9px] text-zinc-600 mt-1">ERP</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">PayPal</p><p class="text-[9px] text-zinc-600 mt-1">Payments</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Zapier</p><p class="text-[9px] text-zinc-600 mt-1">Automation</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">Calendly</p><p class="text-[9px] text-zinc-600 mt-1">Scheduling</p></div>
+      <div class="int-tile p-5 text-center"><p class="text-[11px] font-medium text-zinc-300">SAP</p><p class="text-[9px] text-zinc-600 mt-1">ERP</p></div>
+    </div>
+    <div class="text-center reveal">
+      <a href="#" class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-gold transition-colors border-b border-zinc-700 pb-0.5">Explore All Integrations →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     TESTIMONIALS
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-24 max-w-7xl mx-auto px-6">
+  <div class="mb-14 reveal">
+    <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4">Social Proof</p>
+    <h2 class="font-luxury text-5xl">Brands That Trust Us</h2>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="border border-zinc-800 p-8 reveal">
+      <p class="font-luxury text-5xl text-gold/30 mb-4">"</p>
+      <p class="font-luxury text-xl leading-relaxed mb-6">"Linezheets cut our wholesale order cycle from 3 weeks to 4 days. The AI line sheet builder alone was worth the switch."</p>
+      <div class="border-t border-zinc-800 pt-4">
+        <p class="text-sm font-medium">Margaux V.</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Creative Director, House of Meridian</p>
+      </div>
+    </div>
+    <div class="border border-zinc-800 p-8 reveal" style="transition-delay:0.1s">
+      <p class="font-luxury text-5xl text-gold/30 mb-4">"</p>
+      <p class="font-luxury text-xl leading-relaxed mb-6">"The buyer intelligence scores changed how we prioritize accounts. We focused on the right relationships and grew revenue 40%."</p>
+      <div class="border-t border-zinc-800 pt-4">
+        <p class="text-sm font-medium">James K.</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Head of Sales, Voss & Co.</p>
+      </div>
+    </div>
+    <div class="border border-zinc-800 p-8 reveal" style="transition-delay:0.2s">
+      <p class="font-luxury text-5xl text-gold/30 mb-4">"</p>
+      <p class="font-luxury text-xl leading-relaxed mb-6">"We tried three platforms before Linezheets. Nothing else connects trend forecasting, inventory, and buyer matching in one place."</p>
+      <div class="border-t border-zinc-800 pt-4">
+        <p class="text-sm font-medium">Céline R.</p>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Founder, Atelier Luxx</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     PRICING
+════════════════════════════════════════════════════ -->
+<section id="pricing" class="sec-divider py-24 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-4 reveal text-center">
+      <p class="font-mono-dm text-[10px] text-zinc-500 uppercase tracking-[0.3em] mb-4">Simple, Transparent</p>
+      <h2 class="font-luxury text-5xl mb-8">Pricing</h2>
+
+      <!-- Toggle -->
+      <div class="inline-flex items-center gap-3 border border-zinc-800 px-1 py-1 mb-14">
+        <button id="toggle-monthly" class="text-[10px] uppercase tracking-widest px-5 py-2 bg-zinc-800 text-white transition-all">Monthly</button>
+        <button id="toggle-annual" class="text-[10px] uppercase tracking-widest px-5 py-2 text-zinc-500 transition-all">Annual <span class="text-gold">-20%</span></button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Starter -->
+      <div class="price-card p-8 reveal">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Starter</p>
+        <p class="font-luxury text-5xl mb-1"><span class="price-val" data-monthly="49" data-annual="39">$49</span><span class="font-sans text-lg text-zinc-500">/mo</span></p>
+        <p class="text-zinc-600 text-xs mb-8">Billed monthly</p>
+        <ul class="space-y-3 mb-10 text-sm text-zinc-400">
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Up to 100 products</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Marketplace listing</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> 5 AI line sheets/month</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Basic analytics</li>
+          <li class="flex items-center gap-2"><span class="text-zinc-700 text-xs">✗</span> <span class="text-zinc-600">Buyer intelligence</span></li>
+          <li class="flex items-center gap-2"><span class="text-zinc-700 text-xs">✗</span> <span class="text-zinc-600">Trend forecasting</span></li>
+        </ul>
+        <a href="/pages/auth.html?mode=register&plan=starter" class="block text-center border border-zinc-700 text-[10px] uppercase tracking-widest py-3.5 hover:border-white transition-colors">Get Started</a>
+      </div>
+
+      <!-- Studio (featured) -->
+      <div class="price-card featured p-8 reveal relative" style="transition-delay:0.1s">
+        <span class="absolute top-4 right-4 bg-gold text-black text-[9px] uppercase tracking-widest px-3 py-1">Most Popular</span>
+        <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Studio</p>
+        <p class="font-luxury text-5xl mb-1"><span class="price-val" data-monthly="149" data-annual="119">$149</span><span class="font-sans text-lg text-zinc-500">/mo</span></p>
+        <p class="text-zinc-600 text-xs mb-8">Billed monthly</p>
+        <ul class="space-y-3 mb-10 text-sm text-zinc-400">
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Unlimited products</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> AI style matching</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Unlimited line sheets</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Buyer intelligence scores</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Trend forecasting</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Predictive reorder engine</li>
+        </ul>
+        <a href="/pages/auth.html?mode=register&plan=studio" class="block text-center bg-gold text-black text-[10px] uppercase tracking-widest py-3.5 hover:bg-[#E8D5A3] transition-colors">Start Free Trial</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="price-card p-8 reveal" style="transition-delay:0.2s">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Enterprise</p>
+        <p class="font-luxury text-5xl mb-1">Custom</p>
+        <p class="text-zinc-600 text-xs mb-8">Volume pricing available</p>
+        <ul class="space-y-3 mb-10 text-sm text-zinc-400">
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Everything in Studio</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Multi-brand management</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> ERP / PIM integrations</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Dedicated account manager</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> Custom AI model training</li>
+          <li class="flex items-center gap-2"><span class="text-gold text-xs">✓</span> SLA + priority support</li>
+        </ul>
+        <a href="mailto:enterprise@linezheets.com" class="block text-center border border-zinc-700 text-[10px] uppercase tracking-widest py-3.5 hover:border-white transition-colors">Contact Sales</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FINAL CTA
+════════════════════════════════════════════════════ -->
+<section class="sec-divider py-32 text-center">
+  <div class="max-w-3xl mx-auto px-6 reveal">
+    <p class="font-mono-dm text-[10px] text-gold uppercase tracking-[0.3em] mb-6">Ready When You Are</p>
+    <h2 class="font-luxury text-6xl md:text-7xl mb-8">Your next season<br>starts here.</h2>
+    <p class="text-zinc-400 font-light mb-12">Join 8,400+ brands already using Linezheets to sell smarter.</p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="/pages/auth.html?mode=register" class="bg-gold text-black text-[10px] uppercase tracking-[0.22em] px-10 py-4 hover:bg-[#E8D5A3] transition-colors">Start Free Trial</a>
+      <a href="mailto:info@linezheets.com" class="border border-zinc-700 text-[10px] uppercase tracking-[0.22em] px-10 py-4 hover:border-white transition-colors">Talk to Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════ -->
+<footer class="sec-divider py-16 bg-[#06060A]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
+      <div class="col-span-2 md:col-span-1">
+        <p class="font-luxury text-2xl text-white mb-4">Linezheets</p>
+        <p class="text-zinc-600 text-xs font-light leading-relaxed">The intelligence layer for fashion commerce.</p>
+      </div>
+      <div>
+        <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-500 mb-5">Platform</p>
+        <ul class="space-y-3 text-xs text-zinc-500">
+          <li><a href="/pages/buyer-shop.html" class="hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="#ai-studio" class="hover:text-white transition-colors">AI Studio</a></li>
+          <li><a href="/pages/brand-dashboard.html" class="hover:text-white transition-colors">Line Sheets</a></li>
+          <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-500 mb-5">Solutions</p>
+        <ul class="space-y-3 text-xs text-zinc-500">
+          <li><a href="#" class="hover:text-white transition-colors">For Brands</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">For Showrooms</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">For Retailers</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Enterprise</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-500 mb-5">Resources</p>
+        <ul class="space-y-3 text-xs text-zinc-500">
+          <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Integrations</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Status</a></li>
+          <li><a href="/api/health" class="hover:text-white transition-colors">API</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[9px] uppercase tracking-[0.25em] text-zinc-500 mb-5">Company</p>
+        <ul class="space-y-3 text-xs text-zinc-500">
+          <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
+          <li><a href="mailto:info@linezheets.com" class="hover:text-white transition-colors">Contact</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <p class="text-zinc-700 text-[10px]">© 2026 Linezheets. All rights reserved.</p>
+      <div class="flex gap-6 text-[10px] text-zinc-600">
+        <a href="#" class="hover:text-zinc-400 transition-colors">Privacy Policy</a>
+        <a href="#" class="hover:text-zinc-400 transition-colors">Terms of Service</a>
+        <a href="#" class="hover:text-zinc-400 transition-colors">Cookie Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════ -->
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function resolveImage(p) {
+  let img = p.image_url || p.image || p.logo_url || null;
+  if (!img && Array.isArray(p.image_urls) && p.image_urls.length) img = p.image_urls[0];
+  return img;
+}
+
+// ── Nav scroll effect ─────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// ── Hero canvas particle mesh ─────────────────────────────────────────────────
+(function initCanvas() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles;
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    particles = Array.from({ length: 80 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.5 + 0.5
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(201,168,76,0.35)';
+      ctx.fill();
+    });
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(201,168,76,${0.08 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+// ── Typewriter hero ───────────────────────────────────────────────────────────
+(function typewriter() {
+  const words = ['Fashion Commerce', 'Wholesale Intelligence', 'Season Planning', 'Buyer Discovery'];
+  const el = document.getElementById('typewriter');
+  let wi = 0, ci = 0, deleting = false;
+
+  function tick() {
+    const word = words[wi];
+    if (!deleting) {
+      el.textContent = word.slice(0, ++ci);
+      if (ci === word.length) { deleting = true; return setTimeout(tick, 2200); }
+    } else {
+      el.textContent = word.slice(0, --ci);
+      if (ci === 0) { deleting = false; wi = (wi + 1) % words.length; }
+    }
+    setTimeout(tick, deleting ? 45 : 90);
+  }
+  tick();
+})();
+
+// ── Scroll reveal ─────────────────────────────────────────────────────────────
+const revealIO = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealIO.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => revealIO.observe(el));
+
+// ── Animated counters ─────────────────────────────────────────────────────────
+const counterIO = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const el = entry.target;
+    const target = parseFloat(el.dataset.target);
+    const isDecimal = el.dataset.decimal === 'true';
+    const duration = 1800;
+    const start = performance.now();
+    function step(now) {
+      const pct = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - pct, 3);
+      const val = target * ease;
+      el.textContent = isDecimal ? val.toFixed(1) : Math.floor(val).toLocaleString();
+      if (pct < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    counterIO.unobserve(el);
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.counter').forEach(el => counterIO.observe(el));
+
+// ── Solutions tabs ────────────────────────────────────────────────────────────
+document.querySelectorAll('.sol-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sol-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ── Pricing toggle ────────────────────────────────────────────────────────────
+let isAnnual = false;
+function setPricingMode(annual) {
+  isAnnual = annual;
+  document.getElementById('toggle-monthly').classList.toggle('bg-zinc-800', !annual);
+  document.getElementById('toggle-monthly').classList.toggle('text-white', !annual);
+  document.getElementById('toggle-monthly').classList.toggle('text-zinc-500', annual);
+  document.getElementById('toggle-annual').classList.toggle('bg-zinc-800', annual);
+  document.getElementById('toggle-annual').classList.toggle('text-white', annual);
+  document.getElementById('toggle-annual').classList.toggle('text-zinc-500', !annual);
+  document.querySelectorAll('.price-val').forEach(el => {
+    el.textContent = '$' + (annual ? el.dataset.annual : el.dataset.monthly);
+  });
+  document.querySelectorAll('.price-card .text-zinc-600').forEach(el => {
+    if (el.textContent.includes('illed')) el.textContent = annual ? 'Billed annually' : 'Billed monthly';
+  });
+}
+document.getElementById('toggle-monthly').addEventListener('click', () => setPricingMode(false));
+document.getElementById('toggle-annual').addEventListener('click',  () => setPricingMode(true));
+
+// ── API: Trending products ─────────────────────────────────────────────────────
+async function loadTrending() {
+  const grid = document.getElementById('trending-grid');
+  const EUR_RATE = 0.92; // fixed conversion for display
+
+  try {
+    const res = await fetch('/api/marketplace/trending');
+    const data = await res.json();
+    const products = data.trending || [];
+
+    if (!products.length) {
+      grid.innerHTML = `<p class="text-zinc-600 text-xs col-span-4 py-8">No products found.</p>`;
+      return;
+    }
+
+    grid.innerHTML = products.map(p => {
+    // These names MUST match the backend exactly
+    const wholesale = p.wholesale_usd;
+    const retail = p.srp_usd;
+    const wholesaleEur = p.wholesale_eur;
+    const retailEur = p.srp_eur;
+
+    return `
+    <div class="product-card group cursor-pointer border border-zinc-900 p-4 hover:border-white transition-all">
+        <div class="aspect-[3/4] bg-zinc-900 mb-6 overflow-hidden flex items-center justify-center relative">
+            <img src="${p.image_urls[0]}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+        </div>
+
+        <h4 class="font-luxury text-xl mb-1">${p.title}</h4>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-widest mb-4 border-b border-zinc-800 pb-2">${p.category}</p>
+
+        <div class="space-y-3 mt-4 text-[11px] uppercase tracking-tighter">
+            <div class="flex justify-between items-center">
+                <span class="text-zinc-500">Wholesale</span>
+                <div class="text-right">
+                    <span class="text-white font-bold">$${wholesale}</span>
+                    <span class="text-zinc-600 ml-1">/ €${wholesaleEur}</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-zinc-900 pt-2">
+                <span class="text-zinc-500">Retail (SRP)</span>
+                <div class="text-right">
+                    <span class="text-zinc-300">$${Number(retail).toFixed(2)}</span>
+                    <span class="text-zinc-600 ml-1">/ €${retailEur}</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-zinc-900 pt-2">
+                <span class="text-zinc-500">MOQ / STOCK</span>
+                <div class="text-right">
+                    <span class="text-white">${p.moq} units</span>
+                    <span class="text-red-900 ml-2 font-bold">${p.stock} avail.</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}).join('');
+  } catch (err) {
+    console.error('loadTrending error:', err);
+    grid.innerHTML = `<p class="text-red-500 text-xs col-span-4">Error: ${err.message}</p>`;
+  }
+}
+
+// ── API: Featured products ─────────────────────────────────────────────────────
+async function loadFeatured() {
+  const grid = document.getElementById('featured-grid');
+  try {
+    const res = await fetch('/api/marketplace/featured');
+    const data = await res.json();
+    const products = data.featured || [];
+
+    if (!products.length) {
+      grid.innerHTML = `<p class="text-zinc-600 text-xs col-span-3 py-8">No featured products.</p>`;
+      return;
+    }
+
+    grid.innerHTML = products.slice(0, 6).map((p, i) => {
+      const img = resolveImage(p);
+      const sizes = ['aspect-[3/4]', 'aspect-[3/4]', 'aspect-[3/4]', 'aspect-[3/4]', 'aspect-[3/4]', 'aspect-[3/4]'];
+      return `
+        <div class="pcard cursor-pointer group" onclick="window.location='/pages/buyer-shop.html'">
+          <div class="${sizes[i]} bg-zinc-900 mb-4 overflow-hidden">
+            ${img
+              ? `<img src="${img}" alt="${p.title || p.name || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'">`
+              : `<div class="w-full h-full flex items-center justify-center"><span class="font-luxury text-zinc-700 text-sm uppercase tracking-widest">${p.title || p.name || ''}</span></div>`}
+          </div>
+          <h4 class="font-luxury text-lg mb-0.5">${p.title || p.name || 'Untitled'}</h4>
+          <p class="text-[10px] text-zinc-500 uppercase tracking-widest">${p.brand_name || ''}</p>
+          <p class="font-mono-dm text-sm text-gold mt-2">$${parseFloat(p.retail_price || p.price || 0).toFixed(2)}</p>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('loadFeatured error:', err);
+    grid.innerHTML = `<p class="text-red-500 text-xs">Error: ${err.message}</p>`;
+  }
+}
+
+// ── API: Categories ───────────────────────────────────────────────────────────
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/marketplace/categories');
+    const data = await res.json();
+    const cats = data.categories || [];
+    if (!cats.length) return; // keep static defaults
+
+    const row = document.getElementById('categories-row');
+    row.innerHTML = cats.map(c => `
+      <span class="cat-pill text-[10px] uppercase tracking-widest px-4 py-2 text-zinc-400"
+            onclick="window.location='/pages/buyer-shop.html?category=${encodeURIComponent(c.category)}'">
+        ${c.category}
+        <span class="text-zinc-700 ml-1">(${c.product_count})</span>
+      </span>`).join('');
+  } catch (err) {
+    console.error('loadCategories error:', err);
+  }
+}
+
+// ── API: Brands ───────────────────────────────────────────────────────────────
+async function loadBrands() {
+  const grid = document.getElementById('brands-grid');
+  try {
+    const res = await fetch('/api/marketplace/brands?limit=8');
+    const data = await res.json();
+    const brands = data.brands || [];
+
+    if (!brands.length) {
+      grid.innerHTML = `<p class="text-zinc-600 text-xs col-span-4 py-8">No brands found.</p>`;
+      return;
+    }
+
+    grid.innerHTML = brands.slice(0, 8).map(b => `
+      <div class="group cursor-pointer" onclick="window.location='/brands/${b.slug || b.id}'">
+        <div class="aspect-square bg-zinc-900 mb-4 overflow-hidden relative flex items-center justify-center">
+          ${b.logo_url
+            ? `<img src="${b.logo_url}" alt="${b.brand_name}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500">`
+            : `<span class="font-luxury text-2xl text-zinc-600 group-hover:text-zinc-400 transition-colors">${(b.brand_name || '?')[0]}</span>`}
+          <div class="absolute inset-0 border border-transparent group-hover:border-gold/40 transition-colors duration-300"></div>
+        </div>
+        <p class="font-luxury text-base mb-0.5">${b.brand_name || 'Unnamed Brand'}</p>
+        <p class="text-[10px] text-zinc-600 uppercase tracking-widest">${b.country || b.category || ''}</p>
+      </div>`).join('');
+  } catch (err) {
+    console.error('loadBrands error:', err);
+    grid.innerHTML = `<p class="text-red-500 text-xs">Error: ${err.message}</p>`;
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadTrending();
+  loadFeatured();
+  loadCategories();
+  loadBrands();
+});
+</script>
+
+</body>
+</html>

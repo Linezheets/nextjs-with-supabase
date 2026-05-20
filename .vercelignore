@@ -1,0 +1,26 @@
+# Dependencies (Vercel installs these)
+node_modules/
+
+# Build output (Vercel builds fresh)
+.next/
+
+# Local uploads (use S3/Supabase Storage in production)
+uploads/
+
+# Temp files
+tmp/
+*.log
+
+# Local env files
+.env
+.env.local
+
+# Test data
+test-data/
+
+# Supabase local config
+supabase/.branches/
+supabase/.temp/
+
+# Backend (deployed separately to Railway)
+# backend/

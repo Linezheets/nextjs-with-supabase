@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up Your Account — Linezheets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    body { background:#0A0A0F; font-family:'Inter',sans-serif; color:#fff; }
+    .font-luxury { font-family:'Cormorant Garamond',serif; }
+    .font-mono-dm { font-family:'DM Mono',monospace; }
+
+    .field-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#555; display:block; margin-bottom:6px; }
+    .input-field { width:100%; background:transparent; border:1px solid #222; color:#fff; padding:11px 14px; font-size:13px; outline:none; transition:border-color .2s; box-sizing:border-box; }
+    .input-field:focus { border-color:#C9A84C; }
+    .input-field::placeholder { color:#333; }
+    select.input-field { background:#0A0A0F; }
+
+    /* Step progress */
+    .step-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'DM Mono',monospace; font-size:10px; transition:all .3s; }
+    .step-dot.done     { background:#C9A84C; color:#000; }
+    .step-dot.active   { border:2px solid #C9A84C; color:#C9A84C; }
+    .step-dot.upcoming { border:1px solid #333; color:#444; }
+    .step-line { flex:1; height:1px; background:#1a1a1a; }
+    .step-line.done { background:#C9A84C; }
+
+    /* Category pills */
+    .cat-pill { border:1px solid #222; padding:8px 16px; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all .2s; user-select:none; }
+    .cat-pill.selected { border-color:#C9A84C; color:#C9A84C; background:rgba(201,168,76,0.05); }
+    .cat-pill:hover:not(.selected) { border-color:#444; }
+
+    /* Market segment cards */
+    .seg-card { border:1px solid #222; padding:16px; cursor:pointer; transition:all .2s; }
+    .seg-card.selected { border-color:#C9A84C; background:rgba(201,168,76,0.04); }
+    .seg-card:hover:not(.selected) { border-color:#333; }
+
+    /* error */
+    .err-box { border:1px solid rgba(239,68,68,0.4); background:rgba(127,29,29,0.15); padding:12px 16px; font-size:11px; color:#f87171; margin-bottom:16px; display:none; }
+    .err-box.show { display:block; }
+
+    /* password strength */
+    .strength-bar { height:3px; transition:width .3s, background .3s; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ── Top bar ────────────────────────────────────────────────────────────── -->
+<div class="border-b border-zinc-900 px-8 py-4 flex items-center justify-between shrink-0">
+  <span class="font-luxury text-xl tracking-[0.2em] text-[#C9A84C]">Linezheets</span>
+  <p class="font-mono-dm text-[10px] text-zinc-600 uppercase tracking-widest">Account Setup</p>
+</div>
+
+<!-- ── Main ───────────────────────────────────────────────────────────────── -->
+<main class="flex-1 flex flex-col items-center justify-start px-6 pt-12 pb-20">
+
+  <!-- Progress bar -->
+  <div class="w-full max-w-2xl mb-12">
+    <div class="flex items-center gap-0">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot upcoming" id="dot-2">2</div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-dot upcoming" id="dot-3">3</div>
+      <div class="step-line" id="line-3"></div>
+      <div class="step-dot upcoming" id="dot-4">4</div>
+    </div>
+    <div class="flex justify-between mt-2">
+      <span class="font-mono-dm text-[9px] text-zinc-600 uppercase">Password</span>
+      <span class="font-mono-dm text-[9px] text-zinc-600 uppercase">Your Details</span>
+      <span class="font-mono-dm text-[9px] text-zinc-600 uppercase">Your Store</span>
+      <span class="font-mono-dm text-[9px] text-zinc-600 uppercase">Store Profile</span>
+    </div>
+  </div>
+
+  <div class="w-full max-w-2xl">
+
+    <!-- ── STEP 1: Set Password ─────────────────────────────────────────── -->
+    <div id="step-1" class="step-panel">
+      <h1 class="font-luxury text-4xl uppercase tracking-widest mb-2">Set Your Password</h1>
+      <p class="text-zinc-500 text-sm mb-10">Choose a secure password to access your Linezheets account.</p>
+
+      <div class="err-box" id="err-1"></div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="field-label">New Password <span class="text-zinc-700">(min 8 characters)</span></label>
+          <input type="password" id="new-password" class="input-field" placeholder="At least 8 characters"
+            autocomplete="new-password" oninput="checkStrength(this.value)">
+          <!-- Strength meter -->
+          <div class="mt-2 h-0.5 bg-zinc-900 overflow-hidden">
+            <div id="strength-bar" class="strength-bar" style="width:0%;background:#f97316"></div>
+          </div>
+          <p id="strength-label" class="font-mono-dm text-[9px] text-zinc-700 mt-1"></p>
+        </div>
+        <div>
+          <label class="field-label">Confirm Password</label>
+          <input type="password" id="confirm-password" class="input-field" placeholder="Re-enter password"
+            autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="mt-10 flex justify-end">
+        <button onclick="nextStep(1)" class="bg-[#C9A84C] text-black px-10 py-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#E8D5A3] transition-colors">
+          Continue →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Personal Details ─────────────────────────────────────── -->
+    <div id="step-2" class="step-panel hidden">
+      <h1 class="font-luxury text-4xl uppercase tracking-widest mb-2">Your Details</h1>
+      <p class="text-zinc-500 text-sm mb-10">So brands and our team know who to reach. Only what matters — nothing excessive.</p>
+
+      <div class="err-box" id="err-2"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="field-label">First Name *</label>
+          <input type="text" id="first-name" class="input-field" placeholder="Sarah" autocomplete="given-name">
+        </div>
+        <div>
+          <label class="field-label">Last Name *</label>
+          <input type="text" id="last-name" class="input-field" placeholder="Chen" autocomplete="family-name">
+        </div>
+        <div class="md:col-span-2">
+          <label class="field-label">Email <span class="text-zinc-700">(pre-filled)</span></label>
+          <input type="email" id="profile-email" class="input-field" readonly style="opacity:0.5;cursor:default">
+        </div>
+        <div>
+          <label class="field-label">Phone <span class="text-zinc-700">(with country code)</span></label>
+          <input type="tel" id="phone" class="input-field" placeholder="+1 212 555 0100" autocomplete="tel">
+        </div>
+        <div>
+          <label class="field-label">Country *</label>
+          <select id="country" class="input-field">
+            <option value="">Select country…</option>
+            <option value="US">United States</option><option value="GB">United Kingdom</option>
+            <option value="FR">France</option><option value="IT">Italy</option>
+            <option value="DE">Germany</option><option value="JP">Japan</option>
+            <option value="AU">Australia</option><option value="CA">Canada</option>
+            <option value="HK">Hong Kong</option><option value="SG">Singapore</option>
+            <option value="AE">UAE</option><option value="KR">South Korea</option>
+            <option value="NL">Netherlands</option><option value="ES">Spain</option>
+            <option value="CH">Switzerland</option><option value="OTHER">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-10 flex justify-between">
+        <button onclick="prevStep(2)" class="border border-zinc-700 px-8 py-3.5 text-[11px] uppercase tracking-widest hover:border-white transition-colors">
+          ← Back
+        </button>
+        <button onclick="nextStep(2)" class="bg-[#C9A84C] text-black px-10 py-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#E8D5A3] transition-colors">
+          Continue →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Store Info ────────────────────────────────────────────── -->
+    <div id="step-3" class="step-panel hidden">
+      <h1 class="font-luxury text-4xl uppercase tracking-widest mb-2">Your Store</h1>
+      <p class="text-zinc-500 text-sm mb-10">Help brands find and trust you — your store's public identity.</p>
+
+      <div class="err-box" id="err-3"></div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="field-label">Store Name <span class="text-zinc-700">(pre-filled)</span></label>
+          <input type="text" id="store-name-display" class="input-field" readonly style="opacity:0.5;cursor:default">
+        </div>
+        <div>
+          <label class="field-label">Store Address</label>
+          <input type="text" id="store-address" class="input-field" placeholder="123 Fashion Ave, Suite 400" autocomplete="street-address">
+        </div>
+        <div>
+          <label class="field-label">City</label>
+          <input type="text" id="city" class="input-field" placeholder="New York" autocomplete="address-level2">
+        </div>
+        <div>
+          <label class="field-label">Store Type *</label>
+          <select id="store-type" class="input-field">
+            <option value="">Select type…</option>
+            <option value="boutique">Independent Boutique</option>
+            <option value="department">Department Store / Concession</option>
+            <option value="online">Online Retailer</option>
+            <option value="multi-brand">Multi-Brand Concept Store</option>
+            <option value="flagship">Brand Flagship / Mono-brand</option>
+            <option value="showroom">Showroom / Agent</option>
+            <option value="marketplace">Online Marketplace</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Store Website</label>
+          <input type="url" id="store-url" class="input-field" placeholder="https://yourstore.com" autocomplete="url">
+        </div>
+
+        <!-- Social media — clearly optional -->
+        <div class="border-t border-zinc-900 pt-6">
+          <p class="font-mono-dm text-[10px] uppercase tracking-widest text-zinc-600 mb-4">Social Presence <span class="text-zinc-800">(optional — helps us tailor your feed)</span></p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">Instagram</label>
+              <div class="flex">
+                <span style="background:#111;border:1px solid #222;border-right:none;padding:11px 12px;font-family:'DM Mono',monospace;font-size:11px;color:#555">@</span>
+                <input type="text" id="instagram" class="input-field" style="border-left:none" placeholder="yourstorehandle">
+              </div>
+            </div>
+            <div>
+              <label class="field-label">TikTok</label>
+              <div class="flex">
+                <span style="background:#111;border:1px solid #222;border-right:none;padding:11px 12px;font-family:'DM Mono',monospace;font-size:11px;color:#555">@</span>
+                <input type="text" id="tiktok" class="input-field" style="border-left:none" placeholder="yourstorehandle">
+              </div>
+            </div>
+            <div>
+              <label class="field-label">LinkedIn</label>
+              <input type="url" id="linkedin" class="input-field" placeholder="https://linkedin.com/company/…">
+            </div>
+            <div>
+              <label class="field-label">Other</label>
+              <input type="text" id="other-socials" class="input-field" placeholder="Pinterest, Lyst listing, etc.">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-10 flex justify-between">
+        <button onclick="prevStep(3)" class="border border-zinc-700 px-8 py-3.5 text-[11px] uppercase tracking-widest hover:border-white transition-colors">← Back</button>
+        <button onclick="nextStep(3)" class="bg-[#C9A84C] text-black px-10 py-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-[#E8D5A3] transition-colors">Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Store Profile ─────────────────────────────────────────── -->
+    <div id="step-4" class="step-panel hidden">
+      <h1 class="font-luxury text-4xl uppercase tracking-widest mb-2">Store Profile</h1>
+      <p class="text-zinc-500 text-sm mb-10">This helps us surface the right products for your buyers — only for your benefit, never shared.</p>
+
+      <div class="err-box" id="err-4"></div>
+
+      <!-- Categories -->
+      <div class="mb-8">
+        <label class="field-label mb-4 block">What categories do you stock? <span class="text-zinc-700">(select all that apply)</span></label>
+        <div class="flex flex-wrap gap-2" id="cat-pills">
+          <div class="cat-pill" data-cat="TOPS" onclick="toggleCat(this)">Tops</div>
+          <div class="cat-pill" data-cat="BOTTOMS" onclick="toggleCat(this)">Bottoms</div>
+          <div class="cat-pill" data-cat="DRESSES" onclick="toggleCat(this)">Dresses</div>
+          <div class="cat-pill" data-cat="OUTERWEAR" onclick="toggleCat(this)">Outerwear</div>
+          <div class="cat-pill" data-cat="KNITWEAR" onclick="toggleCat(this)">Knitwear</div>
+          <div class="cat-pill" data-cat="FOOTWEAR" onclick="toggleCat(this)">Footwear</div>
+          <div class="cat-pill" data-cat="ACCESSORIES" onclick="toggleCat(this)">Accessories</div>
+          <div class="cat-pill" data-cat="DENIM" onclick="toggleCat(this)">Denim</div>
+          <div class="cat-pill" data-cat="ACTIVEWEAR" onclick="toggleCat(this)">Activewear</div>
+          <div class="cat-pill" data-cat="SWIMWEAR" onclick="toggleCat(this)">Swimwear</div>
+          <div class="cat-pill" data-cat="SETS" onclick="toggleCat(this)">Sets / Co-ords</div>
+          <div class="cat-pill" data-cat="BRIDAL" onclick="toggleCat(this)">Bridal / Occasion</div>
+        </div>
+      </div>
+
+      <!-- Market Segment -->
+      <div class="mb-8">
+        <label class="field-label mb-4 block">How would you describe your market positioning? *</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="seg-cards">
+          <div class="seg-card" data-seg="luxury" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Luxury</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">SRP $500+  ·  Designer / Prestige</p>
+          </div>
+          <div class="seg-card" data-seg="premium" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Premium</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">SRP $150–500  ·  Elevated quality</p>
+          </div>
+          <div class="seg-card" data-seg="contemporary" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Contemporary</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">SRP $80–200  ·  Trend-led, accessible</p>
+          </div>
+          <div class="seg-card" data-seg="streetwear" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Streetwear</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">Urban culture  ·  Drop-based</p>
+          </div>
+          <div class="seg-card" data-seg="fast-fashion" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Volume / Fast</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">High turnover  ·  Price-driven</p>
+          </div>
+          <div class="seg-card" data-seg="multi" onclick="selectSeg(this)">
+            <p class="font-luxury text-lg uppercase tracking-wider mb-1">Multi-segment</p>
+            <p class="font-mono-dm text-[9px] text-zinc-600">Mix of price points</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Price Range -->
+      <div class="mb-8">
+        <label class="field-label mb-3 block">Typical SRP range you stock <span class="text-zinc-700">(what your customers pay in-store)</span></label>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="field-label">From ($)</label>
+            <input type="number" id="price-min" class="input-field" placeholder="50" min="0">
+          </div>
+          <div>
+            <label class="field-label">To ($)</label>
+            <input type="number" id="price-max" class="input-field" placeholder="800" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Annual Buy Budget -->
+      <div class="mb-8">
+        <label class="field-label mb-3 block">Approximate annual buy budget <span class="text-zinc-700">(optional — for brand matching)</span></label>
+        <select id="annual-budget" class="input-field">
+          <option value="">Prefer not to say</option>
+          <option value="50000">Under $50K</option>
+          <option value="100000">$50K – $100K</option>
+          <option value="250000">$100K – $250K</option>
+          <option value="500000">$250K – $500K</option>
+          <option value="1000000">$500K – $1M</option>
+          <option value="2000000">$1M+</option>
+        </select>
+      </div>
+
+      <div id="err-4b" class="err-box"></div>
+
+      <!-- Submit -->
+      <div class="mt-10 flex justify-between">
+        <button onclick="prevStep(4)" class="border border-zinc-700 px-8 py-3.5 text-[11px] uppercase tracking-widest hover:border-white transition-colors">← Back</button>
+        <button id="submit-btn" onclick="submitOnboarding()"
+          class="px-10 py-3.5 text-[11px] font-bold uppercase tracking-widest transition-colors"
+          style="background:#C9A84C;color:#000"
+          onmouseover="this.style.background='#E8D5A3'" onmouseout="this.style.background='#C9A84C'">
+          Complete Setup →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: Done ──────────────────────────────────────────────────── -->
+    <div id="step-5" class="step-panel hidden text-center py-16">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-8" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3)">
+        <span style="color:#C9A84C;font-size:28px">✓</span>
+      </div>
+      <h1 class="font-luxury text-5xl uppercase tracking-widest mb-4">You're In</h1>
+      <p class="text-zinc-400 text-sm mb-2" id="welcome-msg">Welcome to Linezheets.</p>
+      <p class="text-zinc-600 text-xs mb-12">Taking you to the marketplace…</p>
+      <div class="w-px h-12 bg-gradient-to-b from-[#C9A84C] to-transparent mx-auto mb-4 animate-pulse"></div>
+    </div>
+
+  </div><!-- /max-w-2xl -->
+</main>
+
+<script>
+const API = '/api';
+let currentStep = 1;
+let selectedCats = [];
+let selectedSeg  = '';
+const BRAND_Q    = new URLSearchParams(location.search).get('brand') || '';
+
+// Pre-fill from stored login
+window.addEventListener('DOMContentLoaded', () => {
+  const tok  = localStorage.getItem('lz_buyer_token');
+  const info = JSON.parse(localStorage.getItem('lz_buyer_info') || '{}');
+  if (!tok) { window.location.href = '/pages/buyer-landing.html' + (BRAND_Q ? '?brand='+encodeURIComponent(BRAND_Q) : ''); return; }
+
+  if (info.email) document.getElementById('profile-email').value = info.email;
+  if (info.store_name) document.getElementById('store-name-display').value = info.store_name;
+});
+
+// ── Password strength ─────────────────────────────────────────────────────────
+function checkStrength(pw) {
+  const bar   = document.getElementById('strength-bar');
+  const label = document.getElementById('strength-label');
+  const len   = pw.length;
+  const hasUp = /[A-Z]/.test(pw), hasNum = /\d/.test(pw), hasSym = /[^A-Za-z0-9]/.test(pw);
+  let score = 0;
+  if (len >= 8)  score++;
+  if (len >= 12) score++;
+  if (hasUp)     score++;
+  if (hasNum)    score++;
+  if (hasSym)    score++;
+  const pct   = [0,25,50,70,90,100][score];
+  const col   = ['#f87171','#f97316','#facc15','#a3e635','#4ade80'][score-1] || '#f87171';
+  const text  = ['','Weak','Fair','Good','Strong','Very strong'][score];
+  bar.style.width = pct + '%'; bar.style.background = col;
+  label.textContent = text; label.style.color = col;
+}
+
+// ── Category pills ────────────────────────────────────────────────────────────
+function toggleCat(el) {
+  const cat = el.dataset.cat;
+  el.classList.toggle('selected');
+  if (selectedCats.includes(cat)) selectedCats = selectedCats.filter(c => c !== cat);
+  else selectedCats.push(cat);
+}
+
+function selectSeg(el) {
+  document.querySelectorAll('.seg-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedSeg = el.dataset.seg;
+}
+
+// ── Step navigation ───────────────────────────────────────────────────────────
+function showStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById(`step-${n}`).classList.remove('hidden');
+  currentStep = n;
+  // Update dots
+  for (let i = 1; i <= 4; i++) {
+    const dot  = document.getElementById(`dot-${i}`);
+    const line = document.getElementById(`line-${i}`);
+    dot.className  = 'step-dot ' + (i < n ? 'done' : i === n ? 'active' : 'upcoming');
+    dot.textContent = i < n ? '✓' : i;
+    if (line) line.className = 'step-line ' + (i < n ? 'done' : '');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function nextStep(from) {
+  if (from === 1) {
+    const pw  = document.getElementById('new-password').value;
+    const cpw = document.getElementById('confirm-password').value;
+    if (pw.length < 8) { showErr('err-1', 'Password must be at least 8 characters'); return; }
+    if (pw !== cpw)    { showErr('err-1', 'Passwords do not match'); return; }
+  }
+  if (from === 2) {
+    const fn = document.getElementById('first-name').value.trim();
+    const ln = document.getElementById('last-name').value.trim();
+    const ct = document.getElementById('country').value;
+    if (!fn || !ln)  { showErr('err-2', 'First and last name are required'); return; }
+    if (!ct)         { showErr('err-2', 'Please select your country'); return; }
+  }
+  if (from === 3) {
+    const st = document.getElementById('store-type').value;
+    if (!st) { showErr('err-3', 'Please select your store type'); return; }
+  }
+  showStep(from + 1);
+}
+
+function prevStep(from) { showStep(from - 1); }
+
+// ── Final submission ──────────────────────────────────────────────────────────
+async function submitOnboarding() {
+  if (!selectedSeg) { showErr('err-4', 'Please select your market positioning'); return; }
+  if (!selectedCats.length) { showErr('err-4', 'Please select at least one category you stock'); return; }
+
+  const priceMin = parseFloat(document.getElementById('price-min').value) || null;
+  const priceMax = parseFloat(document.getElementById('price-max').value) || null;
+  if (priceMin && priceMax && priceMin > priceMax) {
+    showErr('err-4', 'Price range: "From" must be less than "To"'); return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const tok    = localStorage.getItem('lz_buyer_token');
+  const budget = document.getElementById('annual-budget').value;
+
+  const payload = {
+    new_password      : document.getElementById('new-password').value,
+    first_name        : document.getElementById('first-name').value.trim(),
+    last_name         : document.getElementById('last-name').value.trim(),
+    phone             : document.getElementById('phone').value.trim(),
+    country           : document.getElementById('country').value,
+    store_address     : document.getElementById('store-address').value.trim(),
+    city              : document.getElementById('city').value.trim(),
+    store_type        : document.getElementById('store-type').value,
+    store_url         : document.getElementById('store-url').value.trim(),
+    instagram         : document.getElementById('instagram').value.trim().replace('@',''),
+    tiktok            : document.getElementById('tiktok').value.trim().replace('@',''),
+    linkedin          : document.getElementById('linkedin').value.trim(),
+    other_socials     : document.getElementById('other-socials').value.trim(),
+    categories_sold   : selectedCats,
+    market_segment    : selectedSeg,
+    price_range_min   : priceMin,
+    price_range_max   : priceMax,
+    annual_buy_budget : budget ? parseFloat(budget) : null,
+  };
+
+  try {
+    const res  = await fetch(`${API}/buyers/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${tok}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showErr('err-4b', data.error || 'Something went wrong — please try again');
+      btn.textContent = 'Complete Setup →'; btn.disabled = false;
+      return;
+    }
+
+    // Update stored token + buyer info
+    localStorage.setItem('lz_buyer_token', data.token);
+    localStorage.setItem('lz_buyer_info', JSON.stringify(data.buyer));
+
+    // Show success step, then redirect
+    document.getElementById('welcome-msg').textContent =
+      `Welcome, ${data.buyer?.first_name || data.buyer?.store_name || 'to Linezheets'}.`;
+    showStep(5);
+
+    setTimeout(() => {
+      window.location.href = '/pages/buyer-shop.html';
+    }, 2200);
+
+  } catch (err) {
+    showErr('err-4b', 'Network error — please try again');
+    btn.textContent = 'Complete Setup →'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

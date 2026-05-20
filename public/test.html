@@ -1,0 +1,16 @@
+<html>
+  <body>
+    <h1>Server Connection Test</h1>
+    <div id="test">Loading...</div>
+    <script>
+      fetch('http://127.0.0.1:4000/api/marketplace/trending')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('test').innerText = "SUCCESS: Found " + data.trending[0].title;
+        })
+        .catch(err => {
+          document.getElementById('test').innerText = "STILL FAILING: " + err.message;
+        });
+    </script>
+  </body>
+</html>

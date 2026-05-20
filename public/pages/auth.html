@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linezheets — Sign In</title>
+  <meta name="description" content="Sign in or create your Linezheets account — the AI-powered wholesale fashion platform." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#0A0A0F',
+            navy: '#080B1A',
+            gold: { DEFAULT: '#C9A84C', light: '#E8D5A3', dark: '#9a7a2e' },
+            platinum: '#D4D4D8',
+            ivory: '#F5F0E8',
+            crimson: '#8B1A2F',
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"DM Mono"', 'monospace'],
+          },
+        }
+      }
+    };
+  </script>
+  <style>
+    /* ── Design Tokens ── */
+    :root {
+      --bg:          #0C0C10;
+      --surface:     #111117;
+      --border:      rgba(255,255,255,0.07);
+      --border-gold: rgba(181,149,106,0.28);
+      --text:        #DEDBD2;
+      --text-2:      #7C7970;
+      --text-3:      #4A4744;
+      --gold:        #B5956A;
+      --gold-bright: #CCAB7C;
+      --gold-dim:    rgba(181,149,106,0.1);
+      --danger:      #8C4A4A;
+      --danger-dim:  rgba(140,74,74,0.15);
+      --success:     #4B8A6A;
+      --success-dim: rgba(75,138,106,0.15);
+    }
+    [data-theme="light"] {
+      --bg:          #EDEAE3;
+      --surface:     #F7F5F0;
+      --border:      rgba(0,0,0,0.08);
+      --border-gold: rgba(140,109,64,0.35);
+      --text:        #1A1714;
+      --text-2:      #6A6760;
+      --text-3:      #9A9790;
+      --gold:        #8C6D40;
+      --gold-bright: #A07848;
+      --gold-dim:    rgba(140,109,64,0.1);
+      --danger:      #6B3030;
+      --danger-dim:  rgba(107,48,48,0.12);
+      --success:     #2D6B50;
+      --success-dim: rgba(45,107,80,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background-color: var(--bg); color: var(--text);
+      min-height: 100vh; font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* ── Orb background ── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(181,149,106,0.08) 0%, transparent 70%); top: -100px; right: -100px; animation: drift1 18s ease-in-out infinite; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(74,122,140,0.04) 0%, transparent 70%); bottom: -80px; left: -80px; animation: drift2 22s ease-in-out infinite; }
+    @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
+    @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-30px)} }
+    [data-theme="light"] .orb-1 { opacity: 0.5; }
+
+    /* ── Card ── */
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(20px);
+    }
+
+    /* ── Tab pill ── */
+    .tab-pill {
+      flex: 1; padding: 10px; font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; text-align: center; cursor: pointer; transition: all 0.2s;
+      border: 1px solid transparent; color: var(--text-2);
+      font-family: 'DM Mono', monospace; background: transparent;
+    }
+    .tab-pill.active { background: var(--gold-dim); border-color: var(--border-gold); color: var(--gold); }
+    .tab-pill:hover:not(.active) { color: var(--text); }
+
+    /* ── Role toggle ── */
+    .role-btn {
+      flex: 1; padding: 14px 12px; text-align: center; cursor: pointer; transition: all 0.25s;
+      border: 1px solid var(--border); position: relative; overflow: hidden;
+      background: transparent;
+    }
+    .role-btn:first-child { border-right: none; }
+    .role-btn.active { background: var(--gold-dim); border-color: var(--border-gold); }
+    .role-btn .role-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+    .role-btn .role-label { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 400; display: block; color: var(--text); }
+    .role-btn .role-sub { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-top: 2px; display: block; }
+    .role-btn.active .role-sub { color: var(--gold); }
+
+    /* ── Inputs ── */
+    .field-group { position: relative; }
+    .field-label {
+      display: block; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-2); margin-bottom: 7px; font-family: 'DM Mono', monospace;
+    }
+    .field-input {
+      width: 100%; background: transparent; border: 1px solid var(--border);
+      color: var(--text); padding: 11px 14px; font-size: 14px; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .field-input::placeholder { color: var(--text-3); }
+    .field-input:focus { border-color: var(--border-gold); background: var(--gold-dim); }
+    .field-input.error { border-color: rgba(140,74,74,0.6); }
+    select.field-input { cursor: pointer; background: var(--surface); }
+    select.field-input option { background: var(--surface); color: var(--text); }
+
+    /* ── Password toggle ── */
+    .pw-wrap { position: relative; }
+    .pw-wrap .field-input { padding-right: 44px; }
+    .pw-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-3); cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .pw-toggle:hover { color: var(--gold); }
+
+    /* ── Password strength ── */
+    .strength-bar { display: flex; gap: 3px; margin-top: 6px; }
+    .strength-bar span { flex: 1; height: 2px; background: var(--border); transition: background 0.3s; }
+    .strength-bar.s1 span:nth-child(1) { background: var(--danger); }
+    .strength-bar.s2 span:nth-child(1), .strength-bar.s2 span:nth-child(2) { background: #B5763A; }
+    .strength-bar.s3 span:nth-child(1), .strength-bar.s3 span:nth-child(2), .strength-bar.s3 span:nth-child(3) { background: var(--gold); }
+    .strength-bar.s4 span { background: var(--success); }
+
+    /* ── Tier cards ── */
+    .tier-card {
+      flex: 1; padding: 14px 10px; border: 1px solid var(--border); cursor: pointer;
+      transition: all 0.2s; text-align: center; position: relative; background: transparent;
+    }
+    .tier-card:hover { border-color: var(--border-gold); }
+    .tier-card.selected { border-color: var(--border-gold); background: var(--gold-dim); }
+    .tier-card .tier-badge {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      background: var(--gold); color: #0C0C10; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; white-space: nowrap;
+    }
+    .tier-card .tier-name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 400; color: var(--text); }
+    .tier-card .tier-price { font-family: 'DM Mono', monospace; font-size: 20px; color: var(--gold); margin: 4px 0; }
+    .tier-card .tier-price small { font-size: 11px; color: var(--text-2); }
+    .tier-card .tier-features { font-size: 11px; color: var(--text-2); line-height: 1.6; margin-top: 8px; }
+
+    /* ── Submit button ── */
+    .btn-gold {
+      width: 100%; padding: 14px; background: var(--gold); color: #0C0C10;
+      font-weight: 600; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+      border: none; cursor: pointer; transition: all 0.2s; position: relative;
+      font-family: 'DM Mono', monospace;
+    }
+    .btn-gold:hover { background: var(--gold-bright); }
+    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-gold .spinner {
+      display: none; width: 16px; height: 16px; border: 2px solid rgba(12,12,16,0.3);
+      border-top-color: #0C0C10; border-radius: 50%; animation: spin 0.7s linear infinite;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    }
+    .btn-gold.loading .btn-text { opacity: 0; }
+    .btn-gold.loading .spinner { display: block; }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+    /* ── Divider ── */
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .divider span { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); font-family: 'DM Mono', monospace; }
+
+    /* ── Error / success banners ── */
+    .banner { padding: 12px 14px; font-size: 13px; border: 1px solid; display: none; align-items: flex-start; gap: 10px; }
+    .banner.show { display: flex; }
+    .banner.error { border-color: rgba(140,74,74,0.4); background: var(--danger-dim); color: #C4817F; }
+    .banner.success { border-color: rgba(75,138,106,0.4); background: var(--success-dim); color: #7DB89A; }
+
+    /* ── Field error text ── */
+    .field-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: none; }
+    .field-error.show { display: block; }
+
+    /* ── Checkbox ── */
+    .check-wrap { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+    .check-wrap input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--gold); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+    .check-wrap label { font-size: 12px; color: var(--text-2); cursor: pointer; line-height: 1.5; }
+    .check-wrap label a { color: var(--gold); text-decoration: none; }
+    .check-wrap label a:hover { text-decoration: underline; }
+
+    /* ── Transitions ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .slide-up { animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Logo ── */
+    .logo-mark { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: var(--gold); letter-spacing: 0.06em; }
+
+    /* ── Social proof strip ── */
+    .proof-strip { border-top: 1px solid var(--border); }
+
+    /* ── Nav ── */
+    .auth-nav { background: var(--bg); border-bottom: 1px solid var(--border); }
+
+    /* ── Theme toggle ── */
+    #auth-theme-toggle {
+      background: transparent; border: 1px solid var(--border); color: var(--text-2);
+      width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; transition: border-color 0.15s, color 0.15s;
+    }
+    #auth-theme-toggle:hover { border-color: var(--border-gold); color: var(--gold); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 2px; }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Background orbs -->
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+
+  <!-- Nav bar -->
+  <header class="auth-nav" style="position:fixed; top:0; left:0; right:0; z-index:50; backdrop-filter:blur(12px);">
+    <div style="max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+      <a href="/" class="logo-mark" style="font-size:22px; text-decoration:none;">Linezheets</a>
+      <p style="font-size:10px; color:var(--text-3); letter-spacing:0.16em; text-transform:uppercase; display:none;" class="sm:block">The Intelligence Layer for Fashion Commerce</p>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <a href="/" style="font-size:11px; color:var(--text-2); text-decoration:none; font-family:'DM Mono',monospace; letter-spacing:0.1em; transition:color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-2)'">← Back</a>
+        <button id="auth-theme-toggle" onclick="toggleAuthTheme()" title="Toggle theme">☽</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="relative z-10 min-h-screen flex items-center justify-center px-4 py-24">
+    <div class="w-full max-w-md">
+
+      <!-- Logo + heading -->
+      <div class="text-center mb-8">
+        <div class="logo-mark mb-3">Linezheets</div>
+        <p class="text-zinc-500 text-sm tracking-wide">Where Fashion Meets Intelligence</p>
+      </div>
+
+      <!-- Auth card -->
+      <div class="auth-card p-8 slide-up">
+
+        <!-- Tab switcher: Log In / Create Account -->
+        <div id="main-tabs" class="flex gap-2 mb-8">
+          <button class="tab-pill active" data-tab="login" onclick="switchMainTab('login')" type="button">Log In</button>
+          <button class="tab-pill" data-tab="register" onclick="switchMainTab('register')" type="button">Create Account</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             LOGIN PANEL
+        ═══════════════════════════════════════════ -->
+        <section id="panel-login" class="tab-panel active" aria-label="Login form">
+          <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+
+            <div id="login-banner" class="banner error mb-5" role="alert" aria-live="assertive">
+              <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="login-error-msg">Invalid email or password.</span>
+            </div>
+
+            <div class="space-y-5">
+              <div class="field-group">
+                <label class="field-label" for="login-email">Email address</label>
+                <input class="field-input" type="email" id="login-email" name="email"
+                  autocomplete="email" placeholder="you@brand.com" required />
+                <span class="field-error" id="login-email-err">Please enter a valid email.</span>
+              </div>
+
+              <div class="field-group">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="field-label" style="margin-bottom:0" for="login-password">Password</label>
+                  <button type="button" onclick="showForgotPassword()" class="text-[10px] text-gold/70 hover:text-gold transition-colors tracking-wide uppercase">Forgot?</button>
+                </div>
+                <div class="pw-wrap">
+                  <input class="field-input" type="password" id="login-password" name="password"
+                    autocomplete="current-password" placeholder="••••••••" required />
+                  <button class="pw-toggle" type="button" onclick="togglePassword('login-password', this)" aria-label="Toggle password visibility">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <span class="field-error" id="login-password-err">Password is required.</span>
+              </div>
+
+              <div class="check-wrap">
+                <input type="checkbox" id="login-remember" name="remember" />
+                <label for="login-remember">Keep me signed in for 30 days</label>
+              </div>
+            </div>
+
+            <button class="btn-gold mt-7" type="submit" id="login-btn">
+              <span class="btn-text">Sign In</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <!-- Forgot password inline form -->
+          <div id="forgot-panel" class="hidden mt-6">
+            <div class="divider"><span>Reset Password</span></div>
+            <form id="forgot-form" onsubmit="handleForgotPassword(event)" novalidate>
+              <div class="field-group mb-4">
+                <label class="field-label" for="forgot-email">Enter your account email</label>
+                <input class="field-input" type="email" id="forgot-email" name="email"
+                  autocomplete="email" placeholder="you@brand.com" required />
+              </div>
+              <div id="forgot-success" class="banner success mb-4">
+                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Reset link sent — check your inbox.</span>
+              </div>
+              <button class="btn-gold" type="submit" id="forgot-btn">
+                <span class="btn-text">Send Reset Link</span>
+                <span class="spinner" aria-hidden="true"></span>
+              </button>
+              <button type="button" onclick="hideForgotPassword()" class="w-full mt-3 text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1">← Back to login</button>
+            </form>
+          </div>
+
+          <p class="text-center text-xs text-zinc-600 mt-6">
+            No account?
+            <button type="button" onclick="switchMainTab('register')" class="text-gold hover:text-gold-light transition-colors ml-1">Create one free →</button>
+          </p>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
+             REGISTER PANEL
+        ═══════════════════════════════════════════ -->
+        <section id="panel-register" class="tab-panel" aria-label="Registration form">
+
+          <!-- Role selector -->
+          <div class="flex mb-6 border border-white/6 rounded-sm overflow-hidden" role="group" aria-label="Account type">
+            <button type="button" class="role-btn active" id="role-brand" onclick="selectRole('brand')" aria-pressed="true">
+              <span class="role-icon" aria-hidden="true">🏷️</span>
+              <span class="role-label">Brand / Agency</span>
+              <span class="role-sub">Sell wholesale</span>
+            </button>
+            <button type="button" class="role-btn" id="role-buyer" onclick="selectRole('buyer')" aria-pressed="false">
+              <span class="role-icon" aria-hidden="true">🏪</span>
+              <span class="role-label">Buyer / Retailer</span>
+              <span class="role-sub">Browse &amp; order</span>
+            </button>
+          </div>
+
+          <!-- Global error banner -->
+          <div id="reg-banner" class="banner error mb-5" role="alert" aria-live="assertive">
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="reg-error-msg">Something went wrong. Please try again.</span>
+          </div>
+
+          <!-- ── Brand registration form ── -->
+          <form id="brand-form" onsubmit="handleRegisterBrand(event)" novalidate>
+            <div class="space-y-4">
+
+              <div class="field-group">
+                <label class="field-label" for="brand-name">Brand / Company name</label>
+                <input class="field-input" type="text" id="brand-name" name="brandName"
+                  autocomplete="organization" placeholder="House of Meridian" required />
+                <span class="field-error" id="brand-name-err">Brand name is required.</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="field-group">
+                  <label class="field-label" for="brand-first">First name</label>
+                  <input class="field-input" type="text" id="brand-first" name="firstName"
+                    autocomplete="given-name" placeholder="Sophie" required />
+                  <span class="field-error" id="brand-first-err">Required.</span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="brand-last">Last name</label>
+                  <input class="field-input" type="text" id="brand-last" name="lastName"
+                    autocomplete="family-name" placeholder="Laurent" required />
+                  <span class="field-error" id="brand-last-err">Required.</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="brand-email">Work email</label>
+                <input class="field-input" type="email" id="brand-email" name="email"
+                  autocomplete="email" placeholder="sophie@meridian.com" required />
+                <span class="field-error" id="brand-email-err">Enter a valid email address.</span>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="brand-phone">Phone (optional)</label>
+                <input class="field-input" type="tel" id="brand-phone" name="phone"
+                  autocomplete="tel" placeholder="+1 212 555 0100" />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="brand-password">Password</label>
+                <div class="pw-wrap">
+                  <input class="field-input" type="password" id="brand-password" name="password"
+                    autocomplete="new-password" placeholder="Min. 8 characters"
+                    required oninput="updateStrength(this)" />
+                  <button class="pw-toggle" type="button" onclick="togglePassword('brand-password', this)" aria-label="Show password">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <div class="strength-bar" id="strength-bar" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+                <span class="field-error" id="brand-password-err">Password must be at least 8 characters.</span>
+              </div>
+
+              <!-- Subscription tier selector -->
+              <div>
+                <p class="field-label mb-3">Choose your plan <span class="text-zinc-600 normal-case font-normal">(14-day free trial on all plans)</span></p>
+                <div class="flex gap-2" role="radiogroup" aria-label="Subscription plan">
+                  <div class="tier-card selected" id="tier-starter" onclick="selectTier('starter')" role="radio" aria-checked="true" tabindex="0">
+                    <div class="tier-name">Starter</div>
+                    <div class="tier-price">$49<small>/mo</small></div>
+                    <div class="tier-features">Up to 200 SKUs<br>Basic analytics<br>1 user seat</div>
+                  </div>
+                  <div class="tier-card" id="tier-studio" onclick="selectTier('studio')" role="radio" aria-checked="false" tabindex="0">
+                    <div class="tier-badge">Popular</div>
+                    <div class="tier-name">Studio</div>
+                    <div class="tier-price">$149<small>/mo</small></div>
+                    <div class="tier-features">Unlimited SKUs<br>AI features<br>5 user seats</div>
+                  </div>
+                  <div class="tier-card" id="tier-enterprise" onclick="selectTier('enterprise')" role="radio" aria-checked="false" tabindex="0">
+                    <div class="tier-name">Enterprise</div>
+                    <div class="tier-price" style="font-size:15px;margin-top:6px">Custom</div>
+                    <div class="tier-features">Unlimited everything<br>Dedicated support<br>Custom SLA</div>
+                  </div>
+                </div>
+                <input type="hidden" id="brand-tier" name="tier" value="starter" />
+              </div>
+
+              <div class="check-wrap">
+                <input type="checkbox" id="brand-terms" name="terms" required />
+                <label for="brand-terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+              </div>
+              <span class="field-error" id="brand-terms-err">You must accept the terms to continue.</span>
+
+            </div>
+
+            <button class="btn-gold mt-6" type="submit" id="brand-submit-btn">
+              <span class="btn-text">Start Free Trial</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+            <p class="text-center text-[10px] text-zinc-600 mt-3 tracking-wide uppercase">No credit card required · Cancel anytime</p>
+          </form>
+
+          <!-- ── Buyer registration form ── -->
+          <form id="buyer-form" class="hidden" onsubmit="handleRegisterBuyer(event)" novalidate>
+            <div class="space-y-4">
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-company">Company / Store name</label>
+                <input class="field-input" type="text" id="buyer-company" name="companyName"
+                  autocomplete="organization" placeholder="Atelier Luxx Boutique" required />
+                <span class="field-error" id="buyer-company-err">Company name is required.</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="field-group">
+                  <label class="field-label" for="buyer-first">First name</label>
+                  <input class="field-input" type="text" id="buyer-first" name="firstName"
+                    autocomplete="given-name" placeholder="Marc" required />
+                  <span class="field-error" id="buyer-first-err">Required.</span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="buyer-last">Last name</label>
+                  <input class="field-input" type="text" id="buyer-last" name="lastName"
+                    autocomplete="family-name" placeholder="Voss" required />
+                  <span class="field-error" id="buyer-last-err">Required.</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-email">Work email</label>
+                <input class="field-input" type="email" id="buyer-email" name="email"
+                  autocomplete="email" placeholder="marc@atelierluxx.com" required />
+                <span class="field-error" id="buyer-email-err">Enter a valid email address.</span>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-type">Business type</label>
+                <select class="field-input" id="buyer-type" name="businessType" required>
+                  <option value="" disabled selected>Select your business type</option>
+                  <option value="boutique">Independent Boutique</option>
+                  <option value="department_store">Department Store</option>
+                  <option value="online_retailer">Online Retailer</option>
+                  <option value="multi_door">Multi-Door Retailer</option>
+                  <option value="showroom">Showroom / Agency</option>
+                  <option value="subscription_box">Subscription Box</option>
+                  <option value="marketplace">Marketplace / Platform</option>
+                  <option value="other">Other</option>
+                </select>
+                <span class="field-error" id="buyer-type-err">Please select a business type.</span>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-website">Website (optional)</label>
+                <input class="field-input" type="url" id="buyer-website" name="website"
+                  autocomplete="url" placeholder="https://atelierluxx.com" />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-phone">Phone (optional)</label>
+                <input class="field-input" type="tel" id="buyer-phone" name="phone"
+                  autocomplete="tel" placeholder="+33 1 55 00 0000" />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="buyer-password">Password</label>
+                <div class="pw-wrap">
+                  <input class="field-input" type="password" id="buyer-password" name="password"
+                    autocomplete="new-password" placeholder="Min. 8 characters"
+                    required oninput="updateStrength(this)" />
+                  <button class="pw-toggle" type="button" onclick="togglePassword('buyer-password', this)" aria-label="Show password">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <div class="strength-bar" id="buyer-strength-bar" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+                <span class="field-error" id="buyer-password-err">Password must be at least 8 characters.</span>
+              </div>
+
+              <div class="check-wrap">
+                <input type="checkbox" id="buyer-terms" name="terms" required />
+                <label for="buyer-terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+              </div>
+              <span class="field-error" id="buyer-terms-err">You must accept the terms to continue.</span>
+
+            </div>
+
+            <button class="btn-gold mt-6" type="submit" id="buyer-submit-btn">
+              <span class="btn-text">Create Buyer Account</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+            <p class="text-center text-[10px] text-zinc-600 mt-3 tracking-wide">
+              Free to join · Verification required to place orders
+            </p>
+          </form>
+
+          <p class="text-center text-xs text-zinc-600 mt-5">
+            Already have an account?
+            <button type="button" onclick="switchMainTab('login')" class="text-gold hover:text-gold-light transition-colors ml-1">Sign in →</button>
+          </p>
+        </section>
+
+      </div><!-- /auth-card -->
+
+      <!-- Social proof strip -->
+      <div class="proof-strip mt-6 pt-5 flex items-center justify-center gap-8 flex-wrap">
+        <div class="text-center">
+          <div class="font-mono text-gold text-lg font-medium">8,400+</div>
+          <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Brands</div>
+        </div>
+        <div class="w-px h-8 bg-white/5"></div>
+        <div class="text-center">
+          <div class="font-mono text-gold text-lg font-medium">62,000+</div>
+          <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Buyers</div>
+        </div>
+        <div class="w-px h-8 bg-white/5"></div>
+        <div class="text-center">
+          <div class="font-mono text-gold text-lg font-medium">$2.4B</div>
+          <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Orders Processed</div>
+        </div>
+      </div>
+
+      <!-- Trust badges -->
+      <div class="flex items-center justify-center gap-5 mt-5">
+        <div class="flex items-center gap-1.5 text-zinc-600 text-[10px] uppercase tracking-widest">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          SSL Encrypted
+        </div>
+        <div class="flex items-center gap-1.5 text-zinc-600 text-[10px] uppercase tracking-widest">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          SOC 2 Compliant
+        </div>
+        <div class="flex items-center gap-1.5 text-zinc-600 text-[10px] uppercase tracking-widest">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Stripe Payments
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    let currentRole = 'brand';
+    let currentTab = 'login';
+
+    // ── Read URL params on load ─────────────────────────────────────────────────
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      const role = params.get('role');
+      const tab = params.get('tab');
+
+      if (window.location.pathname === '/register' || tab === 'register') {
+        switchMainTab('register');
+      }
+      if (role === 'buyer') {
+        switchMainTab('register');
+        selectRole('buyer');
+      } else if (role === 'brand') {
+        switchMainTab('register');
+        selectRole('brand');
+      }
+
+      // Pre-fill email if passed (e.g., from landing page CTA)
+      const email = params.get('email');
+      if (email) {
+        document.getElementById('login-email').value = email;
+        document.getElementById('brand-email').value = email;
+        document.getElementById('buyer-email').value = email;
+      }
+    })();
+
+    // ── Tab switching ──────────────────────────────────────────────────────────
+    function switchMainTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `panel-${tab}`);
+      });
+      // Update URL without reload
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url);
+
+      // Clear banners
+      hideBanner('login-banner');
+      hideBanner('reg-banner');
+    }
+
+    // ── Role switching ─────────────────────────────────────────────────────────
+    function selectRole(role) {
+      currentRole = role;
+      const brandBtn = document.getElementById('role-brand');
+      const buyerBtn = document.getElementById('role-buyer');
+      const brandForm = document.getElementById('brand-form');
+      const buyerForm = document.getElementById('buyer-form');
+
+      brandBtn.classList.toggle('active', role === 'brand');
+      brandBtn.setAttribute('aria-pressed', role === 'brand');
+      buyerBtn.classList.toggle('active', role === 'buyer');
+      buyerBtn.setAttribute('aria-pressed', role === 'buyer');
+
+      brandForm.classList.toggle('hidden', role !== 'brand');
+      buyerForm.classList.toggle('hidden', role !== 'buyer');
+
+      hideBanner('reg-banner');
+
+      // Update URL
+      const url = new URL(window.location);
+      url.searchParams.set('role', role);
+      window.history.replaceState({}, '', url);
+    }
+
+    // ── Password visibility ────────────────────────────────────────────────────
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      const paths = btn.querySelectorAll('path');
+      if (!showing) {
+        paths[0].setAttribute('d', 'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21');
+        if (paths[1]) paths[1].setAttribute('d', '');
+      } else {
+        paths[0].setAttribute('d', 'M15 12a3 3 0 11-6 0 3 3 0 016 0z');
+        if (paths[1]) paths[1].setAttribute('d', 'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z');
+      }
+    }
+
+    // ── Password strength ──────────────────────────────────────────────────────
+    function updateStrength(input) {
+      const val = input.value;
+      const barId = input.id === 'buyer-password' ? 'buyer-strength-bar' : 'strength-bar';
+      const bar = document.getElementById(barId);
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      bar.className = 'strength-bar' + (score > 0 ? ` s${score}` : '');
+    }
+
+    // ── Tier selection ─────────────────────────────────────────────────────────
+    function selectTier(tier) {
+      ['starter', 'studio', 'enterprise'].forEach(t => {
+        const el = document.getElementById(`tier-${t}`);
+        el.classList.toggle('selected', t === tier);
+        el.setAttribute('aria-checked', t === tier);
+      });
+      document.getElementById('brand-tier').value = tier;
+    }
+
+    // ── Banner helpers ─────────────────────────────────────────────────────────
+    function showBanner(id, msg, type = 'error') {
+      const el = document.getElementById(id);
+      el.className = `banner ${type} mb-5 show`;
+      if (msg) el.querySelector('span:last-child').textContent = msg;
+    }
+    function hideBanner(id) {
+      const el = document.getElementById(id);
+      if (el) el.className = el.className.replace(' show', '');
+    }
+
+    function showFieldError(inputId, errId) {
+      document.getElementById(inputId)?.classList.add('error');
+      document.getElementById(errId)?.classList.add('show');
+    }
+    function clearFieldError(inputId, errId) {
+      document.getElementById(inputId)?.classList.remove('error');
+      document.getElementById(errId)?.classList.remove('show');
+    }
+
+    // ── Set button loading state ───────────────────────────────────────────────
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.classList.toggle('loading', loading);
+    }
+
+    // ── Login ──────────────────────────────────────────────────────────────────
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideBanner('login-banner');
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      let valid = true;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('login-email', 'login-email-err'); valid = false;
+      } else clearFieldError('login-email', 'login-email-err');
+
+      if (!password) {
+        showFieldError('login-password', 'login-password-err'); valid = false;
+      } else clearFieldError('login-password', 'login-password-err');
+
+      if (!valid) return;
+
+      setLoading('login-btn', true);
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showBanner('login-banner', data.error || 'Invalid email or password.');
+          return;
+        }
+
+        // Store token
+        localStorage.setItem('lz_token', data.token);
+        localStorage.setItem('lz_user', JSON.stringify(data.user));
+        if (data.profile) localStorage.setItem('lz_profile', JSON.stringify(data.profile));
+
+        // Redirect based on role
+        const redirectTo = new URLSearchParams(window.location.search).get('redirect');
+        if (redirectTo) {
+          window.location.href = redirectTo;
+        } else if (data.needs_onboard) {
+          window.location.href = '/pages/buyer-onboard.html';
+        } else if (data.user.role === 'brand') {
+          window.location.href = '/pages/brand-dashboard.html';
+        } else if (data.user.role === 'buyer') {
+          window.location.href = '/pages/buyer-shop.html';
+        } else if (data.user.role === 'admin') {
+          window.location.href = '/pages/brand-admin.html';
+        } else {
+          window.location.href = '/';
+        }
+      } catch {
+        showBanner('login-banner', 'Network error — please check your connection.');
+      } finally {
+        setLoading('login-btn', false);
+      }
+    }
+
+    // ── Forgot password ────────────────────────────────────────────────────────
+    function showForgotPassword() {
+      document.getElementById('forgot-panel').classList.remove('hidden');
+      document.getElementById('login-form').classList.add('hidden');
+    }
+    function hideForgotPassword() {
+      document.getElementById('forgot-panel').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('forgot-success').classList.remove('show');
+    }
+    async function handleForgotPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value.trim();
+      if (!email) return;
+      setLoading('forgot-btn', true);
+      try {
+        await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        document.getElementById('forgot-success').classList.add('show');
+      } catch {/* silent */} finally {
+        setLoading('forgot-btn', false);
+      }
+    }
+
+    // ── Brand registration ─────────────────────────────────────────────────────
+    async function handleRegisterBrand(e) {
+      e.preventDefault();
+      hideBanner('reg-banner');
+
+      const brandName = document.getElementById('brand-name').value.trim();
+      const firstName = document.getElementById('brand-first').value.trim();
+      const lastName  = document.getElementById('brand-last').value.trim();
+      const email     = document.getElementById('brand-email').value.trim();
+      const password  = document.getElementById('brand-password').value;
+      const phone     = document.getElementById('brand-phone').value.trim();
+      const terms     = document.getElementById('brand-terms').checked;
+      const tier      = document.getElementById('brand-tier').value;
+
+      let valid = true;
+
+      const v = (cond, inputId, errId) => {
+        if (!cond) { showFieldError(inputId, errId); valid = false; }
+        else clearFieldError(inputId, errId);
+      };
+
+      v(brandName, 'brand-name', 'brand-name-err');
+      v(firstName, 'brand-first', 'brand-first-err');
+      v(lastName, 'brand-last', 'brand-last-err');
+      v(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'brand-email', 'brand-email-err');
+      v(password && password.length >= 8, 'brand-password', 'brand-password-err');
+
+      if (!terms) {
+        document.getElementById('brand-terms-err').classList.add('show'); valid = false;
+      } else {
+        document.getElementById('brand-terms-err').classList.remove('show');
+      }
+
+      if (!valid) return;
+
+      setLoading('brand-submit-btn', true);
+
+      try {
+        const res = await fetch('/api/auth/register/brand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, firstName, lastName, brandName, phone, tier })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showBanner('reg-banner', data.error || 'Registration failed. Please try again.');
+          return;
+        }
+
+        localStorage.setItem('lz_token', data.token);
+        localStorage.setItem('lz_user', JSON.stringify(data.user));
+        if (data.brand) localStorage.setItem('lz_profile', JSON.stringify(data.brand));
+
+        window.location.href = '/brand/dashboard?welcome=1';
+      } catch {
+        showBanner('reg-banner', 'Network error — please check your connection.');
+      } finally {
+        setLoading('brand-submit-btn', false);
+      }
+    }
+
+    // ── Buyer registration ─────────────────────────────────────────────────────
+    async function handleRegisterBuyer(e) {
+      e.preventDefault();
+      hideBanner('reg-banner');
+
+      const companyName  = document.getElementById('buyer-company').value.trim();
+      const firstName    = document.getElementById('buyer-first').value.trim();
+      const lastName     = document.getElementById('buyer-last').value.trim();
+      const email        = document.getElementById('buyer-email').value.trim();
+      const businessType = document.getElementById('buyer-type').value;
+      const website      = document.getElementById('buyer-website').value.trim();
+      const phone        = document.getElementById('buyer-phone').value.trim();
+      const password     = document.getElementById('buyer-password').value;
+      const terms        = document.getElementById('buyer-terms').checked;
+
+      let valid = true;
+      const v = (cond, inputId, errId) => {
+        if (!cond) { showFieldError(inputId, errId); valid = false; }
+        else clearFieldError(inputId, errId);
+      };
+
+      v(companyName, 'buyer-company', 'buyer-company-err');
+      v(firstName, 'buyer-first', 'buyer-first-err');
+      v(lastName, 'buyer-last', 'buyer-last-err');
+      v(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'buyer-email', 'buyer-email-err');
+      v(businessType, 'buyer-type', 'buyer-type-err');
+      v(password && password.length >= 8, 'buyer-password', 'buyer-password-err');
+
+      if (!terms) {
+        document.getElementById('buyer-terms-err').classList.add('show'); valid = false;
+      } else {
+        document.getElementById('buyer-terms-err').classList.remove('show');
+      }
+
+      if (!valid) return;
+
+      setLoading('buyer-submit-btn', true);
+
+      try {
+        const res = await fetch('/api/auth/register/buyer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, firstName, lastName, companyName, businessType, website, phone })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showBanner('reg-banner', data.error || 'Registration failed. Please try again.');
+          return;
+        }
+
+        localStorage.setItem('lz_token', data.token);
+        localStorage.setItem('lz_user', JSON.stringify(data.user));
+        if (data.buyer) localStorage.setItem('lz_profile', JSON.stringify(data.buyer));
+
+        window.location.href = '/shop?welcome=1';
+      } catch {
+        showBanner('reg-banner', 'Network error — please check your connection.');
+      } finally {
+        setLoading('buyer-submit-btn', false);
+      }
+    }
+
+    // ── Tier card keyboard support ─────────────────────────────────────────────
+    document.querySelectorAll('.tier-card').forEach(card => {
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const tier = card.id.replace('tier-', '');
+          selectTier(tier);
+        }
+      });
+    });
+
+    // ── Check if already logged in ─────────────────────────────────────────────
+    (function checkAuth() {
+      const token = localStorage.getItem('lz_token');
+      const user = JSON.parse(localStorage.getItem('lz_user') || 'null');
+      if (!token || !user) return;
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      if (redirect) { window.location.href = redirect; return; }
+      if (user.role === 'brand') window.location.href = '/brand/dashboard';
+      else if (user.role === 'buyer') window.location.href = '/shop';
+      else if (user.role === 'admin') window.location.href = '/admin';
+    })();
+  </script>
+  <script>
+    // Theme toggle
+    function toggleAuthTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('lz-theme', next);
+      document.getElementById('auth-theme-toggle').textContent = next === 'dark' ? '☀' : '☽';
+    }
+    // Restore saved theme
+    const _t = localStorage.getItem('lz-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', _t);
+    const _btn = document.getElementById('auth-theme-toggle');
+    if (_btn) _btn.textContent = _t === 'dark' ? '☀' : '☽';
+  </script>
+</body>
+</html>

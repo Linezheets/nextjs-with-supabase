@@ -1,0 +1,8 @@
+.next/
+uploads/
+tmp/
+test-data/
+*.log
+supabase/.branches/
+supabase/.temp/
+public/

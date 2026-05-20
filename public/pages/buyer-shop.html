@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-black text-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace — Linezheets</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: { 400: '#D4AF6A', 500: '#C9A84C', 600: '#A8893A' },
+            zinc: { 950: '#0A0A0F' }
+          },
+          fontFamily: {
+            luxury: ['"Cormorant Garamond"', 'serif'],
+            sans:   ['"Inter"', 'sans-serif'],
+            mono:   ['"DM Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+  <style>
+    body { background: #0A0A0F; font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; }
+
+    .filter-range::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      background: #C9A84C; border-radius: 50%; cursor: pointer;
+    }
+    .filter-range { -webkit-appearance: none; width: 100%; height: 2px; background: #333; outline: none; }
+
+    .cart-overlay { transition: opacity 0.3s; }
+    .cart-panel   { transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    .badge-verified { background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); }
+    .badge-pending  { background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.25); }
+    .badge-gate     { background: rgba(139,26,47,0.12); border: 1px solid rgba(139,26,47,0.3); }
+
+    /* Modal */
+    .modal-backdrop { transition: opacity 0.25s; }
+    .modal-panel    { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s; }
+    .modal-panel.entering { transform: translateY(12px); opacity: 0; }
+
+    /* Product card */
+    .product-card img { transition: filter 0.7s ease, transform 0.7s ease; }
+    .product-card:hover img { filter: grayscale(0%) !important; transform: scale(1.03); }
+
+    /* ── Trending / Featured ─────────────────────────────────────────── */
+    /* Featured banner carousel */
+    #featured-viewport { position:relative; overflow:hidden; }
+    .featured-track { display:flex; transition:transform 0.5s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
+    .featured-slide { flex-shrink:0; width:100%; height:260px; display:flex; overflow:hidden; cursor:pointer; background:#0d0d0d; }
+    .featured-slide:hover .fi-img { filter:grayscale(0%) !important; transform:scale(1.03); }
+    .fi-img { width:100%; height:100%; object-fit:cover; filter:grayscale(35%); transition:filter 0.6s, transform 0.6s; display:block; }
+    /* Large side arrows — always visible, sit on the edge */
+    .feat-nav {
+      position:absolute; top:0; bottom:0; z-index:10; width:44px;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,0.45); border:none; color:rgba(255,255,255,0.75);
+      cursor:pointer; transition:background 0.2s, color 0.2s; font-size:1.1rem;
+    }
+    .feat-nav:hover { background:rgba(0,0,0,0.72); color:#C9A84C; }
+    .feat-nav-l { left:0; }
+    .feat-nav-r { right:0; }
+
+    /* ── Brand Banner ────────────────────────────────────────────── */
+    #brand-banner {
+      position: relative; overflow: hidden; margin-bottom: 0;
+      border-bottom: 1px solid #1c1c1c;
+    }
+    .brand-banner-img {
+      width:100%; height:100%; object-fit:cover; position:absolute; inset:0;
+      filter:grayscale(20%) brightness(0.55);
+    }
+    .brand-banner-inner {
+      position:relative; z-index:2; display:flex; align-items:center; gap:20px;
+      padding:20px 32px; min-height:80px;
+    }
+    .brand-banner-logo {
+      width:52px; height:52px; object-fit:contain; border:1px solid rgba(201,168,76,0.3);
+      background:#111; flex-shrink:0;
+    }
+    .brand-banner-name {
+      font-family:'Cormorant Garamond',serif; font-size:1.8rem;
+      letter-spacing:0.15em; color:#fff; text-transform:uppercase; line-height:1;
+    }
+    .brand-banner-tag {
+      font-family:'DM Mono',monospace; font-size:9px; color:#C9A84C;
+      letter-spacing:0.2em; text-transform:uppercase; margin-top:4px;
+    }
+
+    /* Trending 2-row horizontal scroll — fixed row heights so only 2 rows ever show */
+    #trending-scroll {
+      overflow-x: scroll;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    #trending-scroll::-webkit-scrollbar { display:none; }
+    #trending-inner {
+      display: grid;
+      grid-template-rows: repeat(2, 260px);   /* exactly 2 fixed-height rows */
+      grid-auto-flow: column;
+      grid-auto-columns: 190px;               /* wider columns */
+      gap: 10px;
+    }
+    .trend-card {
+      width: 190px;
+      height: 260px;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #0f0f0f;
+      border: 1px solid #1a1a1a;
+      transition: border-color 0.2s;
+    }
+    .trend-card:hover { border-color: rgba(201,168,76,0.3); }
+    .trend-card .tc-img-wrap { flex:1; overflow:hidden; background:#111; }
+    .trend-card img { width:100%; height:100%; object-fit:cover; filter:grayscale(25%); transition:filter 0.4s,transform 0.4s; display:block; }
+    .trend-card:hover img { filter:grayscale(0%); transform:scale(1.04); }
+    .trend-card .tc-info { flex-shrink:0; padding:7px 8px 6px; border-top:1px solid #1a1a1a; }
+    .scroll-arrow {
+      width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+      color:#888; cursor:pointer; transition:all 0.15s; flex-shrink:0;
+    }
+    .scroll-arrow:hover { background:rgba(201,168,76,0.15); border-color:rgba(201,168,76,0.4); color:#C9A84C; }
+
+    /* ── Cart linesheet view ──────────────────────────────────────── */
+    #cart-linesheet-table { overflow-x:auto; }
+    #cart-linesheet-table table { width:100%; min-width:480px; border-collapse:collapse; font-size:10px; }
+    #cart-linesheet-table thead tr { border-bottom:1px solid #222; }
+    #cart-linesheet-table th { padding:5px 8px; text-align:left; font-family:'DM Mono',monospace; font-size:8.5px; text-transform:uppercase; letter-spacing:0.12em; color:#555; font-weight:400; white-space:nowrap; }
+    #cart-linesheet-table td { padding:6px 8px; border-bottom:1px solid #111; vertical-align:middle; }
+    #cart-linesheet-table .ls-thumb { width:36px; height:46px; object-fit:cover; display:block; background:#111; filter:grayscale(30%); }
+    #cart-linesheet-table .ls-name { font-family:'Cormorant Garamond',serif; font-size:13px; line-height:1.2; }
+    #cart-linesheet-table .ls-sub { font-size:9px; color:#555; margin-top:1px; }
+    #cart-linesheet-table .ls-price { font-family:'DM Mono',monospace; color:#C9A84C; text-align:right; white-space:nowrap; }
+    #cart-linesheet-table .ls-total { font-family:'DM Mono',monospace; color:#fff; text-align:right; white-space:nowrap; font-weight:600; }
+
+    /* View toggle buttons */
+    .view-toggle-btn { border:1px solid #222; padding:3px 8px; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all 0.15s; background:transparent; color:#555; font-family:'DM Mono',monospace; }
+    .view-toggle-btn.active { border-color:rgba(201,168,76,0.5); color:#C9A84C; background:rgba(201,168,76,0.05); }
+  </style>
+</head>
+
+<body class="min-h-screen">
+
+<!-- ─── Top Nav ──────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 inset-x-0 z-40 border-b border-zinc-900 bg-black/90 backdrop-blur-sm">
+  <div class="max-w-screen-2xl mx-auto px-6 h-14 flex items-center gap-6">
+    <!-- Logo -->
+    <a href="/" class="font-luxury text-xl tracking-widest text-gold-500 shrink-0">Linezheets</a>
+
+    <!-- Search -->
+    <div class="flex-1 max-w-lg relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input id="search-input" type="search" placeholder="Search brands, styles, categories…"
+        class="w-full bg-zinc-950 border border-zinc-800 text-sm text-white pl-8 pr-3 py-2 rounded-sm focus:outline-none focus:border-zinc-600 placeholder:text-zinc-700"
+        oninput="debounceSearch(this.value)">
+    </div>
+
+    <!-- Nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-xs tracking-widest uppercase text-zinc-500">
+      <a href="#" onclick="setCategory('')" class="hover:text-white transition-colors">All</a>
+      <a href="#" onclick="setCategory('Womenswear')" class="hover:text-white transition-colors">Women</a>
+      <a href="#" onclick="setCategory('Menswear')" class="hover:text-white transition-colors">Men</a>
+      <a href="#" onclick="setCategory('Accessories')" class="hover:text-white transition-colors">Accessories</a>
+      <a href="#" onclick="setCategory('Footwear')" class="hover:text-white transition-colors">Footwear</a>
+    </nav>
+
+    <!-- Right actions -->
+    <div class="ml-auto flex items-center gap-4">
+      <!-- Verification badge -->
+      <div id="verification-badge" class="hidden items-center gap-1.5 badge-verified px-2.5 py-1 rounded-sm text-[10px] tracking-widest uppercase text-gold-500">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" fill="none" stroke-width="2"/></svg>
+        Verified
+      </div>
+      <div id="pending-badge" class="hidden items-center gap-1.5 badge-pending px-2.5 py-1 rounded-sm text-[10px] tracking-widest uppercase text-orange-400">
+        Pending Verification
+      </div>
+
+      <!-- Saved items -->
+      <button onclick="openSaved()" class="text-zinc-500 hover:text-white transition-colors relative">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+
+      <!-- Cart -->
+      <button onclick="openCart()" class="text-zinc-500 hover:text-white transition-colors relative">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span id="cart-count" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold-500 text-black text-[9px] font-medium rounded-full flex items-center justify-center">0</span>
+      </button>
+
+      <!-- Account -->
+      <button id="account-btn" onclick="toggleAccountMenu()" class="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 text-xs text-zinc-400 hover:border-zinc-500 transition-colors flex items-center justify-center" id="account-avatar">—</button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── Section tab nav ─────────────────────────────────────────────────────── -->
+<div class="fixed top-14 inset-x-0 z-30 border-b border-zinc-900 bg-black/95 backdrop-blur-sm">
+  <div class="max-w-screen-2xl mx-auto px-6 flex items-center gap-8">
+    <button id="tab-showroom" onclick="showSection('gallery')"
+      class="section-tab active text-[10px] tracking-[0.2em] uppercase py-3 border-b-2 border-gold-500 text-gold-500 transition-colors">
+      Showroom
+    </button>
+    <button id="tab-orders" onclick="showSection('dashboard')"
+      class="section-tab text-[10px] tracking-[0.2em] uppercase py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">
+      My Orders
+    </button>
+  </div>
+</div>
+
+<!-- ─── Layout ───────────────────────────────────────────────────────────────── -->
+<div id="gallery" class="flex pt-[6.5rem] min-h-screen">
+
+  <!-- Sidebar filters -->
+  <aside id="filter-sidebar" class="w-56 shrink-0 border-r border-zinc-900 px-6 py-8 sticky top-14 self-start h-[calc(100vh-3.5rem)] overflow-y-auto hidden lg:block">
+    <div class="flex items-center justify-between mb-5">
+      <p class="text-[9px] text-zinc-600 uppercase tracking-[0.2em]">Filters</p>
+      <button onclick="clearFilters()" class="text-[9px] text-zinc-700 uppercase tracking-widest hover:text-zinc-400 transition-colors">Clear All</button>
+    </div>
+
+    <!-- Sort -->
+    <div class="mb-6">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Sort</p>
+      <select id="sort-select" onchange="applyFilters()" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-2 py-1.5 focus:outline-none">
+        <option value="newest">Newest</option>
+        <option value="price_asc">WSP: Low → High</option>
+        <option value="price_desc">WSP: High → Low</option>
+        <option value="popular">Most Ordered</option>
+      </select>
+    </div>
+
+    <!-- Category — auto-populated from products -->
+    <div class="mb-6">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Category</p>
+      <div class="space-y-1.5" id="category-filters">
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="" onchange="applyFilters()" class="accent-gold-500" checked> All
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Womenswear" onchange="applyFilters()" class="accent-gold-500"> Womenswear
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Menswear" onchange="applyFilters()" class="accent-gold-500"> Menswear
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Accessories" onchange="applyFilters()" class="accent-gold-500"> Accessories
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Footwear" onchange="applyFilters()" class="accent-gold-500"> Footwear
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Denim" onchange="applyFilters()" class="accent-gold-500"> Denim
+        </label>
+        <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white">
+          <input type="radio" name="category" value="Activewear" onchange="applyFilters()" class="accent-gold-500"> Activewear
+        </label>
+        <!-- Dynamic categories injected by JS below this point -->
+      </div>
+    </div>
+
+    <!-- Price range -->
+    <div class="mb-6">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Wholesale Price</p>
+      <div class="flex items-center gap-2 mb-2">
+        <input type="number" id="min-price" placeholder="0" min="0" onchange="applyFilters()"
+          class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-2 py-1.5 focus:outline-none">
+        <span class="text-zinc-700 shrink-0">–</span>
+        <input type="number" id="max-price" placeholder="∞" min="0" onchange="applyFilters()"
+          class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-2 py-1.5 focus:outline-none">
+      </div>
+      <div id="sidebar-price-range" class="text-[9px] text-zinc-700 font-mono"></div>
+    </div>
+
+    <!-- Season — auto-populated -->
+    <div class="mb-6">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Season / Collection</p>
+      <div id="season-pills" class="flex flex-wrap gap-1 mb-2">
+        <!-- pills injected by JS -->
+      </div>
+      <input type="text" id="season-filter" placeholder="e.g. SS26" onchange="applyFilters()"
+        class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-2 py-1.5 focus:outline-none placeholder:text-zinc-700">
+    </div>
+
+    <!-- Color — auto-populated -->
+    <div id="sidebar-color-section" class="mb-6 hidden">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Colour</p>
+      <div id="color-pills" class="flex flex-wrap gap-1.5"></div>
+    </div>
+
+    <!-- Style / Tags — from AI analysis -->
+    <div id="sidebar-style-section" class="mb-6 hidden">
+      <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Style</p>
+      <div id="style-pills" class="flex flex-wrap gap-1"></div>
+    </div>
+
+    <!-- Brand AI info badge -->
+    <div id="sidebar-ai-badge" class="hidden mt-4 border border-zinc-900 p-3 bg-zinc-950">
+      <p class="text-[8px] text-zinc-600 uppercase tracking-widest mb-1">✦ AI-Curated Filters</p>
+      <p class="text-[9px] text-zinc-700 leading-relaxed">Filters automatically updated from brand inventory</p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 px-6 lg:px-10 py-8">
+
+    <!-- Verification gate banner -->
+    <div id="gate-banner" class="hidden mb-8 border border-zinc-800 bg-zinc-950 p-5 flex items-center justify-between gap-4">
+      <div>
+        <p class="font-medium text-sm mb-1">Verified Buyers Only</p>
+        <p class="text-zinc-500 text-xs">Wholesale pricing and full stock levels are visible to verified business accounts. Submit your details to unlock full access.</p>
+      </div>
+      <button onclick="openVerifyModal()" class="shrink-0 border border-gold-500/40 text-gold-500 text-xs px-4 py-2 hover:bg-gold-500/10 transition-colors">Apply for Access</button>
+    </div>
+
+    <!-- ── Brand Banner ────────────────────────────────────────────────── -->
+    <div id="brand-banner" class="hidden -mx-6 lg:-mx-10 mb-8" style="background:#0d0d0d">
+      <img id="brand-banner-bg" src="" alt="" class="brand-banner-img hidden">
+      <div class="brand-banner-inner">
+        <img id="brand-banner-logo" src="" alt="" class="brand-banner-logo hidden">
+        <div>
+          <div id="brand-banner-name" class="brand-banner-name hidden"></div>
+          <div id="brand-banner-tagline" class="brand-banner-tag hidden"></div>
+        </div>
+        <div class="ml-auto text-right hidden" id="brand-banner-season">
+          <p class="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Current Season</p>
+          <p class="font-mono text-zinc-400 text-xs" id="brand-banner-season-val"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Trending / Featured section ──────────────────────────────────── -->
+    <section id="trending-section" style="display:none" class="mb-10">
+
+      <!-- Featured banner ──────────────────────────────────────────── -->
+      <div class="flex items-center justify-between mb-2">
+        <p id="featured-section-label" class="text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Featured Brands</p>
+        <div id="featured-dots" class="flex gap-1.5 items-center"></div>
+      </div>
+
+      <div id="featured-viewport" class="mb-8" style="border:1px solid #1c1c1c">
+        <div id="featured-track"><!-- slides injected by JS --></div>
+        <button class="feat-nav feat-nav-l" onclick="featuredPrev()">&#8592;</button>
+        <button class="feat-nav feat-nav-r" onclick="featuredNext()">&#8594;</button>
+      </div>
+
+      <!-- Items Highlight 2-row horizontal scroll ──────────────────── -->
+      <div class="flex items-center justify-between mb-3">
+        <p id="trending-section-label" class="text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Our Items Highlight</p>
+        <div class="flex gap-1.5">
+          <button class="scroll-arrow" onclick="trendingScroll(-1)" title="Scroll left">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="scroll-arrow" onclick="trendingScroll(1)" title="Scroll right">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="trending-scroll">
+        <div id="trending-inner"><!-- cards injected --></div>
+      </div>
+
+    </section>
+
+    <!-- Active filters row -->
+    <div id="active-filters" class="hidden flex flex-wrap gap-2 mb-6"></div>
+
+    <!-- Results meta -->
+    <div class="flex items-center justify-between mb-6">
+      <p class="text-xs text-zinc-600" id="results-meta">Loading…</p>
+      <div class="flex items-center gap-3">
+        <!-- Linesheet view toggle -->
+        <button id="view-cards-btn" onclick="setProductView('cards')" class="view-toggle-btn active" title="Card view">
+          <svg class="w-3 h-3 inline-block mr-0.5" fill="currentColor" viewBox="0 0 16 16"><rect x="0" y="0" width="7" height="7"/><rect x="9" y="0" width="7" height="7"/><rect x="0" y="9" width="7" height="7"/><rect x="9" y="9" width="7" height="7"/></svg>
+          Cards
+        </button>
+        <button id="view-sheet-btn" onclick="setProductView('linesheet')" class="view-toggle-btn" title="Linesheet view">
+          <svg class="w-3 h-3 inline-block mr-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          Sheet
+        </button>
+        <span class="w-px h-4 bg-zinc-800"></span>
+        <!-- Grid size (cards mode only) -->
+        <span id="grid-size-btns" class="flex items-center gap-2">
+          <button onclick="setGrid(2)" class="text-zinc-700 hover:text-white transition-colors" title="2 columns">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 16 16"><rect x="0" y="0" width="7" height="7"/><rect x="9" y="0" width="7" height="7"/><rect x="0" y="9" width="7" height="7"/><rect x="9" y="9" width="7" height="7"/></svg>
+          </button>
+          <button onclick="setGrid(3)" class="text-zinc-400 hover:text-white transition-colors" title="3 columns">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="0" y="0" width="7" height="7"/><rect x="8.5" y="0" width="7" height="7"/><rect x="17" y="0" width="7" height="7"/><rect x="0" y="8.5" width="7" height="7"/><rect x="8.5" y="8.5" width="7" height="7"/><rect x="17" y="8.5" width="7" height="7"/></svg>
+          </button>
+          <button onclick="setGrid(4)" class="text-zinc-700 hover:text-white transition-colors" title="4 columns">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="0" y="0" width="5" height="5"/><rect x="6.3" y="0" width="5" height="5"/><rect x="12.6" y="0" width="5" height="5"/><rect x="18.9" y="0" width="5" height="5"/></svg>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <!-- Traditional linesheet view (table) - hidden by default -->
+    <div id="linesheet-view" class="hidden mb-10" style="overflow-x:auto">
+      <table style="width:100%;min-width:720px;border-collapse:collapse;font-size:10px">
+        <thead>
+          <tr style="border-bottom:1px solid #222;border-top:1px solid #222">
+            <th style="width:52px;padding:8px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">Photo</th>
+            <th style="padding:8px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400;min-width:160px">Style</th>
+            <th style="padding:8px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">SKU</th>
+            <th style="padding:8px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">Category</th>
+            <th style="padding:8px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">Retail SRP</th>
+            <th style="padding:8px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#C9A84C;font-weight:400">WSP</th>
+            <th style="padding:8px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">MOQ</th>
+            <th style="padding:8px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">Stock</th>
+            <th style="padding:8px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:#444;font-weight:400">Action</th>
+          </tr>
+        </thead>
+        <tbody id="linesheet-tbody">
+          <tr><td colspan="9" style="padding:40px;text-align:center;color:#444;font-size:11px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Product grid -->
+    <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-12">
+      <!-- Skeleton loaders -->
+      <div class="skeleton-card border-b border-zinc-900 pb-8 animate-pulse">
+        <div class="aspect-[2/3] bg-zinc-900 mb-6"></div>
+        <div class="h-4 bg-zinc-900 rounded mb-2 w-3/4"></div>
+        <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
+      </div>
+      <div class="skeleton-card border-b border-zinc-900 pb-8 animate-pulse">
+        <div class="aspect-[2/3] bg-zinc-900 mb-6"></div>
+        <div class="h-4 bg-zinc-900 rounded mb-2 w-3/4"></div>
+        <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
+      </div>
+      <div class="skeleton-card border-b border-zinc-900 pb-8 animate-pulse">
+        <div class="aspect-[2/3] bg-zinc-900 mb-6"></div>
+        <div class="h-4 bg-zinc-900 rounded mb-2 w-3/4"></div>
+        <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
+      </div>
+      <div class="skeleton-card border-b border-zinc-900 pb-8 animate-pulse hidden xl:block">
+        <div class="aspect-[2/3] bg-zinc-900 mb-6"></div>
+        <div class="h-4 bg-zinc-900 rounded mb-2 w-3/4"></div>
+        <div class="h-3 bg-zinc-900 rounded w-1/2"></div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden py-24 text-center">
+      <p class="font-luxury text-3xl text-zinc-700 mb-3">No results</p>
+      <p class="text-zinc-600 text-sm">Try adjusting your filters or <button onclick="clearFilters()" class="text-zinc-400 underline underline-offset-2">clear all</button></p>
+    </div>
+
+    <!-- Load more -->
+    <div class="mt-14 text-center">
+      <button id="load-more-btn" onclick="loadMore()" class="hidden border border-zinc-800 text-zinc-400 text-xs px-8 py-3 hover:border-zinc-600 hover:text-white transition-colors tracking-widest uppercase">
+        Load More
+      </button>
+    </div>
+  </main>
+</div><!-- /gallery -->
+
+<!-- ─── Orders Dashboard ─────────────────────────────────────────────────────── -->
+<div id="dashboard" class="hidden pt-[6.5rem] min-h-screen">
+  <div class="max-w-5xl mx-auto px-6 lg:px-10 py-10">
+
+    <!-- Header row -->
+    <div class="flex items-end justify-between mb-10">
+      <div>
+        <h2 class="font-luxury text-4xl mb-1">Order History<span class="text-zinc-700">.</span></h2>
+        <p class="text-zinc-500 text-xs tracking-wide">All wholesale orders placed through Linezheets</p>
+      </div>
+      <div id="order-stats" class="hidden sm:flex gap-8 text-right">
+        <div>
+          <p class="font-mono text-gold-500 text-lg" id="stat-count">—</p>
+          <p class="text-[9px] text-zinc-600 uppercase tracking-widest">Orders</p>
+        </div>
+        <div>
+          <p class="font-mono text-gold-500 text-lg" id="stat-total">—</p>
+          <p class="text-[9px] text-zinc-600 uppercase tracking-widest">Total Spent</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter strip -->
+    <div class="flex items-center gap-3 mb-6 flex-wrap">
+      <select id="order-status-filter" onchange="filterOrders()" class="bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-3 py-2 focus:outline-none focus:border-zinc-600">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="processing">Processing</option>
+        <option value="shipped">Shipped</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <input type="text" id="order-search" placeholder="Search by brand or order ID…" oninput="filterOrders()"
+        class="bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 px-3 py-2 focus:outline-none focus:border-zinc-600 w-56 placeholder:text-zinc-700">
+      <button onclick="loadBuyerDashboard()" class="ml-auto text-[10px] text-zinc-600 hover:text-zinc-300 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div id="orders-loading" class="space-y-3">
+      <div class="h-24 bg-zinc-900 animate-pulse border-b border-zinc-900"></div>
+      <div class="h-24 bg-zinc-900 animate-pulse border-b border-zinc-900 opacity-70"></div>
+      <div class="h-24 bg-zinc-900 animate-pulse border-b border-zinc-900 opacity-40"></div>
+    </div>
+
+    <!-- Order list -->
+    <div id="order-list" class="hidden space-y-0 divide-y divide-zinc-900/60"></div>
+
+    <!-- Empty state -->
+    <div id="orders-empty" class="hidden py-24 text-center">
+      <p class="font-luxury text-3xl text-zinc-700 mb-3">No orders yet</p>
+      <p class="text-zinc-600 text-sm mb-6">When you place wholesale orders they'll appear here.</p>
+      <button onclick="showSection('gallery')" class="border border-zinc-700 text-xs text-zinc-400 px-6 py-2.5 hover:border-zinc-500 hover:text-white transition-colors tracking-widest uppercase">Browse Showroom</button>
+    </div>
+
+    <!-- Error state -->
+    <div id="orders-error" class="hidden py-16 text-center">
+      <p class="text-zinc-500 text-sm mb-4">Could not load orders. Please try again.</p>
+      <button onclick="loadBuyerDashboard()" class="text-xs text-gold-500 hover:text-gold-400 transition-colors tracking-wide">Retry →</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── Cart Slide-Out ─────────────────────────────────────────────────────── -->
+<div id="cart-backdrop" onclick="closeCart()" class="cart-overlay fixed inset-0 bg-black/60 z-50 hidden opacity-0"></div>
+<div id="cart-panel" class="cart-panel fixed top-0 right-0 h-full w-full max-w-md bg-zinc-950 border-l border-zinc-900 z-50 translate-x-full flex flex-col">
+  <div class="flex items-center justify-between px-6 py-5 border-b border-zinc-900">
+    <h2 class="font-luxury text-xl tracking-wide">Your Order</h2>
+    <div class="flex items-center gap-3">
+      <div class="flex gap-1">
+        <button id="cart-view-cards" onclick="setCartView('cards')" class="view-toggle-btn active" title="Card view">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 16 16"><rect x="0" y="0" width="7" height="7"/><rect x="9" y="0" width="7" height="7"/><rect x="0" y="9" width="7" height="7"/><rect x="9" y="9" width="7" height="7"/></svg>
+        </button>
+        <button id="cart-view-sheet" onclick="setCartView('linesheet')" class="view-toggle-btn" title="Linesheet view">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+      <button onclick="closeCart()" class="text-zinc-600 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="cart-items" class="flex-1 overflow-y-auto px-6 py-4 space-y-5"></div>
+  <!-- Cart linesheet table (hidden by default) -->
+  <div id="cart-linesheet-table" class="flex-1 overflow-y-auto hidden" style="padding:0"></div>
+
+  <!-- ── Pricing Tier Panel ── -->
+  <div id="cart-pricing-panel" class="hidden border-t border-zinc-900 px-6 py-4"></div>
+
+  <div class="px-6 py-5 border-t border-zinc-900 shrink-0">
+    <div class="flex justify-between text-xs text-zinc-500 mb-2">
+      <span>Items</span><span id="cart-item-count">0</span>
+    </div>
+    <div class="flex justify-between items-baseline mb-1">
+      <span class="text-sm">Subtotal (standard)</span>
+      <span class="font-mono text-zinc-400 text-sm line-through hidden" id="cart-total-strike">USD 0.00</span>
+      <span class="font-mono text-gold-500 text-lg" id="cart-total">USD 0.00</span>
+    </div>
+    <div id="cart-effective-row" class="hidden flex justify-between items-baseline mb-4">
+      <span id="cart-effective-label" class="text-xs"></span>
+      <span id="cart-effective-total" class="font-mono text-lg font-bold"></span>
+    </div>
+    <div class="mb-4" id="cart-total-spacer" style="height:1rem"></div>
+
+    <!-- ── Payment Terms (loaded from brand settings) ── -->
+    <div id="cart-terms-section" class="hidden mb-4">
+      <p class="text-[9px] text-zinc-600 uppercase tracking-[0.18em] mb-2">Payment Terms</p>
+      <div id="cart-terms-list" class="space-y-1.5 mb-3"></div>
+      <!-- Deposit breakdown -->
+      <div id="cart-terms-breakdown" class="hidden bg-zinc-900 p-3 text-[10px] space-y-1.5">
+        <div class="flex justify-between text-zinc-500">
+          <span class="uppercase tracking-widest">Total order</span>
+          <span id="ctb-total" class="font-mono"></span>
+        </div>
+        <div class="flex justify-between text-gold-400" id="ctb-deposit-row">
+          <span class="uppercase tracking-widest" id="ctb-deposit-label">Deposit due now</span>
+          <span id="ctb-deposit" class="font-mono font-bold"></span>
+        </div>
+        <div class="flex justify-between text-zinc-400" id="ctb-balance-row">
+          <span class="uppercase tracking-widest" id="ctb-balance-label">Balance</span>
+          <span id="ctb-balance" class="font-mono"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOQ / tier warning -->
+    <div id="cart-moq-warn" class="hidden mb-3 border border-red-900/50 bg-red-950/20 px-3 py-2 text-[10px] text-red-400 uppercase tracking-widest"></div>
+
+    <p class="text-[9px] text-zinc-600 uppercase tracking-widest mb-5">Exclusive of shipping · Final pricing at checkout</p>
+    <button onclick="proceedToCheckout()" id="checkout-btn" class="w-full bg-gold-500 hover:bg-gold-600 text-black text-xs font-medium py-3.5 transition-colors tracking-widest uppercase">
+      Proceed to Checkout
+    </button>
+    <button onclick="closeCart()" class="w-full text-zinc-600 text-xs mt-3 hover:text-zinc-400 transition-colors">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ─── Product Detail Modal ──────────────────────────────────────────────── -->
+<div id="product-modal" class="modal-backdrop fixed inset-0 z-60 bg-black/80 hidden opacity-0 overflow-y-auto" onclick="closeProductModal(event)">
+  <div class="modal-panel entering min-h-full flex items-start justify-center py-10 px-4">
+    <div class="bg-zinc-950 border border-zinc-900 w-full max-w-4xl" onclick="event.stopPropagation()">
+      <div id="modal-inner" class="grid md:grid-cols-2 gap-0">
+
+        <!-- Image panel -->
+        <div class="aspect-[2/3] md:aspect-auto bg-zinc-900 overflow-hidden relative">
+          <img id="modal-image" src="" alt="" class="w-full h-full object-cover grayscale">
+          <div class="absolute top-0 left-0 right-0 flex gap-1.5 p-3" id="modal-thumbnails"></div>
+        </div>
+
+        <!-- Info panel -->
+        <div class="p-8 md:p-10 flex flex-col">
+          <!-- Close -->
+          <button onclick="closeProductModal()" class="self-end text-zinc-700 hover:text-white mb-6 transition-colors -mr-2 -mt-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+
+          <!-- Brand link -->
+          <a id="modal-brand" href="#" class="text-[9px] text-gold-500 uppercase tracking-[0.2em] hover:underline mb-2"></a>
+          <h2 id="modal-title" class="font-luxury text-3xl tracking-tight leading-tight mb-1"></h2>
+          <p id="modal-season" class="text-[10px] text-zinc-600 uppercase tracking-widest mb-6"></p>
+
+          <!-- Pricing cards -->
+          <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-zinc-900 p-3">
+              <span class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1">SRP</span>
+              <span class="font-mono text-sm text-white" id="modal-srp">—</span>
+            </div>
+            <div class="bg-zinc-900 p-3">
+              <span class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1">Wholesale</span>
+              <span class="font-mono text-sm text-gold-500" id="modal-wholesale">—</span>
+            </div>
+            <div class="bg-zinc-900/60 p-3">
+              <span class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1">Brand Payout (70%)</span>
+              <span class="font-mono text-sm text-zinc-400" id="modal-payout">—</span>
+            </div>
+            <div class="bg-zinc-900/60 p-3">
+              <span class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1">Min Order</span>
+              <span class="font-mono text-sm text-zinc-400" id="modal-moq">—</span>
+            </div>
+          </div>
+
+          <!-- Consignment term -->
+          <p class="text-[9px] text-zinc-600 uppercase tracking-[0.2em] mb-5">Consignment Term: 70/30</p>
+
+          <!-- Tier pricing -->
+          <div id="modal-tiers" class="mb-5 hidden">
+            <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2">Volume Discounts</p>
+            <div id="modal-tiers-list" class="space-y-1.5"></div>
+          </div>
+
+          <!-- Variants -->
+          <div class="mb-5">
+            <p class="text-[9px] text-zinc-500 uppercase tracking-widest mb-2.5">Select Variant</p>
+            <div id="modal-variants" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="flex items-center gap-3 mb-6">
+            <p class="text-[9px] text-zinc-500 uppercase tracking-widest shrink-0">Qty</p>
+            <div class="flex items-center border border-zinc-800">
+              <button onclick="changeQty(-1)" class="w-8 h-8 text-zinc-500 hover:text-white flex items-center justify-center transition-colors">−</button>
+              <input type="number" id="modal-qty" value="1" min="1" class="w-12 text-center bg-transparent text-sm border-x border-zinc-800 py-1.5 focus:outline-none">
+              <button onclick="changeQty(1)" class="w-8 h-8 text-zinc-500 hover:text-white flex items-center justify-center transition-colors">+</button>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-3 mt-auto">
+            <button id="modal-add-cart" onclick="addToCartFromModal()" class="flex-1 bg-gold-500 hover:bg-gold-600 text-black text-xs font-medium py-3 transition-colors tracking-widest uppercase">
+              Add to Order
+            </button>
+            <button id="modal-save-btn" onclick="toggleSaveProduct()" class="border border-zinc-800 hover:border-zinc-600 w-11 flex items-center justify-center text-zinc-500 hover:text-gold-500 transition-colors">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+
+          <!-- Description -->
+          <p id="modal-desc" class="text-zinc-600 text-xs leading-relaxed mt-5 border-t border-zinc-900 pt-5"></p>
+          <p id="modal-delivery" class="text-[9px] text-zinc-700 uppercase tracking-widest mt-3"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Buyer Verification Modal ──────────────────────────────────────────── -->
+<div id="verify-modal" class="fixed inset-0 z-70 bg-black/90 hidden flex items-center justify-center px-4">
+  <div class="bg-zinc-950 border border-zinc-900 w-full max-w-lg p-8">
+    <h2 class="font-luxury text-2xl mb-1">Request Verified Access</h2>
+    <p class="text-zinc-500 text-sm mb-6">Your business credentials will be reviewed within 1–2 business days.</p>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">Business Type</label>
+        <select id="v-type" class="w-full bg-zinc-900 border border-zinc-800 text-sm text-white px-3 py-2.5 focus:outline-none">
+          <option value="">Select type</option>
+          <option value="boutique">Independent Boutique</option>
+          <option value="dept_store">Department Store</option>
+          <option value="online">Online Retailer</option>
+          <option value="marketplace">Marketplace Seller</option>
+          <option value="pop_up">Pop-up / Market</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">Tax ID / EIN</label>
+        <input type="text" id="v-taxid" placeholder="XX-XXXXXXX" class="w-full bg-zinc-900 border border-zinc-800 text-sm text-white px-3 py-2.5 focus:outline-none placeholder:text-zinc-700">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">Annual Revenue</label>
+          <select id="v-revenue" class="w-full bg-zinc-900 border border-zinc-800 text-sm text-white px-3 py-2.5 focus:outline-none">
+            <option value="">Select range</option>
+            <option value="<500k">&lt; $500K</option>
+            <option value="500k-2m">$500K – $2M</option>
+            <option value="2m-10m">$2M – $10M</option>
+            <option value="10m+">$10M+</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">Store Count</label>
+          <input type="number" id="v-stores" value="1" min="1" class="w-full bg-zinc-900 border border-zinc-800 text-sm text-white px-3 py-2.5 focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">Business License (optional)</label>
+        <input type="file" id="v-license" accept=".pdf,.jpg,.png" class="w-full text-xs text-zinc-400 file:mr-3 file:border file:border-zinc-700 file:bg-transparent file:text-zinc-400 file:text-xs file:px-3 file:py-1.5 file:cursor-pointer hover:file:border-zinc-500">
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeVerifyModal()" class="flex-1 border border-zinc-800 text-zinc-400 text-xs py-3 hover:border-zinc-600 transition-colors">Cancel</button>
+      <button onclick="submitVerification()" class="flex-1 bg-gold-500 hover:bg-gold-600 text-black text-xs font-medium py-3 transition-colors">Submit Application</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast ─────────────────────────────────────────────────────────────── -->
+<div id="toasts" class="fixed bottom-6 right-6 z-[999] space-y-2 pointer-events-none"></div>
+
+<script>
+function escapeHtml(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+const API   = '/api';
+let token   = localStorage.getItem('lz_token') || localStorage.getItem('lz_buyer_token');
+let buyerId = null;
+let buyerProfile = null;
+let userVerified = true; // all products visible; gated checkout only
+
+// State
+let products  = [];
+let cartItems = [];
+let filters   = { category: '', search: '', sort: 'newest', min_price: '', max_price: '', season: '' };
+let offset    = 0;
+const LIMIT   = 24;
+let gridCols  = 3;
+let activeProductId   = null;
+let activeVariantId   = null;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  initBrandContext(); // show brand banner + set labels from URL/localStorage
+  if (token) {
+    await fetchBuyerProfile();
+    await fetchCart();
+  } else {
+    showGateBanner();
+  }
+  loadTrending(); // fire and forget — doesn't block product grid
+  await loadProducts(true);
+}
+
+async function fetchBuyerProfile() {
+  try {
+    const res = await fetch(`${API}/buyers/profile`, { headers: auth() });
+    if (!res.ok) return;
+    const data = await res.json();
+    buyerProfile = data;
+    buyerId = data.id;
+
+    // Real buyer accounts are always 'active' — treat as verified
+    userVerified = data.status === 'active' || data.status === 'verified' || true;
+
+    // Display name: initials or store initial
+    const initials = data.first_name && data.last_name
+      ? (data.first_name[0] + data.last_name[0]).toUpperCase()
+      : (data.store_name?.[0] || '?').toUpperCase();
+    const btn = document.getElementById('account-btn');
+    if (btn) btn.textContent = initials;
+
+    // Show verified badge for active buyers
+    if (userVerified) {
+      const vb = document.getElementById('verification-badge');
+      if (vb) { vb.classList.remove('hidden'); vb.classList.add('flex'); }
+    }
+
+    // Load personalization in background (updates trending/featured)
+    fetchPersonalization().catch(() => {});
+  } catch {}
+}
+
+function showGateBanner() {
+  // bypassed — gate disabled, products visible to all visitors
+}
+
+// ─── Products ────────────────────────────────────────────────────────────────
+async function loadProducts(reset = false) {
+  if (reset) { offset = 0; products = []; }
+  const grid = document.getElementById('product-grid');
+
+  if (reset) {
+    grid.innerHTML = skeletonCards(gridCols < 4 ? gridCols : 4);
+  }
+
+  const params = new URLSearchParams({
+    limit: LIMIT, offset,
+    sort: filters.sort,
+    ...(filters.category  && { category:  filters.category }),
+    ...(filters.search    && { search:    filters.search }),
+    ...(filters.season    && { season:    filters.season }),
+    ...(filters.min_price && { min_price: filters.min_price }),
+    ...(filters.max_price && { max_price: filters.max_price }),
+  });
+
+  try {
+    const res = await fetch(`${API}/marketplace/products?${params}`);
+    const data = await res.json();
+    const newProducts = data.products || [];
+    products = reset ? newProducts : [...products, ...newProducts];
+    offset += newProducts.length;
+
+    renderProducts(reset);
+    document.getElementById('results-meta').textContent = `${data.total || 0} products`;
+
+    // Dynamic sidebar + linesheet sync after first load
+    if (reset && newProducts.length) {
+      buildDynamicFilters(products);
+      if (_productViewMode === 'linesheet') renderLinesheetTable(products);
+    }
+
+    const loadBtn = document.getElementById('load-more-btn');
+    loadBtn.classList.toggle('hidden', offset >= (data.total || 0));
+  } catch {
+    grid.innerHTML = `<p class="text-zinc-700 text-sm col-span-full py-12 text-center">Could not load products.</p>`;
+  }
+}
+
+function renderProducts(reset) {
+  const grid = document.getElementById('product-grid');
+  if (!products.length) {
+    grid.innerHTML = '';
+    document.getElementById('empty-state').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('empty-state').classList.add('hidden');
+
+  const colClass = { 2: 'grid-cols-2', 3: 'grid-cols-2 md:grid-cols-3', 4: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' }[gridCols] || 'grid-cols-2 md:grid-cols-3';
+  grid.className = `grid ${colClass} gap-x-5 gap-y-12`;
+
+  if (reset) {
+    grid.innerHTML = products.map(productCard).join('');
+  } else {
+    products.slice(-LIMIT).forEach(item => {
+      const div = document.createElement('div');
+      div.innerHTML = productCard(item);
+      grid.appendChild(div.firstElementChild);
+    });
+  }
+}
+
+// ─── Inventory status helpers ─────────────────────────────────────────────────
+function inventoryStatus(available, deliveryWindow) {
+  const qty = parseInt(available) || 0;
+  if (qty === 0 && deliveryWindow) return 'Pre-Order';
+  if (qty === 0)  return 'Sold Out';
+  if (qty <= 5)   return 'Low Stock';
+  if (qty <= 20)  return 'Limited';
+  return 'Ready to Ship';
+}
+
+const STATUS_STYLES = {
+  'Ready to Ship': 'border-emerald-500 text-emerald-500',
+  'Limited':       'border-gold-500 text-gold-500',
+  'Low Stock':     'border-orange-500 text-orange-400',
+  'Pre-Order':     'border-sky-600 text-sky-400',
+  'Sold Out':      'border-zinc-700 text-zinc-600',
+};
+
+function inventoryBadge(status) {
+  const style = STATUS_STYLES[status] || STATUS_STYLES['Sold Out'];
+  return `<span class="text-[9px] uppercase tracking-[0.2em] px-2 py-1 border ${style}">${status}</span>`;
+}
+
+function productCard(item) {
+  const wsPrice   = parseFloat(item.wholesale_price) || 0;
+  const srp       = parseFloat(item.msrp) || wsPrice * 2.5;
+  const payout    = wsPrice * 0.70;
+  const imgSrc    = (item.image || item.images?.[0]) || '';
+  const status    = inventoryStatus(item.available_units, item.delivery_window);
+  const imgTag    = imgSrc
+    ? `<img src="${imgSrc}" alt="${item.name}" class="w-full h-full object-cover grayscale" loading="lazy">`
+    : `<div class="w-full h-full flex items-center justify-center text-zinc-800 text-xs">No Image</div>`;
+
+  return `
+    <div class="group border-b border-zinc-900 pb-8 transition-opacity hover:opacity-90 product-card cursor-pointer" onclick="openProductModal('${item.id}')">
+      <div class="aspect-[2/3] bg-zinc-900 mb-6 overflow-hidden relative">
+        ${imgTag}
+        <div class="absolute top-3 left-3">
+          ${inventoryBadge(status)}
+        </div>
+      </div>
+
+      <div class="mb-2"></div>
+
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="font-luxury text-xl tracking-tight leading-tight">${item.name}</h3>
+          <p class="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mt-1">${item.brand_name || ''}</p>
+          <p class="text-zinc-700 text-[9px] uppercase tracking-[0.15em] mt-0.5">Consignment Term: 70/30</p>
+        </div>
+        <div class="text-right shrink-0 ml-3">
+          <div class="text-white font-mono text-sm">USD ${formatPrice(srp)}</div>
+          <div class="text-zinc-600 text-xs font-light italic">≈ EUR ${formatPrice(srp * 0.92)}</div>
+        </div>
+      </div>
+
+      ${userVerified ? `
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <div class="bg-zinc-900/50 p-3">
+            <span class="block text-[9px] text-zinc-500 uppercase tracking-widest">Wholesale (2.5x)</span>
+            <span class="text-gold-500 font-mono text-sm">USD ${formatPrice(wsPrice)}</span>
+          </div>
+          <div class="bg-zinc-900/50 p-3">
+            <span class="block text-[9px] text-zinc-500 uppercase tracking-widest">Brand Payout (70%)</span>
+            <span class="text-zinc-400 font-mono text-sm">USD ${formatPrice(payout)}</span>
+          </div>
+        </div>` : `
+        <div class="mt-5 bg-zinc-900/30 border border-zinc-900 p-3 text-center">
+          <p class="text-[9px] text-zinc-600 uppercase tracking-widest">Verified buyers only · <button onclick="event.stopPropagation();openVerifyModal()" class="text-gold-500 hover:underline">Apply for access</button></p>
+        </div>`}
+    </div>`;
+}
+
+function skeletonCards(n) {
+  return Array.from({length: n}, () => `
+    <div class="border-b border-zinc-900 pb-8 animate-pulse">
+      <div class="aspect-[2/3] bg-zinc-900 mb-6"></div>
+      <div class="h-5 bg-zinc-900 rounded mb-2 w-2/3"></div>
+      <div class="h-3 bg-zinc-900 rounded w-1/3 mb-4"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="h-14 bg-zinc-900 rounded"></div>
+        <div class="h-14 bg-zinc-900 rounded"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── Product Modal ─────────────────────────────────────────────────────────
+async function openProductModal(productId) {
+  activeProductId  = productId;
+  activeVariantId  = null;
+  trackProductView(productId); // fire-and-forget analytics
+  const modal      = document.getElementById('product-modal');
+  const panel      = modal.querySelector('.modal-panel');
+
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    modal.classList.remove('opacity-0');
+    panel.classList.remove('entering');
+  });
+  document.body.style.overflow = 'hidden';
+
+  // Fetch product detail
+  try {
+    const res = await fetch(`${API}/marketplace/product/${productId}`);
+    const p = await res.json();
+    populateModal(p);
+  } catch {}
+}
+
+function populateModal(p) {
+  const wsPrice = parseFloat(p.wholesale_price) || 0;
+  const srp     = parseFloat(p.msrp) || wsPrice * 2.5;
+
+  document.getElementById('modal-image').src       = p.images?.[0] || '';
+  document.getElementById('modal-brand').textContent = p.brand_name || '';
+  document.getElementById('modal-brand').href       = `/brand/${p.brand_id}`;
+  document.getElementById('modal-title').textContent = p.name;
+  const status = inventoryStatus(p.available_units, p.delivery_window);
+  document.getElementById('modal-season').innerHTML =
+    `<span class="mr-3">${p.season || ''}</span>${inventoryBadge(status)}`;
+  document.getElementById('modal-srp').textContent   = `USD ${formatPrice(srp)}`;
+  document.getElementById('modal-wholesale').textContent = `USD ${formatPrice(wsPrice)}`;
+  document.getElementById('modal-payout').textContent = `USD ${formatPrice(wsPrice * 0.70)}`;
+  document.getElementById('modal-moq').textContent   = `${p.min_order_qty || 1} units min`;
+  document.getElementById('modal-desc').textContent  = p.product_notes || '';
+  document.getElementById('modal-delivery').textContent = p.delivery_window ? `Delivery: ${p.delivery_window}` : '';
+
+  // Thumbnails
+  const thumbs = document.getElementById('modal-thumbnails');
+  thumbs.innerHTML = (p.images || []).map((src, i) =>
+    `<img src="${src}" alt="" onclick="document.getElementById('modal-image').src='${src}'" class="w-10 h-14 object-cover cursor-pointer border border-zinc-800 hover:border-gold-500 transition-colors">`
+  ).join('');
+
+  // Variants
+  const varDiv = document.getElementById('modal-variants');
+  if (p.variants?.length) {
+    varDiv.innerHTML = p.variants.map(v => `
+      <button onclick="selectVariant('${v.id}', this)" data-id="${v.id}" data-avail="${v.available}"
+        class="variant-btn border border-zinc-800 px-3 py-1.5 text-xs hover:border-gold-500 transition-colors ${v.available > 0 ? 'text-zinc-300' : 'text-zinc-700 line-through'}">
+        ${v.size ? v.size + (v.color ? ' / ' + v.color : '') : v.color || 'OS'}
+        ${v.available > 0 ? '' : ' <span class="text-zinc-700">(sold out)</span>'}
+      </button>`).join('');
+    // Auto-select first available
+    const firstAvail = p.variants.find(v => v.available > 0);
+    if (firstAvail) {
+      activeVariantId = firstAvail.id;
+      varDiv.querySelector(`[data-id="${firstAvail.id}"]`)?.classList.add('!border-gold-500', 'text-gold-500');
+    }
+  } else {
+    varDiv.innerHTML = '<p class="text-xs text-zinc-600">No variants available</p>';
+  }
+
+  // Tier pricing
+  const tiersWrap = document.getElementById('modal-tiers');
+  if (p.tier_pricing?.length) {
+    tiersWrap.classList.remove('hidden');
+    document.getElementById('modal-tiers-list').innerHTML = p.tier_pricing.map(t =>
+      `<div class="flex items-center justify-between text-xs">
+         <span class="text-zinc-500">${t.tier_name} · ${t.min_qty}+ units</span>
+         <span class="text-gold-500 font-mono">−${t.discount_pct}%</span>
+       </div>`
+    ).join('');
+  } else {
+    tiersWrap.classList.add('hidden');
+  }
+}
+
+function selectVariant(id, btn) {
+  activeVariantId = id;
+  document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('!border-gold-500', 'text-gold-500'));
+  btn.classList.add('!border-gold-500', 'text-gold-500');
+}
+
+function changeQty(delta) {
+  const input = document.getElementById('modal-qty');
+  input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+}
+
+function closeProductModal(e) {
+  if (e && e.target !== document.getElementById('product-modal') && !e.target.closest('.modal-panel')) return;
+  const modal = document.getElementById('product-modal');
+  const panel = modal.querySelector('.modal-panel');
+  modal.classList.add('opacity-0');
+  panel.classList.add('entering');
+  setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300);
+}
+
+// ─── Cart ─────────────────────────────────────────────────────────────────
+async function fetchCart() {
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/buyers/cart`, { headers: auth() });
+    const data = await res.json();
+    cartItems = data.cart || [];
+    renderCartBadge();
+    renderCartPanel();
+  } catch {}
+}
+
+async function addToCartFromModal() {
+  if (!token) { toast('Sign in to add items to your order', 'info'); return; }
+  if (!activeVariantId) { toast('Please select a variant', 'info'); return; }
+  const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+
+  try {
+    const res = await fetch(`${API}/buyers/cart`, {
+      method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variantId: activeVariantId, quantity: qty })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Could not add item', 'danger'); return; }
+    toast('Added to order', 'success');
+    await fetchCart();
+  } catch { toast('Network error', 'danger'); }
+}
+
+async function removeFromCart(variantId) {
+  try {
+    await fetch(`${API}/buyers/cart/${variantId}`, { method: 'DELETE', headers: auth() });
+    cartItems = cartItems.filter(i => i.variant_id !== variantId);
+    renderCartBadge();
+    renderCartPanel();
+  } catch {}
+}
+
+function renderCartBadge() {
+  const count = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const badge = document.getElementById('cart-count');
+  badge.textContent = count;
+  badge.classList.toggle('hidden', count === 0);
+  badge.classList.toggle('flex', count > 0);
+}
+
+// ─── Payment Terms (B2B) ────────────────────────────────────────────────────
+const CART_TERM_DATA = {
+  full_prepayment: { label: 'Full Prepayment',  deposit: 1.00, balance: 0.00, trigger: 'before shipment' },
+  deposit_50_50  : { label: '50/50 Deposit',    deposit: 0.50, balance: 0.50, trigger: 'before shipment' },
+  deposit_40_60  : { label: '40/60 Deposit',    deposit: 0.40, balance: 0.60, trigger: 'before shipment' },
+  net_30         : { label: 'Net 30',            deposit: 0.00, balance: 1.00, trigger: '30 days post-delivery' },
+  net_60         : { label: 'Net 60',            deposit: 0.00, balance: 1.00, trigger: '60 days post-delivery' },
+  consignment    : { label: 'Consignment',       deposit: 0.00, balance: 1.00, trigger: 'upon sale' },
+};
+let selectedCheckoutTerm = localStorage.getItem('lz_checkout_term') || null;
+
+function renderCartTerms(total) {
+  const raw = localStorage.getItem('lz_brand_terms');
+  const section  = document.getElementById('cart-terms-section');
+  const moqWarn  = document.getElementById('cart-moq-warn');
+  if (!raw) { section.classList.add('hidden'); return; }
+
+  let brandData;
+  try { brandData = JSON.parse(raw); } catch { section.classList.add('hidden'); return; }
+
+  const terms = brandData.terms || [];
+  if (!terms.length) { section.classList.add('hidden'); return; }
+
+  // Min order check
+  const minOrder = parseFloat(brandData.minOrder || 0);
+  if (moqWarn) {
+    if (total < minOrder && total > 0) {
+      moqWarn.textContent = `Minimum order: USD ${minOrder.toLocaleString()} — add ${formatPrice(minOrder - total)} more`;
+      moqWarn.classList.remove('hidden');
+    } else {
+      moqWarn.classList.add('hidden');
+    }
+  }
+
+  // Build term radio buttons
+  section.classList.remove('hidden');
+  const list = document.getElementById('cart-terms-list');
+  // Ensure selected term is valid
+  if (selectedCheckoutTerm && !terms.includes(selectedCheckoutTerm)) selectedCheckoutTerm = null;
+  if (!selectedCheckoutTerm && terms.length === 1) selectedCheckoutTerm = terms[0];
+
+  list.innerHTML = terms.map(t => {
+    const td = CART_TERM_DATA[t];
+    if (!td) return '';
+    const checked = selectedCheckoutTerm === t ? 'checked' : '';
+    return `<label class="flex items-center gap-3 cursor-pointer group py-1.5 px-2 hover:bg-zinc-900 transition-colors rounded-sm">
+      <input type="radio" name="checkout_term" value="${t}" ${checked}
+             onchange="selectCheckoutTerm('${t}', ${total})"
+             class="accent-gold-500 cursor-pointer shrink-0">
+      <span class="flex-1 text-[10px] uppercase tracking-widest text-zinc-300 group-hover:text-white transition-colors">${td.label}</span>
+      ${td.deposit > 0
+        ? `<span class="font-mono text-[10px] text-gold-500">${Math.round(td.deposit*100)}% now</span>`
+        : `<span class="font-mono text-[10px] text-zinc-600">pay later</span>`}
+    </label>`;
+  }).join('');
+
+  // Also add custom term if present
+  if (brandData.other && brandData.other.label) {
+    const dep = parseFloat(brandData.other.deposit || 0) / 100;
+    list.innerHTML += `<label class="flex items-center gap-3 cursor-pointer group py-1.5 px-2 hover:bg-zinc-900 transition-colors rounded-sm">
+      <input type="radio" name="checkout_term" value="custom"
+             ${selectedCheckoutTerm === 'custom' ? 'checked' : ''}
+             onchange="selectCheckoutTerm('custom', ${total})"
+             class="accent-gold-500 cursor-pointer shrink-0">
+      <span class="flex-1 text-[10px] uppercase tracking-widest text-zinc-300 group-hover:text-white transition-colors">${brandData.other.label}</span>
+      ${dep > 0 ? `<span class="font-mono text-[10px] text-gold-500">${Math.round(dep*100)}% now</span>` : `<span class="font-mono text-[10px] text-zinc-600">pay later</span>`}
+    </label>`;
+  }
+
+  if (selectedCheckoutTerm) renderTermBreakdown(selectedCheckoutTerm, total, brandData);
+}
+
+function selectCheckoutTerm(termId, total) {
+  selectedCheckoutTerm = termId;
+  localStorage.setItem('lz_checkout_term', termId);
+  const raw = localStorage.getItem('lz_brand_terms');
+  const brandData = raw ? JSON.parse(raw) : {};
+  renderTermBreakdown(termId, total, brandData);
+  // Update checkout button
+  const btn = document.getElementById('checkout-btn');
+  const td = CART_TERM_DATA[termId];
+  if (td && td.deposit > 0 && td.deposit < 1) {
+    btn.textContent = `Pay Deposit — USD ${formatPrice(total * td.deposit)}`;
+  } else if (td && td.deposit === 1) {
+    btn.textContent = `Pay in Full — USD ${formatPrice(total)}`;
+  } else {
+    btn.textContent = 'Proceed to Checkout';
+  }
+}
+
+function renderTermBreakdown(termId, total, brandData) {
+  const breakdownEl = document.getElementById('cart-terms-breakdown');
+  let dep, bal, trigger;
+
+  if (termId === 'custom' && brandData.other) {
+    dep = parseFloat(brandData.other.deposit || 0) / 100;
+    bal = 1 - dep;
+    trigger = brandData.other.trigger || 'as agreed';
+  } else {
+    const td = CART_TERM_DATA[termId];
+    if (!td) { breakdownEl.classList.add('hidden'); return; }
+    dep = td.deposit; bal = td.balance; trigger = td.trigger;
+  }
+
+  breakdownEl.classList.remove('hidden');
+  document.getElementById('ctb-total').textContent   = `USD ${formatPrice(total)}`;
+  const depRow = document.getElementById('ctb-deposit-row');
+  const balRow = document.getElementById('ctb-balance-row');
+
+  if (dep > 0) {
+    depRow.classList.remove('hidden');
+    document.getElementById('ctb-deposit-label').textContent = dep === 1 ? 'Total due now' : `Deposit (${Math.round(dep*100)}%) — due now`;
+    document.getElementById('ctb-deposit').textContent = `USD ${formatPrice(total * dep)}`;
+  } else {
+    depRow.classList.add('hidden');
+  }
+  if (bal > 0) {
+    balRow.classList.remove('hidden');
+    document.getElementById('ctb-balance-label').textContent = `Balance — ${trigger}`;
+    document.getElementById('ctb-balance').textContent = `USD ${formatPrice(total * bal)}`;
+  } else {
+    balRow.classList.add('hidden');
+  }
+}
+
+// ─── Pricing Tier Engine ──────────────────────────────────────────────────────
+function checkMOQ(items, moqS) {
+  if (!moqS || !moqS.type) return true;
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  if (moqS.type === 'total_units') return totalUnits >= (moqS.total_units || 24);
+  if (moqS.type === 'per_sku') {
+    const minPerSku = moqS.per_sku_units || 12;
+    const bySkuQty = {};
+    items.forEach(i => { const k = i.sku || i.variant_id; bySkuQty[k] = (bySkuQty[k]||0) + i.quantity; });
+    return Object.values(bySkuQty).length > 0 && Object.values(bySkuQty).every(q => q >= minPerSku);
+  }
+  if (moqS.type === 'per_category') {
+    const rules = moqS.category_rules || [];
+    if (!rules.length) return true;
+    return rules.every(rule => {
+      const catQty = items.filter(i => (i.category||'').toUpperCase() === rule.category.toUpperCase())
+                         .reduce((s, i) => s + i.quantity, 0);
+      return catQty >= (rule.min_qty || 1);
+    });
+  }
+  return true;
+}
+
+function getMOQProgressText(items, moqS) {
+  if (!moqS || !moqS.type) return null;
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  if (moqS.type === 'total_units') {
+    const need = (moqS.total_units || 24) - totalUnits;
+    return need > 0 ? `Add ${need} more unit${need > 1 ? 's' : ''} to reach standard pricing` : null;
+  }
+  if (moqS.type === 'per_sku') {
+    const minPerSku = moqS.per_sku_units || 12;
+    const bySkuQty = {};
+    items.forEach(i => { const k = i.sku || i.name || i.variant_id; bySkuQty[k] = (bySkuQty[k]||0) + i.quantity; });
+    const underSku = Object.entries(bySkuQty).filter(([,q]) => q < minPerSku);
+    if (underSku.length) return `${underSku.length} SKU${underSku.length > 1 ? 's' : ''} below ${minPerSku}-unit minimum`;
+    return null;
+  }
+  if (moqS.type === 'per_category') {
+    const rules = moqS.category_rules || [];
+    const failing = rules.filter(r => {
+      const q = items.filter(i => (i.category||'').toUpperCase() === r.category.toUpperCase())
+                     .reduce((s, i) => s + i.quantity, 0);
+      return q < (r.min_qty || 1);
+    });
+    if (failing.length) return failing.map(r => `${r.category}: add ${(r.min_qty||1)} units min`).join(' · ');
+    return null;
+  }
+  return null;
+}
+
+function computeEffectivePricing(items) {
+  const moqS    = (() => { try { return JSON.parse(localStorage.getItem('lz_moq_settings')||'{}'); } catch { return {}; } })();
+  const marginS = (() => { try { return JSON.parse(localStorage.getItem('lz_margin_settings')||'{}'); } catch { return {}; } })();
+
+  const stdPct   = (marginS.standard_pct || 50) / 100;
+  const belowPct = (moqS.below_moq_margin_pct || 65) / 100;
+  const specEnabled = !!(marginS.special_offer?.enabled);
+  const specPct  = (marginS.special_offer?.margin_pct || 40) / 100;
+  const specThreshType = marginS.special_offer?.threshold_type || 'value';
+  const specThreshold  = parseFloat(marginS.special_offer?.threshold || 2000);
+
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  // Standard total (stored wholesale_price is already at standard margin)
+  const stdTotal = items.reduce((s, i) => s + parseFloat(i.wholesale_price||0) * i.quantity, 0);
+  // Derive SRP from standard price (SRP = wsp / stdPct)
+  const srpTotal = stdPct > 0 ? stdTotal / stdPct : stdTotal * 2;
+  const belowTotal  = srpTotal * belowPct;
+  const specTotal   = srpTotal * specPct;
+
+  const moqMet  = checkMOQ(items, moqS);
+  const specMet = specEnabled && (specThreshType === 'value' ? stdTotal >= specThreshold : totalUnits >= specThreshold);
+
+  let activeTier, effectiveTotal;
+  if (specMet)                            { activeTier = 'special';   effectiveTotal = specTotal;  }
+  else if (moqMet || !moqS.type)         { activeTier = 'standard';  effectiveTotal = stdTotal;   }
+  else if (moqS.allow_below_moq)         { activeTier = 'below_moq'; effectiveTotal = belowTotal; }
+  else                                    { activeTier = 'blocked';   effectiveTotal = stdTotal;   }
+
+  return { activeTier, effectiveTotal, moqMet, specMet, specEnabled,
+           stdTotal, belowTotal, specTotal, srpTotal,
+           stdPct, belowPct: belowPct, specPct, specThreshType, specThreshold,
+           totalUnits, moqS, marginS };
+}
+
+function renderPricingTiers(p) {
+  const panel = document.getElementById('cart-pricing-panel');
+  const moqWarn = document.getElementById('cart-moq-warn');
+  const effectiveLabelEl = document.getElementById('cart-effective-label');
+  const effectiveTotalEl = document.getElementById('cart-effective-total');
+  const effectiveRow = document.getElementById('cart-effective-row');
+  const stdEl = document.getElementById('cart-total');
+  const strikeEl = document.getElementById('cart-total-strike');
+
+  // MOQ warning / blocked
+  if (moqWarn) {
+    if (p.activeTier === 'blocked') {
+      const msg = getMOQProgressText(cartItems, p.moqS) || 'Order does not meet minimum quantity';
+      moqWarn.textContent = msg + ' — cannot check out';
+      moqWarn.classList.remove('hidden');
+    } else if (!p.moqMet && p.moqS.allow_below_moq) {
+      const msg = getMOQProgressText(cartItems, p.moqS);
+      moqWarn.textContent = (msg || 'Below MOQ') + ' · surcharge pricing applies';
+      moqWarn.classList.remove('hidden');
+    } else if (!p.moqMet && p.moqS.type) {
+      moqWarn.textContent = getMOQProgressText(cartItems, p.moqS) || 'Below minimum order';
+      moqWarn.classList.remove('hidden');
+    } else {
+      moqWarn.classList.add('hidden');
+    }
+  }
+
+  // Effective total row
+  if (effectiveRow && effectiveLabelEl && effectiveTotalEl) {
+    if (p.activeTier === 'below_moq') {
+      effectiveRow.classList.remove('hidden');
+      effectiveLabelEl.textContent = 'Below MOQ price';
+      effectiveLabelEl.style.color = '#f97316';
+      effectiveTotalEl.textContent = `USD ${formatPrice(p.belowTotal)}`;
+      effectiveTotalEl.style.color = '#f97316';
+      if (stdEl) { stdEl.classList.add('line-through'); stdEl.classList.add('text-zinc-600'); stdEl.classList.remove('text-gold-500'); }
+    } else if (p.activeTier === 'special') {
+      effectiveRow.classList.remove('hidden');
+      effectiveLabelEl.textContent = 'Special Offer price';
+      effectiveLabelEl.style.color = '#4ade80';
+      effectiveTotalEl.textContent = `USD ${formatPrice(p.specTotal)}`;
+      effectiveTotalEl.style.color = '#4ade80';
+      if (stdEl) { stdEl.classList.add('line-through'); stdEl.classList.add('text-zinc-600'); stdEl.classList.remove('text-gold-500'); }
+    } else {
+      effectiveRow.classList.add('hidden');
+      if (stdEl) { stdEl.classList.remove('line-through','text-zinc-600'); stdEl.classList.add('text-gold-500'); }
+    }
+  }
+
+  // Build tier panel
+  if (!panel) return;
+  const hasTiers = p.moqS.allow_below_moq || p.specEnabled || (p.moqS.type && !p.moqMet);
+  if (!hasTiers) { panel.classList.add('hidden'); return; }
+
+  panel.classList.remove('hidden');
+
+  const rows = [];
+
+  if (p.moqS.allow_below_moq) rows.push({
+    id:'below_moq', label:'Below MOQ', pct: Math.round(p.belowPct*100), total: p.belowTotal,
+    active: p.activeTier==='below_moq', col:'#f97316',
+    note: getMOQProgressText(cartItems, p.moqS) || `Order below ${p.moqS.type==='total_units'?p.moqS.total_units+' units':'minimum'}`
+  });
+
+  rows.push({
+    id:'standard', label:'Standard', pct: Math.round(p.stdPct*100), total: p.stdTotal,
+    active: p.activeTier==='standard', col:'#C9A84C',
+    note: p.moqS.type ? (p.moqMet ? 'MOQ met ✓' : getMOQProgressText(cartItems, p.moqS)||'Add more to qualify') : 'Standard wholesale'
+  });
+
+  if (p.specEnabled) {
+    const threshLabel = p.specThreshType === 'value'
+      ? `USD ${Number(p.specThreshold).toLocaleString()}`
+      : `${p.specThreshold} units`;
+    const remaining = p.specThreshType === 'value'
+      ? p.specThreshold - p.stdTotal
+      : p.specThreshold - p.totalUnits;
+    rows.push({
+      id:'special', label:'Special Offer', pct: Math.round(p.specPct*100), total: p.specTotal,
+      active: p.activeTier==='special', col:'#4ade80',
+      note: p.specMet ? 'Unlocked ✓' : (p.specThreshType === 'value' ? `Add USD ${formatPrice(remaining)} more to unlock` : `Add ${remaining} more units to unlock`)
+    });
+  }
+
+  panel.innerHTML = `
+    <p class="font-mono text-[9px] uppercase tracking-[0.18em] text-zinc-600 mb-3">Pricing Tiers</p>
+    <div class="space-y-1">
+      ${rows.map(r => `
+        <div class="flex items-start justify-between py-2.5 px-3 rounded-none transition-colors ${r.active ? 'border border-zinc-700' : 'opacity-40'}">
+          <div class="flex items-center gap-2.5 flex-1 min-w-0">
+            <div class="w-1.5 h-1.5 rounded-full shrink-0 mt-0.5" style="background:${r.col}"></div>
+            <div class="min-w-0">
+              <p class="text-[10px] uppercase tracking-widest leading-none" style="color:${r.active ? r.col : '#71717a'}">${r.label} <span class="text-zinc-700">${r.pct}%</span>${r.active ? ' <span style="font-size:9px">● Active</span>' : ''}</p>
+              <p class="text-[9px] text-zinc-700 mt-1 truncate">${r.note}</p>
+            </div>
+          </div>
+          <span class="font-mono text-sm ml-4 shrink-0 ${r.active ? 'text-white font-bold' : 'text-zinc-600'}">$${formatPrice(r.total)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderCartPanel() {
+  const container = document.getElementById('cart-items');
+  const stdTotal  = cartItems.reduce((s, i) => s + parseFloat(i.wholesale_price || 0) * i.quantity, 0);
+
+  document.getElementById('cart-item-count').textContent = cartItems.length;
+  document.getElementById('cart-total').textContent = `USD ${formatPrice(stdTotal)}`;
+
+  // Reset checkout button text and style
+  const btn = document.getElementById('checkout-btn');
+  if (btn) btn.textContent = 'Proceed to Checkout';
+
+  if (!cartItems.length) {
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-48 text-center">
+        <p class="font-luxury text-2xl text-zinc-700 mb-2">Empty order</p>
+        <p class="text-zinc-600 text-xs">Browse products to start building your order.</p>
+      </div>`;
+    document.getElementById('cart-terms-section')?.classList.add('hidden');
+    document.getElementById('cart-moq-warn')?.classList.add('hidden');
+    document.getElementById('cart-pricing-panel')?.classList.add('hidden');
+    document.getElementById('cart-effective-row')?.classList.add('hidden');
+    const stdEl = document.getElementById('cart-total');
+    if (stdEl) { stdEl.classList.remove('line-through','text-zinc-600'); stdEl.classList.add('text-gold-500'); }
+    return;
+  }
+
+  // Compute effective pricing tier
+  const pricing = computeEffectivePricing(cartItems);
+  const effectiveTotal = pricing.effectiveTotal;
+
+  // Re-apply selected term to button
+  if (selectedCheckoutTerm) {
+    const td = CART_TERM_DATA[selectedCheckoutTerm];
+    if (td && td.deposit > 0 && td.deposit < 1 && btn) {
+      btn.textContent = `Pay Deposit — USD ${formatPrice(effectiveTotal * td.deposit)}`;
+    } else if (td && td.deposit === 1 && btn) {
+      btn.textContent = `Pay in Full — USD ${formatPrice(effectiveTotal)}`;
+    }
+  }
+
+  container.innerHTML = cartItems.map(item => {
+    const stdLineTotal = parseFloat(item.wholesale_price || 0) * item.quantity;
+    // Scale line total to effective tier ratio
+    const ratio = pricing.stdTotal > 0 ? effectiveTotal / pricing.stdTotal : 1;
+    const effLineTotal = stdLineTotal * ratio;
+    const isDiff = Math.abs(ratio - 1) > 0.001;
+    const tierCol = pricing.activeTier === 'special' ? '#4ade80' : pricing.activeTier === 'below_moq' ? '#f97316' : null;
+    return `
+    <div class="flex gap-4 border-b border-zinc-900 pb-5">
+      <div class="w-16 bg-zinc-900 shrink-0 overflow-hidden" style="height:84px">
+        <img src="${item.image || ''}" alt="${item.name}" class="w-full h-full object-cover grayscale">
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-luxury text-base leading-tight truncate">${item.name}</p>
+        <p class="text-zinc-600 text-[10px] mt-0.5">${item.brand_name || ''}</p>
+        <p class="text-zinc-700 text-[10px]">${item.size || ''}${item.size && item.color ? ' / ' : ''}${item.color || ''}</p>
+        <div class="flex items-center justify-between mt-3">
+          <div>
+            ${isDiff ? `<p class="font-mono text-zinc-600 text-xs line-through">USD ${formatPrice(stdLineTotal)}</p>` : ''}
+            <span class="font-mono text-sm" style="color:${tierCol || '#C9A84C'}">USD ${formatPrice(isDiff ? effLineTotal : stdLineTotal)}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-zinc-600 text-xs">×${item.quantity}</span>
+            <button onclick="removeFromCart('${item.variant_id}')" class="text-zinc-700 hover:text-white transition-colors ml-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`; }).join('');
+
+  // Render pricing tiers + payment terms
+  renderPricingTiers(pricing);
+  renderCartTerms(effectiveTotal);
+
+  // If in linesheet cart mode, also re-render the table
+  if (_cartViewMode === 'linesheet') renderCartLinesheetMode();
+}
+
+function openCart() {
+  document.getElementById('cart-backdrop').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('cart-backdrop').classList.remove('opacity-0'));
+  document.getElementById('cart-panel').classList.remove('translate-x-full');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  document.getElementById('cart-backdrop').classList.add('opacity-0');
+  document.getElementById('cart-panel').classList.add('translate-x-full');
+  document.body.style.overflow = '';
+  setTimeout(() => document.getElementById('cart-backdrop').classList.add('hidden'), 300);
+}
+
+function proceedToCheckout() {
+  if (!cartItems.length) return;
+  if (!userVerified) { toast('Verified buyers only — please apply for access', 'info'); openVerifyModal(); return; }
+
+  // Compute effective pricing / MOQ check
+  const pricing = computeEffectivePricing(cartItems);
+
+  if (pricing.activeTier === 'blocked') {
+    const msg = getMOQProgressText(cartItems, pricing.moqS) || 'Minimum order not met';
+    toast(msg + ' — cannot check out', 'warning');
+    return;
+  }
+
+  const effectiveTotal = pricing.effectiveTotal;
+
+  // Require a payment term if brand has configured terms
+  const raw = localStorage.getItem('lz_brand_terms');
+  if (raw) {
+    try {
+      const brandData = JSON.parse(raw);
+      if ((brandData.terms || []).length > 0 && !selectedCheckoutTerm) {
+        toast('Please select a payment term to continue', 'info');
+        return;
+      }
+    } catch {}
+  }
+
+  // Save checkout context (includes effective total + active tier)
+  const checkoutContext = {
+    term         : selectedCheckoutTerm,
+    total        : effectiveTotal,
+    stdTotal     : pricing.stdTotal,
+    activeTier   : pricing.activeTier,
+    tierPct      : pricing.activeTier === 'special' ? Math.round(pricing.specPct*100) : pricing.activeTier === 'below_moq' ? Math.round(pricing.belowPct*100) : Math.round(pricing.stdPct*100),
+    items        : cartItems,
+    timestamp    : new Date().toISOString(),
+  };
+  localStorage.setItem('lz_checkout_context', JSON.stringify(checkoutContext));
+
+  window.location.href = '/pages/buyer-order.html';
+}
+
+// ─── Saved items ──────────────────────────────────────────────────────────
+async function toggleSaveProduct() {
+  if (!token || !activeProductId) return;
+  try {
+    const saved = document.getElementById('modal-save-btn').classList.contains('text-gold-500');
+    if (saved) {
+      await fetch(`${API}/buyers/saved/${activeProductId}`, { method: 'DELETE', headers: auth() });
+      document.getElementById('modal-save-btn').classList.remove('text-gold-500');
+    } else {
+      await fetch(`${API}/buyers/saved/${activeProductId}`, { method: 'POST', headers: auth() });
+      document.getElementById('modal-save-btn').classList.add('text-gold-500');
+    }
+  } catch {}
+}
+
+function openSaved() { toast('Saved items — coming soon', 'info'); }
+
+// ─── Filters ─────────────────────────────────────────────────────────────
+function applyFilters() {
+  filters.category  = document.querySelector('input[name="category"]:checked')?.value || '';
+  filters.sort      = document.getElementById('sort-select').value;
+  filters.min_price = document.getElementById('min-price').value;
+  filters.max_price = document.getElementById('max-price').value;
+  filters.season    = document.getElementById('season-filter').value;
+  loadProducts(true);
+}
+
+function setCategory(cat) {
+  filters.category = cat;
+  const radio = document.querySelector(`input[name="category"][value="${cat}"]`);
+  if (radio) radio.checked = true;
+  loadProducts(true);
+}
+
+function clearFilters() {
+  filters = { category: '', search: '', sort: 'newest', min_price: '', max_price: '', season: '' };
+  document.querySelector('input[name="category"][value=""]').checked = true;
+  document.getElementById('sort-select').value = 'newest';
+  document.getElementById('min-price').value = '';
+  document.getElementById('max-price').value = '';
+  document.getElementById('season-filter').value = '';
+  document.getElementById('search-input').value = '';
+  loadProducts(true);
+}
+
+function loadMore() { loadProducts(false); }
+
+function setGrid(cols) {
+  gridCols = cols;
+  renderProducts(true);
+}
+
+// ─── Search ────────────────────────────────────────────────────────────────
+let searchTimer;
+function debounceSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { filters.search = val; loadProducts(true); }, 400);
+}
+
+// ─── Verification modal ───────────────────────────────────────────────────
+function openVerifyModal()  { document.getElementById('verify-modal').classList.remove('hidden'); }
+function closeVerifyModal() { document.getElementById('verify-modal').classList.add('hidden'); }
+
+async function submitVerification() {
+  if (!token) { toast('Please sign in first', 'info'); return; }
+  const fd = new FormData();
+  fd.append('business_type', document.getElementById('v-type').value);
+  fd.append('tax_id',        document.getElementById('v-taxid').value);
+  fd.append('annual_revenue',document.getElementById('v-revenue').value);
+  fd.append('store_count',   document.getElementById('v-stores').value);
+  const file = document.getElementById('v-license').files[0];
+  if (file) fd.append('business_license', file);
+
+  try {
+    const res = await fetch(`${API}/buyers/verify`, { method: 'POST', headers: auth(false), body: fd });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Submission failed', 'danger'); return; }
+    toast('Application submitted — we\'ll review within 1–2 business days', 'success');
+    closeVerifyModal();
+    document.getElementById('pending-badge').classList.remove('hidden');
+    document.getElementById('pending-badge').classList.add('flex');
+  } catch { toast('Network error', 'danger'); }
+}
+
+// ─── Account menu ──────────────────────────────────────────────────────────
+function toggleAccountMenu() {
+  if (!token) { window.location.href = '/login'; return; }
+  // Simple dropdown — toggle logout link
+  const existing = document.getElementById('account-dropdown');
+  if (existing) { existing.remove(); return; }
+  const menu = document.createElement('div');
+  menu.id = 'account-dropdown';
+  menu.className = 'absolute top-14 right-6 bg-zinc-950 border border-zinc-900 w-40 z-50 text-xs';
+  menu.innerHTML = `
+    <a href="/brand/dashboard" class="block px-4 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors">Brand Studio</a>
+    <a href="/orders" class="block px-4 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors">My Orders</a>
+    <hr class="border-zinc-900">
+    <button onclick="logout()" class="block w-full text-left px-4 py-2.5 text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors">Sign Out</button>`;
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+}
+
+function logout() {
+  localStorage.removeItem('lz_token');
+  localStorage.removeItem('lz_buyer_token');
+  localStorage.removeItem('lz_buyer_info');
+  localStorage.removeItem('lz_checkout_context');
+  window.location.href = '/pages/buyer-landing.html';
+}
+
+// ─── Personalization Engine ────────────────────────────────────────────────
+let _personalization = null;
+
+async function fetchPersonalization() {
+  if (!token) return;
+  try {
+    const res  = await fetch(`${API}/buyers/personalization`, { headers: auth() });
+    const data = await res.json();
+    if (data.personalized) {
+      _personalization = data;
+      applyPersonalization(data);
+    }
+  } catch {}
+}
+
+function applyPersonalization(p) {
+  // Silently re-rank trending + featured to match buyer's style
+  // Called after loadTrending() data is ready
+  if (!p || !p.personalization_tags?.length) return;
+
+  const tags = p.personalization_tags;
+  const catWeights = p.category_weights || {};
+
+  // Score inventory products against buyer profile
+  function scoreProduct(prod) {
+    let score = 0;
+    const prodCat = (prod.category || '').toUpperCase();
+    if (catWeights[prodCat]) score += catWeights[prodCat] * 10;
+
+    const priceMid = ((prod.srp_usd || prod.retail_price || 0) + (prod.wsp_usd || prod.wholesale_price || 0)) / 2;
+    if (p.price_sensitivity === 'luxury'  && priceMid > 500) score += 5;
+    if (p.price_sensitivity === 'premium' && priceMid > 150 && priceMid < 600) score += 5;
+    if (p.price_sensitivity === 'contemporary' && priceMid < 200) score += 5;
+
+    tags.forEach(t => {
+      if ((prod.tags || []).includes(t)) score += 2;
+      if ((prod.season || '').toLowerCase().includes(t)) score += 1;
+    });
+    return score;
+  }
+
+  // Re-sort trending grid if data is available
+  const trendingInner = document.getElementById('trending-inner');
+  if (trendingInner && trendingInner._rawProducts) {
+    const sorted = [...trendingInner._rawProducts].sort((a, b) => scoreProduct(b) - scoreProduct(a));
+    renderTrendingGrid(sorted);
+  }
+
+  // Show subtle personalization badge
+  const badge = document.getElementById('personalization-badge');
+  if (!badge) {
+    const b = document.createElement('div');
+    b.id = 'personalization-badge';
+    b.className = 'fixed bottom-6 left-6 z-30';
+    b.style.cssText = 'background:rgba(10,10,15,0.9);border:1px solid rgba(201,168,76,0.3);padding:8px 14px;font-family:"DM Mono",monospace;font-size:9px;color:#C9A84C;letter-spacing:0.1em;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity .5s';
+    b.textContent = '✦ Personalised for you';
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '1'; }, 500);
+    setTimeout(() => { b.style.opacity = '0'; }, 4000);
+  }
+}
+
+// ── Analytics: Track item views ────────────────────────────────────────────────
+async function trackProductView(productId) {
+  // Fire-and-forget view tracking
+  try {
+    await fetch(`${API}/analytics/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, buyer_id: buyerId || null })
+    });
+  } catch {}
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function auth(json = true) {
+  return {
+    Authorization: `Bearer ${token}`,
+    ...(json ? { 'Content-Type': 'application/json' } : {})
+  };
+}
+
+function formatPrice(n) {
+  return parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function toast(msg, type = 'info') {
+  const colors = { success: 'border-green-800 text-green-400', danger: 'border-red-900 text-red-400', info: 'border-zinc-800 text-zinc-300', warning: 'border-amber-800 text-amber-400' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto border bg-zinc-950 px-4 py-3 text-xs max-w-xs backdrop-blur ${colors[type] || colors.info}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+init();
+
+// ── Trending / Featured ───────────────────────────────────────────────────────
+let _featProds  = [];
+let _featIdx    = 0;
+let _featTimer  = null;
+
+async function loadTrending() {
+  try {
+    const res  = await fetch(`${API}/marketplace/trending`);
+    const data = await res.json();
+    const all  = (data.trending || []);
+    if (!all.length) return;
+
+    _featProds = all.slice(0, 6);
+    renderFeaturedBanner(_featProds);
+    renderTrendingGrid(all.slice(0, 30));
+
+    document.getElementById('trending-section').style.display = '';
+    _startFeatTimer();
+  } catch {}
+}
+
+function renderFeaturedBanner(items) {
+  const track = document.getElementById('featured-track');
+  const dots  = document.getElementById('featured-dots');
+  const esc   = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  track.innerHTML = items.map((p, i) => {
+    const img = (p.image_urls||[])[0] || '';
+    const wsp = parseFloat(p.wsp_usd||0).toFixed(0);
+    const srp = parseFloat(p.srp_usd||0).toFixed(0);
+    const mPct = srp > 0 && wsp > 0 ? Math.round((srp-wsp)/srp*100) : (p.margin_pct||0);
+    return `
+      <div class="featured-slide" onclick="openProductModal('${p.id}')">
+        <div style="width:55%;overflow:hidden;flex-shrink:0">
+          ${img
+            ? `<img class="fi-img" src="${esc(img)}" alt="" loading="lazy">`
+            : `<div style="width:100%;height:100%;background:#1a1a1a"></div>`}
+        </div>
+        <div style="flex:1;padding:28px 30px;display:flex;flex-direction:column;justify-content:center;background:#0d0d0d">
+          <p style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#555;margin-bottom:10px">
+            ${esc(p.brand_name||'')}${p.season ? ' · ' + esc(p.season) : ''}
+          </p>
+          <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.45rem;line-height:1.25;color:#fff;margin-bottom:14px">${esc(p.description)}</h3>
+          <div style="display:flex;gap:20px;margin-bottom:16px">
+            <div>
+              <p style="font-size:8px;text-transform:uppercase;letter-spacing:0.18em;color:#555;margin-bottom:3px">WSP</p>
+              <p style="font-family:'DM Mono',monospace;color:#C9A84C;font-size:0.9rem">$${wsp}</p>
+            </div>
+            <div>
+              <p style="font-size:8px;text-transform:uppercase;letter-spacing:0.18em;color:#555;margin-bottom:3px">SRP</p>
+              <p style="font-family:'DM Mono',monospace;color:#aaa;font-size:0.9rem">$${srp}</p>
+            </div>
+            ${mPct > 0 ? `<div>
+              <p style="font-size:8px;text-transform:uppercase;letter-spacing:0.18em;color:#555;margin-bottom:3px">Margin</p>
+              <p style="font-family:'DM Mono',monospace;color:#4ade80;font-size:0.9rem">${mPct}%</p>
+            </div>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;border:1px solid #2a2a2a;color:#555;padding:3px 9px">${esc(p.category||'')}</span>
+            ${p.stock > 0 ? `<span style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;border:1px solid rgba(74,222,128,0.2);color:#4ade80;padding:3px 9px">${p.stock} units</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  dots.innerHTML = items.map((_,i) =>
+    `<button onclick="goFeatured(${i})" title="Slide ${i+1}"
+      style="width:6px;height:6px;border-radius:50%;background:${i===0?'#C9A84C':'#2a2a2a'};
+             border:1px solid ${i===0?'#C9A84C':'#333'};cursor:pointer;padding:0;transition:all 0.2s"></button>`
+  ).join('');
+
+  _featIdx = 0;
+  _updateFeatPos();
+}
+
+function _updateFeatPos() {
+  document.getElementById('featured-track').style.transform = `translateX(-${_featIdx * 100}%)`;
+  document.querySelectorAll('#featured-dots button').forEach((d,i) => {
+    const active = i === _featIdx;
+    d.style.background   = active ? '#C9A84C' : '#2a2a2a';
+    d.style.borderColor  = active ? '#C9A84C' : '#333';
+  });
+}
+
+function featuredPrev() {
+  _featIdx = (_featIdx - 1 + _featProds.length) % _featProds.length;
+  _updateFeatPos(); _resetFeatTimer();
+}
+function featuredNext() {
+  _featIdx = (_featIdx + 1) % _featProds.length;
+  _updateFeatPos(); _resetFeatTimer();
+}
+function goFeatured(i) { _featIdx = i; _updateFeatPos(); _resetFeatTimer(); }
+
+function _startFeatTimer() {
+  clearInterval(_featTimer);
+  _featTimer = setInterval(() => { _featIdx = (_featIdx+1) % _featProds.length; _updateFeatPos(); }, 5000);
+  const vp = document.getElementById('featured-viewport');
+  if (vp && !vp._timerBound) {
+    vp.addEventListener('mouseenter', () => clearInterval(_featTimer));
+    vp.addEventListener('mouseleave', () => _startFeatTimer());
+    vp._timerBound = true;
+  }
+}
+function _resetFeatTimer() { clearInterval(_featTimer); _startFeatTimer(); }
+
+function renderTrendingGrid(items) {
+  const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  document.getElementById('trending-inner').innerHTML = items.map(p => {
+    const img = (p.image_urls||[])[0] || '';
+    const wsp = parseFloat(p.wsp_usd||0).toFixed(0);
+    return `<div class="trend-card" onclick="openProductModal('${p.id}')">
+      <div class="tc-img-wrap">
+        ${img
+          ? `<img src="${esc(img)}" alt="" loading="lazy">`
+          : `<div style="width:100%;height:100%;background:#1a1a1a"></div>`}
+      </div>
+      <div class="tc-info">
+        <p style="font-size:10.5px;color:#ccc;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.description)}</p>
+        <p style="font-family:'DM Mono',monospace;font-size:9.5px;color:#C9A84C;margin-top:2px">$${wsp} <span style="color:#444">WSP</span></p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function trendingScroll(dir) {
+  const el = document.getElementById('trending-scroll');
+  el.scrollLeft += dir * 680;
+}
+
+// ── Section switching ──────────────────────────────────────────────────────
+function showSection(sectionId) {
+  const isGallery = sectionId === 'gallery';
+
+  document.getElementById('gallery').classList.toggle('hidden', !isGallery);
+  document.getElementById('dashboard').classList.toggle('hidden', isGallery);
+
+  // Tab active state
+  document.getElementById('tab-showroom').className =
+    'section-tab text-[10px] tracking-[0.2em] uppercase py-3 border-b-2 transition-colors ' +
+    (isGallery ? 'border-gold-500 text-gold-500' : 'border-transparent text-zinc-500 hover:text-zinc-300');
+  document.getElementById('tab-orders').className =
+    'section-tab text-[10px] tracking-[0.2em] uppercase py-3 border-b-2 transition-colors ' +
+    (!isGallery ? 'border-gold-500 text-gold-500' : 'border-transparent text-zinc-500 hover:text-zinc-300');
+
+  // Sidebar only visible on gallery
+  const sidebar = document.getElementById('filter-sidebar');
+  if (sidebar) sidebar.style.display = isGallery ? '' : 'none';
+
+  if (!isGallery) loadBuyerDashboard();
+}
+
+// ── Order history ─────────────────────────────────────────────────────────
+let _allOrders = [];
+
+async function loadBuyerDashboard() {
+  const loading = document.getElementById('orders-loading');
+  const list    = document.getElementById('order-list');
+  const empty   = document.getElementById('orders-empty');
+  const err     = document.getElementById('orders-error');
+  const stats   = document.getElementById('order-stats');
+
+  loading.classList.remove('hidden');
+  list.classList.add('hidden');
+  empty.classList.add('hidden');
+  err.classList.add('hidden');
+  stats.classList.add('hidden');
+
+  try {
+    const token = localStorage.getItem('lz_token');
+    const res = await fetch('/api/buyers/orders', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (res.status === 401) {
+      window.location.href = '/login?redirect=/shop';
+      return;
+    }
+    if (!res.ok) throw new Error('Failed to load orders');
+
+    const data = await res.json();
+    _allOrders = Array.isArray(data) ? data : (data.orders || []);
+
+    loading.classList.add('hidden');
+
+    if (!_allOrders.length) {
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    // Stats
+    const totalSpent = _allOrders.reduce((s, o) => s + parseFloat(o.total_amount || o.total_usd || 0), 0);
+    document.getElementById('stat-count').textContent = _allOrders.length;
+    document.getElementById('stat-total').textContent = 'USD ' + totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    stats.classList.remove('hidden');
+
+    renderOrders(_allOrders);
+  } catch (e) {
+    console.error(e);
+    loading.classList.add('hidden');
+    err.classList.remove('hidden');
+  }
+}
+
+function filterOrders() {
+  const statusFilter = document.getElementById('order-status-filter').value.toLowerCase();
+  const searchTerm   = document.getElementById('order-search').value.toLowerCase();
+
+  const filtered = _allOrders.filter(o => {
+    const matchStatus = !statusFilter || (o.status || o.simplified_status || '').toLowerCase() === statusFilter;
+    const matchSearch = !searchTerm ||
+      (o.order_id || o.id || '').toLowerCase().includes(searchTerm) ||
+      (o.brand_name || o.product_name || '').toLowerCase().includes(searchTerm);
+    return matchStatus && matchSearch;
+  });
+
+  renderOrders(filtered);
+}
+
+const STATUS_ORDER_COLORS = {
+  pending:    { dot: '#C9A84C', border: 'rgba(201,168,76,0.25)',  bg: 'rgba(201,168,76,0.07)',  label: 'Pending' },
+  confirmed:  { dot: '#60a5fa', border: 'rgba(96,165,250,0.25)',  bg: 'rgba(96,165,250,0.07)',  label: 'Confirmed' },
+  processing: { dot: '#a78bfa', border: 'rgba(167,139,250,0.25)', bg: 'rgba(167,139,250,0.07)', label: 'Processing' },
+  shipped:    { dot: '#38bdf8', border: 'rgba(56,189,248,0.25)',  bg: 'rgba(56,189,248,0.07)',  label: 'Shipped' },
+  delivered:  { dot: '#52b788', border: 'rgba(82,183,136,0.25)', bg: 'rgba(82,183,136,0.07)',  label: 'Delivered' },
+  cancelled:  { dot: '#71717a', border: 'rgba(113,113,122,0.2)',  bg: 'rgba(113,113,122,0.05)', label: 'Cancelled' },
+};
+
+function orderStatusBadge(raw) {
+  const key = (raw || 'pending').toLowerCase().replace(/\s+/g, '_');
+  const s = STATUS_ORDER_COLORS[key] || STATUS_ORDER_COLORS.pending;
+  return `<span style="border:1px solid ${s.border};background:${s.bg};color:${s.dot}"
+    class="inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 uppercase tracking-[0.15em]">
+    <span style="background:${s.dot}" class="w-1.5 h-1.5 rounded-full shrink-0"></span>
+    ${s.label}
+  </span>`;
+}
+
+function formatOrderDate(raw) {
+  if (!raw) return '—';
+  try {
+    return new Date(raw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return raw; }
+}
+
+function renderOrders(orders) {
+  const list  = document.getElementById('order-list');
+  const empty = document.getElementById('orders-empty');
+
+  if (!orders.length) {
+    list.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  list.classList.remove('hidden');
+
+  list.innerHTML = orders.map(order => {
+    const orderId    = order.order_id || order.id || '';
+    const date       = formatOrderDate(order.order_date || order.created_at);
+    const brandName  = order.brand_name || order.product_name || 'Order';
+    const itemCount  = order.item_count ?? order.line_items?.length ?? null;
+    const total      = parseFloat(order.total_amount || order.total_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const status     = order.status || order.simplified_status || 'pending';
+    const shortId    = orderId.length > 8 ? orderId.slice(0, 8) + '…' : orderId;
+
+    return `
+    <article class="flex justify-between items-center gap-4 py-5 hover:bg-zinc-950 transition-colors px-4 -mx-4 group cursor-pointer"
+      onclick="viewOrder('${orderId}')" role="button" tabindex="0"
+      onkeydown="if(event.key==='Enter')viewOrder('${orderId}')">
+      <div class="min-w-0">
+        <p class="text-[9px] text-zinc-600 uppercase tracking-[0.18em] mb-1">${date}</p>
+        <h4 class="font-luxury text-lg leading-tight mb-1 group-hover:text-gold-400 transition-colors">${brandName}</h4>
+        <p class="text-[10px] text-zinc-600 font-mono">
+          #${shortId}
+          ${itemCount !== null ? `<span class="text-zinc-700 mx-1.5">·</span>${itemCount} item${itemCount !== 1 ? 's' : ''}` : ''}
+        </p>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="text-white font-mono text-sm mb-2">USD ${total}</p>
+        ${orderStatusBadge(status)}
+      </div>
+    </article>`;
+  }).join('');
+}
+
+function viewOrder(orderId) {
+  console.log('View order:', orderId);
+  toast('Order detail view — coming soon', 'info');
+}
+
+// ── Brand Banner ────────────────────────────────────────────────────────────
+function initBrandContext() {
+  const params    = new URLSearchParams(window.location.search);
+  const brandParam = params.get('brand') || '';
+  // Also check localStorage for brand settings (set by brand-admin)
+  let brandSettings = {};
+  try { brandSettings = JSON.parse(localStorage.getItem('lz_brand_settings') || '{}'); } catch {}
+
+  const brandName = brandParam || brandSettings.brand_name || '';
+  const bannerImg = brandSettings.banner_image || '';
+  const logoUrl   = brandSettings.logo_url || '';
+  const tagline   = brandSettings.tagline || 'Wholesale Collection';
+  const seasons   = brandSettings.seasons || [];
+
+  // Update the section label if brand has set a custom name
+  const sectionLabel = brandSettings.highlight_label || 'Our Items Highlight';
+  const el = document.getElementById('trending-section-label');
+  if (el) el.textContent = sectionLabel;
+
+  if (!brandName && !bannerImg && !logoUrl) return; // nothing to show
+
+  const banner = document.getElementById('brand-banner');
+  if (!banner) return;
+  banner.classList.remove('hidden');
+
+  if (bannerImg) {
+    const bgImg = document.getElementById('brand-banner-bg');
+    if (bgImg) { bgImg.src = bannerImg; bgImg.classList.remove('hidden'); }
+    banner.style.minHeight = '140px';
+  }
+
+  if (logoUrl) {
+    const logo = document.getElementById('brand-banner-logo');
+    if (logo) { logo.src = logoUrl; logo.classList.remove('hidden'); }
+  }
+
+  if (brandName) {
+    const nameEl = document.getElementById('brand-banner-name');
+    if (nameEl) { nameEl.textContent = brandName; nameEl.classList.remove('hidden'); }
+  }
+
+  if (tagline && brandName) {
+    const tagEl = document.getElementById('brand-banner-tagline');
+    if (tagEl) { tagEl.textContent = tagline; tagEl.classList.remove('hidden'); }
+  }
+
+  if (seasons.length) {
+    const seasonWrap = document.getElementById('brand-banner-season');
+    const seasonVal  = document.getElementById('brand-banner-season-val');
+    if (seasonWrap && seasonVal) {
+      seasonVal.textContent = seasons[seasons.length - 1];
+      seasonWrap.classList.remove('hidden');
+    }
+  }
+}
+
+// ── Product View Modes (Cards / Linesheet table) ─────────────────────────────
+let _productViewMode = 'cards';
+
+function setProductView(mode) {
+  _productViewMode = mode;
+  const grid   = document.getElementById('product-grid');
+  const sheet  = document.getElementById('linesheet-view');
+  const gridBtns = document.getElementById('grid-size-btns');
+  const cardsBtn = document.getElementById('view-cards-btn');
+  const sheetBtn = document.getElementById('view-sheet-btn');
+
+  if (mode === 'linesheet') {
+    grid.classList.add('hidden');
+    sheet.classList.remove('hidden');
+    if (gridBtns) gridBtns.style.opacity = '0.3';
+    cardsBtn.classList.remove('active');
+    sheetBtn.classList.add('active');
+    renderLinesheetTable(products);
+  } else {
+    grid.classList.remove('hidden');
+    sheet.classList.add('hidden');
+    if (gridBtns) gridBtns.style.opacity = '1';
+    cardsBtn.classList.add('active');
+    sheetBtn.classList.remove('active');
+  }
+}
+
+function renderLinesheetTable(items) {
+  const tbody = document.getElementById('linesheet-tbody');
+  if (!tbody) return;
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:#444;font-size:11px">No products found.</td></tr>';
+    return;
+  }
+
+  const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  tbody.innerHTML = items.map((item, idx) => {
+    const wsPrice = parseFloat(item.wholesale_price) || 0;
+    const srp     = parseFloat(item.msrp) || wsPrice * 2;
+    const imgSrc  = (item.image || item.images?.[0]) || '';
+    const stock   = parseInt(item.available_units) || 0;
+    const stockCol= stock === 0 ? '#f87171' : stock <= 5 ? '#f97316' : '#4ade80';
+    const bgColor = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)';
+
+    return `<tr style="border-bottom:1px solid #111;background:${bgColor};cursor:pointer" onclick="openProductModal('${item.id}')">
+      <td style="padding:6px 10px;width:52px">
+        ${imgSrc
+          ? `<img src="${esc(imgSrc)}" alt="" class="ls-thumb" style="width:42px;height:54px;object-fit:cover;background:#111;filter:grayscale(25%);display:block">`
+          : `<div style="width:42px;height:54px;background:#111;display:block"></div>`}
+      </td>
+      <td style="padding:6px 10px;min-width:160px">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.25;color:#e4e4e7">${esc(item.name)}</p>
+        <p style="font-size:9px;color:#555;margin-top:2px;text-transform:uppercase;letter-spacing:0.1em">${esc(item.brand_name||'')}</p>
+      </td>
+      <td style="padding:6px 10px;font-family:'DM Mono',monospace;font-size:9.5px;color:#555">${esc(item.sku||'—')}</td>
+      <td style="padding:6px 10px;font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:0.1em">${esc(item.category||'—')}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:#71717a">$${formatPrice(srp)}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:#C9A84C;font-weight:600">$${formatPrice(wsPrice)}</td>
+      <td style="padding:6px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:#555">${item.moq||1}</td>
+      <td style="padding:6px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:${stockCol};font-weight:600">${stock}</td>
+      <td style="padding:6px 10px;text-align:center">
+        <button onclick="event.stopPropagation();openProductModal('${item.id}')"
+          style="background:none;border:1px solid #2a2a2a;color:#888;font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:0.08em;font-family:'DM Mono',monospace;text-transform:uppercase;transition:all .15s"
+          onmouseover="this.style.borderColor='#C9A84C';this.style.color='#C9A84C'"
+          onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#888'">Order</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Cart View Mode ───────────────────────────────────────────────────────────
+let _cartViewMode = 'cards';
+
+function setCartView(mode) {
+  _cartViewMode = mode;
+  const cardsEl = document.getElementById('cart-items');
+  const sheetEl = document.getElementById('cart-linesheet-table');
+  const cardsBtn = document.getElementById('cart-view-cards');
+  const sheetBtn = document.getElementById('cart-view-sheet');
+
+  if (mode === 'linesheet') {
+    cardsEl.classList.add('hidden');
+    sheetEl.classList.remove('hidden');
+    cardsBtn.classList.remove('active');
+    sheetBtn.classList.add('active');
+    renderCartLinesheetMode();
+  } else {
+    cardsEl.classList.remove('hidden');
+    sheetEl.classList.add('hidden');
+    cardsBtn.classList.add('active');
+    sheetBtn.classList.remove('active');
+  }
+}
+
+function renderCartLinesheetMode() {
+  const el = document.getElementById('cart-linesheet-table');
+  if (!el) return;
+
+  if (!cartItems.length) {
+    el.innerHTML = `<div style="padding:48px;text-align:center">
+      <p style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#333">Empty order</p>
+    </div>`;
+    return;
+  }
+
+  const pricing = computeEffectivePricing(cartItems);
+  const ratio = pricing.stdTotal > 0 ? pricing.effectiveTotal / pricing.stdTotal : 1;
+
+  // Group by brand
+  const byBrand = {};
+  cartItems.forEach(item => {
+    const key = item.brand_name || 'Collection';
+    if (!byBrand[key]) byBrand[key] = [];
+    byBrand[key].push(item);
+  });
+
+  const tierColor = pricing.activeTier === 'special' ? '#4ade80'
+                  : pricing.activeTier === 'below_moq' ? '#f97316' : '#C9A84C';
+
+  let html = '';
+  Object.entries(byBrand).forEach(([brand, items]) => {
+    const brandTotal = items.reduce((s, i) => s + parseFloat(i.wholesale_price||0) * i.quantity, 0);
+    const effBrandTotal = brandTotal * ratio;
+
+    html += `
+    <div style="border-bottom:1px solid #1a1a1a;padding:0">
+      <div style="padding:10px 16px;background:#0d0d0d;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a1a1a">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;letter-spacing:0.1em;text-transform:uppercase;color:#d4d4d8">${brand}</p>
+        <p style="font-family:'DM Mono',monospace;font-size:11px;color:${tierColor}">$${formatPrice(effBrandTotal)}</p>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px">
+        <thead>
+          <tr style="border-bottom:1px solid #1a1a1a">
+            <th style="width:46px;padding:5px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#444;font-weight:400">Photo</th>
+            <th style="padding:5px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#444;font-weight:400;min-width:120px">Style</th>
+            <th style="padding:5px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#444;font-weight:400">Size</th>
+            <th style="padding:5px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#444;font-weight:400">Colour</th>
+            <th style="padding:5px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#C9A84C;font-weight:400">WSP</th>
+            <th style="padding:5px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#444;font-weight:400">Qty</th>
+            <th style="padding:5px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#fff;font-weight:400">Total</th>
+            <th style="width:28px;padding:5px 6px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((item, idx) => {
+            const lineStd = parseFloat(item.wholesale_price||0) * item.quantity;
+            const lineEff = lineStd * ratio;
+            const bg = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.018)';
+            return `<tr style="border-bottom:1px solid #111;background:${bg}">
+              <td style="padding:5px 10px">
+                <div style="width:36px;height:46px;overflow:hidden;background:#111;flex-shrink:0">
+                  <img src="${item.image||''}" alt="" style="width:100%;height:100%;object-fit:cover;filter:grayscale(30%);display:block" onerror="this.style.display='none'">
+                </div>
+              </td>
+              <td style="padding:5px 10px">
+                <p style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#d4d4d8;line-height:1.25">${item.name||''}</p>
+                <p style="font-size:8.5px;color:#555;margin-top:1px;font-family:'DM Mono',monospace">${item.sku||''}</p>
+              </td>
+              <td style="padding:5px 10px;font-size:10px;color:#666">${item.size||'—'}</td>
+              <td style="padding:5px 10px;font-size:10px;color:#666">${item.color||'—'}</td>
+              <td style="padding:5px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:#C9A84C">$${formatPrice(parseFloat(item.wholesale_price||0))}</td>
+              <td style="padding:5px 10px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:#aaa">${item.quantity}</td>
+              <td style="padding:5px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:${tierColor};font-weight:600">$${formatPrice(lineEff)}</td>
+              <td style="padding:5px 6px;text-align:center">
+                <button onclick="removeFromCart('${item.variant_id}')"
+                  style="background:none;border:none;color:#333;cursor:pointer;font-size:11px;padding:2px;transition:color .15s"
+                  onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#333'">✕</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ── Dynamic Sidebar Filters ────────────────────────────────────────────────────
+function buildDynamicFilters(productList) {
+  if (!productList || !productList.length) return;
+
+  // Extract unique values
+  const cats    = new Set();
+  const seasons = new Set();
+  const colors  = new Set();
+  let   minWsp  = Infinity;
+  let   maxWsp  = 0;
+
+  productList.forEach(p => {
+    if (p.category) cats.add(p.category);
+    if (p.season)   seasons.add(p.season);
+    if (p.color)    colors.add(p.color);
+    const wsp = parseFloat(p.wholesale_price || 0);
+    if (wsp > 0) {
+      if (wsp < minWsp) minWsp = wsp;
+      if (wsp > maxWsp) maxWsp = wsp;
+    }
+  });
+
+  // Update category filter list (add any new categories not in the default list)
+  const defaultCats = new Set(['Womenswear','Menswear','Accessories','Footwear','Denim','Activewear']);
+  const extraCats   = [...cats].filter(c => !defaultCats.has(c)).sort();
+  const catContainer = document.getElementById('category-filters');
+  if (catContainer && extraCats.length) {
+    // Remove any previously injected dynamic ones
+    catContainer.querySelectorAll('.dynamic-cat').forEach(el => el.remove());
+    extraCats.forEach(cat => {
+      const label = document.createElement('label');
+      label.className = 'dynamic-cat flex items-center gap-2 text-xs text-zinc-400 cursor-pointer hover:text-white';
+      label.innerHTML = `<input type="radio" name="category" value="${cat}" onchange="applyFilters()" class="accent-gold-500"> ${cat}`;
+      catContainer.appendChild(label);
+    });
+  }
+
+  // Season pills
+  const seasonPillsEl = document.getElementById('season-pills');
+  if (seasonPillsEl && seasons.size) {
+    seasonPillsEl.innerHTML = [...seasons].sort().map(s =>
+      `<button onclick="setSeasonFilter('${s}')"
+        style="font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:0.08em;border:1px solid #222;padding:2px 8px;cursor:pointer;background:transparent;color:#555;transition:all .15s;text-transform:uppercase"
+        onmouseover="this.style.borderColor='rgba(201,168,76,0.5)';this.style.color='#C9A84C'"
+        onmouseout="this.style.borderColor='#222';this.style.color='#555'">${s}</button>`
+    ).join('');
+  }
+
+  // Price range hint
+  const priceRangeEl = document.getElementById('sidebar-price-range');
+  if (priceRangeEl && minWsp !== Infinity) {
+    priceRangeEl.textContent = `Range: $${Math.floor(minWsp)} – $${Math.ceil(maxWsp)}`;
+  }
+
+  // Color pills (if ≤ 12 unique colors)
+  const colorSection = document.getElementById('sidebar-color-section');
+  const colorPills   = document.getElementById('color-pills');
+  if (colorSection && colorPills && colors.size > 0 && colors.size <= 14) {
+    colorSection.classList.remove('hidden');
+    colorPills.innerHTML = [...colors].sort().map(c =>
+      `<button onclick="setColorFilter('${c}')"
+        style="font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:0.08em;border:1px solid #222;padding:2px 7px;cursor:pointer;background:transparent;color:#555;transition:all .15s;text-transform:capitalize"
+        onmouseover="this.style.borderColor='rgba(201,168,76,0.5)';this.style.color='#C9A84C'"
+        onmouseout="this.style.borderColor='#222';this.style.color='#555'">${c}</button>`
+    ).join('');
+  }
+
+  // Show AI badge
+  const aiBadge = document.getElementById('sidebar-ai-badge');
+  if (aiBadge) aiBadge.classList.remove('hidden');
+}
+
+function setSeasonFilter(s) {
+  document.getElementById('season-filter').value = s;
+  filters.season = s;
+  loadProducts(true);
+}
+
+function setColorFilter(c) {
+  filters.color = c;
+  loadProducts(true);
+}
+
+// renderProducts is already defined above — we hook into it via the existing call chain
+// by calling buildDynamicFilters from loadProducts() after the render call
+</script>
+</body>
+</html>

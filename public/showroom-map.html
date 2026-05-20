@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion GPS | Linezheets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; color: #fff; font-family: sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        /* Pulsing animation for active Fashion Weeks */
+        .pulse-marker {
+            width: 14px; height: 14px;
+            background: #fff; border: 2px solid #000; border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+            animation: pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+            cursor: pointer;
+        }
+        @keyframes pulse {
+            to { box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); }
+        }
+        .mapboxgl-popup-content {
+            background: #000 !important; color: #fff !important;
+            border: 1px solid #27272a !important; border-radius: 0px !important; padding: 15px !important;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-80 bg-black border-r border-zinc-800 z-10 flex flex-col justify-between p-6">
+        <div>
+            <div class="text-xs tracking-widest text-zinc-500 uppercase mb-1">Live Global Hub</div>
+            <h1 class="text-xl font-bold tracking-tighter uppercase mb-6">Fashion GPS</h1>
+            
+            <div class="space-y-3">
+                <button onclick="flyToHub([2.3522, 48.8566], 13)" class="w-full text-left bg-zinc-950 border border-zinc-800 p-3 hover:border-white transition flex justify-between items-center">
+                    <div>
+                        <p class="text-sm font-bold">PARIS</p>
+                        <p class="text-[10px] text-zinc-500">PFW FW26 Active</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                </button>
+                
+                <button onclick="flyToHub([9.1900, 45.4642], 13)" class="w-full text-left bg-zinc-950 border border-zinc-800 p-3 hover:border-white transition flex justify-between items-center">
+                    <div>
+                        <p class="text-sm font-bold">MILAN</p>
+                        <p class="text-[10px] text-zinc-500">Showrooms Open</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
+                </button>
+
+                <button onclick="flyToHub([-74.0060, 40.7128], 11)" class="w-full text-left bg-zinc-950 border border-zinc-800 p-3 hover:border-white transition flex justify-between items-center">
+                    <div>
+                        <p class="text-sm font-bold">NEW YORK</p>
+                        <p class="text-[10px] text-zinc-500">Next Market Window</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="border-t border-zinc-800 pt-4 text-[10px] text-zinc-500">
+            MAPBOX ENGINE // ACHROMATIC THEME
+        </div>
+    </aside>
+
+    <div class="flex-1 relative">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // Initialize Mapbox with a sleek Dark/Minimalist style
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZGV2LWxpbmV6aGVldHMiLCJhIjoiY2xwOXg0bXg3MDNidjNpcXBtM3pndTNpYyJ9.PlaceholderToken'; // Claude will update this token
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11', // High contrast monochrome fallback
+            center: [2.3522, 48.8566], // Defaulting straight to Paris
+            zoom: 2.5,
+            pitch: 45
+        });
+
+        // Add Paris Live Showroom Marker
+        const el = document.createElement('div');
+        el.className = 'pulse-marker';
+
+        new mapboxgl.Marker(el)
+            .setLngLat([2.3522, 48.8566])
+            .setPopup(new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+                <h3 class="font-bold text-sm uppercase mb-1">Paris Showroom Hub</h3>
+                <p class="text-xs text-zinc-400 mb-2">Rue Saint-Honoré, 1er Arr.</p>
+                <div class="text-[10px] bg-zinc-900 border border-zinc-800 p-2">
+                    <span class="text-white font-bold">6 Brands</span> exhibiting live inventory right now.
+                </div>
+            `))
+            .addTo(map);
+
+        function flyToHub(coords, zoomLevel) {
+            map.flyTo({
+                center: coords,
+                zoom: zoomLevel,
+                essential: true,
+                speed: 1.2
+            });
+        }
+    </script>
+</body>
+</html>
