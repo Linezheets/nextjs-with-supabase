@@ -9,3 +9,4 @@ public/js/env.js
 uploads/
 tmp/
 test-data/
+*.tsbuildinfo
