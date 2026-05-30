@@ -9,7 +9,7 @@ const path     = require('path');
 const multer   = require('multer');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const { createClient } = require('@supabasesupabase-js');
+const { createClient } = require('@supabase/supabase-js');
 const Anthropic        = require('@anthropic-ai/sdk');
 const crypto           = require('crypto');
 
