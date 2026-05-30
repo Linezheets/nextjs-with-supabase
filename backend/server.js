@@ -12,6 +12,84 @@ const jwt      = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const Anthropic        = require('@anthropic-ai/sdk');
 const crypto           = require('crypto');
+const nodemailer       = require('nodemailer');
+
+// ── Email transport ────────────────────────────────────────────────────────────
+const emailTransport = process.env.SMTP_HOST ? nodemailer.createTransport({
+  host  : process.env.SMTP_HOST,
+  port  : Number(process.env.SMTP_PORT ?? 587),
+  secure: Number(process.env.SMTP_PORT ?? 587) === 465,
+  auth  : { user: process.env.SMTP_USER ?? '', pass: process.env.SMTP_PASS ?? '' },
+}) : null;
+
+const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Linezheets <noreply@linezheets.com>';
+
+async function sendOrderConfirmation(toEmail, order) {
+  if (!emailTransport) {
+    console.warn('[email] SMTP not configured — skipping order confirmation');
+    return;
+  }
+  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  const itemRows = (order.items || []).map(i => {
+    const sizeStr = i.sizes
+      ? Object.entries(i.sizes).map(([s, q]) => `${s}×${q}`).join(', ')
+      : `Qty ${i.total_qty ?? i.quantity ?? 0}`;
+    return `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name || i.title || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#888;">${i.brand_name || ''}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#888;">${sizeStr}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right;">${i.wsp_usd ? fmt(i.wsp_usd) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#fafafa;font-family:system-ui,sans-serif;color:#111;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:40px 20px;">
+<table width="600" cellpadding="0" cellspacing="0" style="margin:0 auto;background:#fff;border:1px solid #ebebeb;">
+  <tr><td style="padding:32px 40px 24px;border-bottom:2px solid #111;">
+    <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.5em;text-transform:uppercase;color:#888;">Linezheets</p>
+    <h1 style="margin:0;font-size:22px;font-weight:300;">Order Confirmation</h1>
+  </td></tr>
+  <tr><td style="padding:24px 40px;border-bottom:1px solid #f0f0f0;">
+    <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.3em;color:#aaa;">Order ID</p>
+    <p style="margin:0;font-size:14px;font-family:monospace;">${order.id}</p>
+  </td></tr>
+  <tr><td style="padding:24px 40px;">
+    <table width="100%" style="border-collapse:collapse;">
+      <thead><tr style="background:#fafafa;">
+        <th style="padding:6px 12px;text-align:left;font-size:10px;color:#888;">Style</th>
+        <th style="padding:6px 12px;text-align:left;font-size:10px;color:#888;">Brand</th>
+        <th style="padding:6px 12px;text-align:left;font-size:10px;color:#888;">Sizes</th>
+        <th style="padding:6px 12px;text-align:right;font-size:10px;color:#888;">WSP</th>
+      </tr></thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+  </td></tr>
+  <tr><td style="padding:16px 40px 24px;border-top:2px solid #111;">
+    <table width="100%"><tr>
+      <td style="font-size:11px;text-transform:uppercase;letter-spacing:0.3em;color:#888;">Total (WSP)</td>
+      <td style="text-align:right;font-size:20px;font-weight:300;">${fmt(order.total_usd || 0)}</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:20px 40px;background:#fafafa;border-top:1px solid #f0f0f0;text-align:center;">
+    <p style="margin:0;font-size:10px;color:#bbb;">Linezheets · Private Wholesale · <a href="https://linezheets.com" style="color:#c9a84c;text-decoration:none;">linezheets.com</a></p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`;
+
+  try {
+    await emailTransport.sendMail({
+      from   : EMAIL_FROM,
+      to     : toEmail,
+      subject: `Order Confirmed — ${order.id}`,
+      html,
+      text   : `Your Linezheets order ${order.id} has been confirmed. Total: ${fmt(order.total_usd || 0)}`,
+    });
+    console.log(`📧 Order confirmation sent to ${toEmail} for ${order.id}`);
+  } catch (err) {
+    console.error('[email] send failed:', err.message);
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'lz-dev-jwt-secret-2025';
 
@@ -3603,6 +3681,11 @@ app.post('/api/buyers/orders', async (req, res) => {
     const { data, error } = await supabase.from('buyer_orders').insert([order]).select().single();
     if (error) throw error;
     console.log(`📋 Order ${order.id} submitted — ${items.length} items — $${order.total_usd}`);
+
+    // Send confirmation email (non-blocking)
+    const buyerEmail = buyer.email;
+    if (buyerEmail) sendOrderConfirmation(buyerEmail, data || order).catch(() => {});
+
     res.json({ success: true, order: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
