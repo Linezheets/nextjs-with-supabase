@@ -121,7 +121,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from   : `${campaign.brand_name} via MXLLA <alerts@mxlla.com>`,
+          from   : `${campaign.brand_name} via Linezheets <alerts@linezheets.com>`,
           to     : [buyer.email],
           subject: campaign.subject,
           html,
