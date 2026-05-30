@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import StoreClient from './StoreClient';
 
-export const metadata = { title: 'My Store — MXLLA Buyer Portal' };
+export const metadata = { title: 'My Store — Linezheets Buyer Portal' };
 
 export default async function StorePage() {
   const supabase = await createClient();
@@ -35,7 +35,7 @@ export default async function StorePage() {
           <a href="/" style={{
             fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
-          }}>MXLLA</a>
+          }}>LINEZHEETS</a>
           <span className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>Buyer Portal</span>
           <div className="flex items-center gap-6">
             {[
@@ -112,11 +112,11 @@ export default async function StorePage() {
       <footer className="border-t border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-10 flex items-center justify-between gap-6">
           <div>
-            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>MXLLA Agency</p>
+            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>Linezheets</p>
             <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc', fontFamily: 'system-ui' }}>Private Showroom · Authorised Retailers Only</p>
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#d8d8d8', fontFamily: 'system-ui' }}>
-            © {new Date().getFullYear()} MXLLA · <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            © {new Date().getFullYear()} LINEZHEETS · <span style={{ color: '#c9a84c' }}>Linezheets</span>
           </p>
         </div>
       </footer>
