@@ -83,7 +83,7 @@ export default async function InquiryThreadPage({
           <Link href="/" style={{
             fontFamily: 'var(--font-serif), Georgia, serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
-          }}>MXLLA</Link>
+          }}>LINEZHEETS</Link>
           <Link href="/inquiries"
                 className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
                 style={{ color: '#888' }}>
