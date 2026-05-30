@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ReportsClient from './ReportsClient';
 
-export const metadata = { title: 'Brand Reports — MXLLA' };
+export const metadata = { title: 'Brand Reports — Linezheets' };
 
 export default async function BrandReportsPage() {
   const supabase = await createClient();

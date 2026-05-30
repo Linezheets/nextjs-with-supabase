@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import OrdersClient from './OrdersClient';
 
-export const metadata = { title: 'Orders — MXLLA Buyer Portal' };
+export const metadata = { title: 'Orders — Linezheets Buyer Portal' };
 
 export default async function OrdersPage() {
   const supabase = await createClient();
@@ -25,12 +25,13 @@ export default async function OrdersPage() {
           <a href="/" style={{
             fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
-          }}>MXLLA</a>
+          }}>LINEZHEETS</a>
           <span className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>Buyer Portal</span>
           <div className="flex items-center gap-6">
             <a href="/dashboard"                  className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Dashboard</a>
             <a href="/dashboard/favorites"        className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Favourites</a>
             <a href="/dashboard/integrations"     className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Integrations</a>
+            <a href="/dashboard/profile"          className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Profile</a>
             <a href="/"                           className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Showroom</a>
             <form action="/api/auth/signout" method="post">
               <button type="submit" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Sign Out</button>
@@ -67,11 +68,11 @@ export default async function OrdersPage() {
       <footer className="border-t border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-10 flex items-center justify-between gap-6">
           <div>
-            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>MXLLA Agency</p>
+            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>Linezheets</p>
             <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc', fontFamily: 'system-ui' }}>Private Showroom · Authorised Retailers Only</p>
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#d8d8d8', fontFamily: 'system-ui' }}>
-            © {new Date().getFullYear()} MXLLA · <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            © {new Date().getFullYear()} Linezheets · <span style={{ color: '#c9a84c' }}>Linezheets</span>
           </p>
         </div>
       </footer>

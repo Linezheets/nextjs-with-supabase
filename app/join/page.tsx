@@ -94,7 +94,7 @@ export default function JoinPage() {
             fontFamily: 'var(--font-serif), Georgia, serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
           }}>
-            MXLLA
+            LINEZHEETS
           </Link>
           <p className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>
             Buyer Registration
@@ -129,7 +129,7 @@ export default function JoinPage() {
             </h2>
             <p className="text-[13px] leading-[1.9]" style={{ color: '#555' }}>
               Register your business for free and get instant access to the
-              MXLLA private wholesale showroom.
+              Linezheets private wholesale showroom.
             </p>
           </div>
 
