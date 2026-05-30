@@ -9,7 +9,7 @@ const path     = require('path');
 const multer   = require('multer');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabasesupabase-js');
 const Anthropic        = require('@anthropic-ai/sdk');
 const crypto           = require('crypto');
 
@@ -55,6 +55,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 const session = require('express-session');
 const passport = require('./config/passport'); // Automatically executes your passport strategies
 
@@ -80,7 +81,7 @@ function ensureAuthenticated(req, res, next) {
 }
 
 // 4. Secure B2B Dashboard Analytics Endpoint
-app.get('/dashboard', ensureAuthenticated, (req, res) => {
+app.get('/api/auth/session-profile', ensureAuthenticated, (req, res) => {
   const profile = req.user;
   res.json({
     message: "Session authenticated successfully via social login",
@@ -95,7 +96,6 @@ app.get('/dashboard', ensureAuthenticated, (req, res) => {
     }
   });
 });
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Return 400 for malformed JSON instead of crashing with a 500
