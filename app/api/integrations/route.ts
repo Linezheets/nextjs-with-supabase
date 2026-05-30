@@ -1,20 +1,42 @@
+// app/api/integrations/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin'; // Your admin client from Step 2 of the last message
 
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from('integration_configs')
-    .select('platform, active, connected_at, last_sync_at, config, shop_domain, external_id')
-    .eq('brand_id', user.id);
+  try {
+    // 1. Fetch user-configured integrations (Existing Logic)
+    const { data: userConfigs, error: configError } = await supabase
+      .from('integration_configs')
+      .select('platform, active, connected_at, last_sync_at, config, shop_domain, external_id')
+      .eq('brand_id', user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ integrations: data ?? [] });
+    if (configError) return NextResponse.json({ error: configError.message }, { status: 500 });
+
+    // 2. Fetch global platform integrations catalog using the Admin Client (New Logic)
+    const { data: globalIntegrations, error: globalError } = await supabaseAdmin
+      .from('integrations')
+      .select('*');
+
+    if (globalError) return NextResponse.json({ error: globalError.message }, { status: 500 });
+
+    // Return both so your front-end layout can map configured settings over the global options catalog
+    return NextResponse.json({ 
+      integrations: userConfigs ?? [],
+      catalog: globalIntegrations ?? [] 
+    });
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Internal Server Error';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
+// ── KEEP YOUR EXISTING POST AND DELETE ROUTINES COMPLETELY UNTOUCHED ──────────
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -22,7 +44,6 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { platform, access_token, shop_domain, external_id, config } = body;
-
   if (!platform) return NextResponse.json({ error: 'platform required' }, { status: 400 });
 
   const { data, error } = await supabase
