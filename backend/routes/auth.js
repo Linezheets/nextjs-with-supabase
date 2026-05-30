@@ -184,5 +184,47 @@ router.post('/change-password', authenticate, async (req, res, next) => {
     res.json({ message: 'Password updated successfully' });
   } catch (err) { next(err); }
 });
+// ... (Your existing brand/buyer registration and login routes stay exactly as they are) ...
+
+// ── ADD PASSPORT SOCIAL ROUTING ENDPOINTS BELOW ──────────────────────────────
+const passport = require('passport');
+
+// Centralized error boundary for authentication pipeline failures
+const handleAuthFailure = (err, req, res, next) => {
+  console.error("OAuth Execution Failure:", err);
+  res.redirect('/login?error=AuthenticationFailed');
+};
+
+// ── 1. GOOGLE ROUTING ────────────────────────────────────────────────────────
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login?error=GoogleAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// ── 2. FACEBOOK ROUTING ──────────────────────────────────────────────────────
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get('/facebook/callback', 
+  passport.authenticate('facebook', { failureRedirect: '/login?error=FacebookAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// ── 3. MICROSOFT ROUTING ─────────────────────────────────────────────────────
+router.get('/microsoft', passport.authenticate('microsoft'));
+router.get('/microsoft/callback', 
+  passport.authenticate('microsoft', { failureRedirect: '/login?error=MicrosoftAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// ── 4. INSTAGRAM ROUTING ─────────────────────────────────────────────────────
+router.get('/instagram', passport.authenticate('instagram', { scope: ['user_profile'] }));
+router.get('/instagram/callback', 
+  passport.authenticate('instagram', { failureRedirect: '/login?error=InstagramAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+router.use(handleAuthFailure);
+
+// This line should remain at the absolute bottom of your file!
 
 module.exports = router;
