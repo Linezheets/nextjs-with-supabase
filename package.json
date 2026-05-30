@@ -12,6 +12,10 @@
     "db:seed": "node backend/database/seed.js"
   },
   "dependencies": {
+    "node-ipinfo": "^3.4.0",
+"passport-facebook": "^3.0.0",
+"passport-microsoft": "^1.0.0",
+"passport-instagram": "^1.0.0",
     "@anthropic-ai/sdk": "^0.96.0",
     "@aws-sdk/client-s3": "^3.490.0",
     "@base-ui/react": "^1.4.1",
