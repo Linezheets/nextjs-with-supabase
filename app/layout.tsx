@@ -21,8 +21,8 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title      : 'MXLLA Agency — Private Showroom',
-  description: 'VIP wholesale showroom for authorised retailers.',
+    title       : 'Linezheets — AI-Powered Luxury Wholesale Platform',
+    description: 'Linezheets connects authorised wholesale buyers with designer houses — AI-powered showroom, stock management, and merchandising.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
