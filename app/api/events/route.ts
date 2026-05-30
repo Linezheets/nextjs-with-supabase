@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
-const AGENCY_EMAILS = ['info@mxlla.com'];
+const AGENCY_EMAILS = ['info@linezheets.com'];
 
 // ── GET /api/events — public list ─────────────────────────────────────────────
 export async function GET(req: NextRequest) {
