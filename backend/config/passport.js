@@ -141,7 +141,7 @@ passport.use(new MicrosoftStrategy({
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
-      const email = profile.emails[0].value || profile.userPrincipalName;
+      const email = (profile.emails?.[0]?.value) || profile.userPrincipalName || profile.id + '@microsoft.com';
       const fullName = profile.displayName;
       const user = await handleUserUpsert(req, 'microsoft', profile.id, email, fullName, null);
       return done(null, user);
