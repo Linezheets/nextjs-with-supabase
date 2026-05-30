@@ -45,7 +45,7 @@ function LoginForm() {
                letterSpacing: '0.5em',
                fontWeight  : 400,
              }}>
-            MXLLA
+            LINEZHEETS
           </a>
           <span className="text-[8px] uppercase tracking-[0.5em]"
                 style={{ color: '#bbb' }}>
@@ -154,7 +154,7 @@ function LoginForm() {
           </p>
           <p className="text-[7.5px] uppercase tracking-[0.2em]"
              style={{ color: '#d8d8d8' }}>
-            © {new Date().getFullYear()} MXLLA ·{' '}
+            © {new Date().getFullYear()} Linezheets ·{' '}
             <span style={{ color: '#c9a84c' }}>Linezheets</span>
           </p>
         </div>
