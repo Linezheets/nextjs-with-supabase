@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Fashion Events — MXLLA',
+  title: 'Fashion Events — Linezheets',
   description: 'Discover global fashion weeks, tradeshows, showrooms, and runway events.',
 };
 
-const AGENCY_EMAILS = ['info@mxlla.com'];
+const AGENCY_EMAILS = ['info@linezheets.com'];
 
 export default async function FashionEventsLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -35,7 +35,7 @@ export default async function FashionEventsLayout({ children }: { children: Reac
             color: '#C9A84C', textDecoration: 'none',
             marginRight: 8,
           }}>
-            MXLLA
+            LINEZHEETS
           </Link>
 
           <Link href="/fashionevents" style={{
@@ -104,7 +104,7 @@ export default async function FashionEventsLayout({ children }: { children: Reac
           letterSpacing: '0.3em', textTransform: 'uppercase',
           color: 'rgba(245,240,232,0.2)',
         }}>
-          © {new Date().getFullYear()} MXLLA Agency · Fashion Events Platform
+          © {new Date().getFullYear()} Linezheets · Fashion Events Platform
         </p>
       </footer>
     </div>
