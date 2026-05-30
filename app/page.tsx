@@ -10,7 +10,7 @@ function safeStr(raw: unknown, fallback = ''): string {
   if (typeof raw === 'string') return raw;
   if (typeof raw === 'number') return String(raw);
   return fallback;
-}
+
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -38,10 +38,10 @@ function NavBar({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none select-none">
           <span className="block font-normal"
                 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '17px', letterSpacing: '0.6em' }}>
-            MXLLA
+            LINEZHEETS
           </span>
           <span className="block text-[7px] uppercase tracking-[0.6em] mt-[3px]" style={{ color: '#bbb' }}>
-            Agency
+            Platform
           </span>
         </div>
 
@@ -432,7 +432,7 @@ export default async function LandingPage() {
               marginBottom: '8px',
               fontWeight  : 400,
             }}>
-              MXLLA
+              LINEZHEETS
             </p>
             <p className="text-[7.5px] uppercase tracking-[0.3em] mb-6" style={{ color: '#ccc' }}>
               Agency · Linezheets Platform
@@ -489,7 +489,7 @@ export default async function LandingPage() {
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 pb-8
                         flex items-center justify-between border-t border-zinc-50 pt-8">
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#ddd' }}>
-            © {new Date().getFullYear()} MXLLA Agency
+            © {new Date().getFullYear()} Linezheets
           </p>
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#ddd' }}>
             Powered by <span style={{ color: '#c9a84c' }}>Linezheets</span>
