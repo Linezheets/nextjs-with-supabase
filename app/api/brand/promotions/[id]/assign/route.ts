@@ -124,7 +124,7 @@ export async function POST(
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
           body: JSON.stringify({
-            from: 'Linezheets <alerts@mxlla.com>',
+            from: 'Linezheets <alerts@linezheets.com>',
             to: buyer.email,
             subject: `${promo.headline} — Exclusive Offer from ${promo.brand_name}`,
             html,
