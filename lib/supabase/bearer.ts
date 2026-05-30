@@ -16,7 +16,7 @@ export async function getUserFromRequest(req: NextRequest) {
   if (bearerToken) {
     const supabase = createAnonClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     );
     const { data: { user }, error } = await supabase.auth.getUser(bearerToken);
     if (!error && user) return { user, supabase };

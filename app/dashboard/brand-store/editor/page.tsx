@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import BrandEditorClient from './BrandEditorClient';
 
-export const metadata = { title: 'Brand Store Editor — MXLLA' };
+export const metadata = { title: 'Brand Store Editor — Linezheets' };
 
 export default async function BrandEditorPage() {
   const supabase = await createClient();

@@ -186,5 +186,27 @@ export async function POST(req: NextRequest) {
     await setBlob(user.id, 'cart', []);
   } catch { /* cart cleanup is non-critical */ }
 
+  // ── 5. Send confirmation email (non-blocking) ─────────────────────────────
+  try {
+    const { sendEmail, orderConfirmationHtml } = await import('@/lib/email');
+    const buyerEmail = user.email;
+    if (buyerEmail) {
+      const html = orderConfirmationHtml({
+        id              : orderId,
+        buyer_name      : user.email ?? user.id,
+        total_usd       : total_usd ?? 0,
+        items           : taggedItems as Parameters<typeof orderConfirmationHtml>[0]['items'],
+        fulfillment_type: orderFulfillmentType,
+        terms,
+      });
+      await sendEmail({
+        to     : buyerEmail,
+        subject: `Order Confirmed — ${orderId}`,
+        html,
+        text   : `Your Linezheets order ${orderId} has been confirmed. Total: $${total_usd ?? 0}`,
+      });
+    }
+  } catch { /* email is non-critical */ }
+
   return NextResponse.json({ order, allocated: result.allocated });
 }

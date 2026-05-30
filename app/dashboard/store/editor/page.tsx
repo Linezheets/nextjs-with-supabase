@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import EditorClient from './EditorClient';
 
-export const metadata = { title: 'Store Editor — MXLLA' };
+export const metadata = { title: 'Store Editor — Linezheets' };
 
 export default async function EditorPage() {
   const supabase = await createClient();

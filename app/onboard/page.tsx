@@ -55,7 +55,7 @@ export default function OnboardPage() {
     <div className="min-h-screen bg-white" style={{ fontFamily: 'system-ui, sans-serif' }}>
       <header className="border-b border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 flex items-center h-[60px]">
-          <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 15, letterSpacing: '0.5em' }}>MXLLA</span>
+          <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 15, letterSpacing: '0.5em' }}>LINEZHEETS</span>
           <span className="ml-auto text-[8px] uppercase tracking-[0.5em] text-zinc-300">Setup Profile</span>
         </div>
       </header>

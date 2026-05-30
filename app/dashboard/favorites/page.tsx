@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FavoritesClient from './FavoritesClient';
 
-export const metadata = { title: 'Favourites — MXLLA Buyer Portal' };
+export const metadata = { title: 'Favourites — Linezheets Buyer Portal' };
 
 export default async function FavoritesPage() {
   const supabase = await createClient();
@@ -38,7 +38,7 @@ export default async function FavoritesPage() {
             fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
           }}>
-            MXLLA
+            LINEZHEETS
           </a>
           <span className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>
             Buyer Portal
@@ -46,6 +46,7 @@ export default async function FavoritesPage() {
           <div className="flex items-center gap-6">
             <a href="/dashboard" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>Dashboard</a>
             <a href="/dashboard/integrations" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>Integrations</a>
+            <a href="/dashboard/profile" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>Profile</a>
             <a href="/" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>Showroom</a>
             <form action="/api/auth/signout" method="post">
               <button type="submit" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>Sign Out</button>
@@ -88,11 +89,11 @@ export default async function FavoritesPage() {
       <footer className="border-t border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-10 flex items-center justify-between gap-6">
           <div>
-            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>MXLLA Agency</p>
+            <p style={{ fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif', fontSize: '13px', letterSpacing: '0.5em', marginBottom: '5px', fontWeight: 400 }}>Linezheets</p>
             <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc', fontFamily: 'system-ui, sans-serif' }}>Private Showroom · Authorised Retailers Only</p>
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em] text-right" style={{ color: '#d8d8d8', fontFamily: 'system-ui, sans-serif' }}>
-            © {new Date().getFullYear()} MXLLA · <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            © {new Date().getFullYear()} Linezheets · <span style={{ color: '#c9a84c' }}>Linezheets</span>
           </p>
         </div>
       </footer>

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import IntegrationsClient from './IntegrationsClient';
 
-export const metadata = { title: 'Integrations — MXLLA Buyer Portal' };
+export const metadata = { title: 'Integrations — Linezheets Buyer Portal' };
 
 export default async function IntegrationsPage() {
   const supabase = await createClient();
@@ -23,7 +23,7 @@ export default async function IntegrationsPage() {
                letterSpacing: '0.5em',
                fontWeight  : 400,
              }}>
-            MXLLA
+            LINEZHEETS
           </a>
 
           <span className="text-[8px] uppercase tracking-[0.5em]"
@@ -36,6 +36,11 @@ export default async function IntegrationsPage() {
                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
                style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
               Dashboard
+            </a>
+            <a href="/dashboard/profile"
+               className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
+               style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
+              Profile
             </a>
             <a href="/"
                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
@@ -99,7 +104,7 @@ export default async function IntegrationsPage() {
               marginBottom: '5px',
               fontWeight  : 400,
             }}>
-              MXLLA Agency
+              Linezheets
             </p>
             <p className="text-[7.5px] uppercase tracking-[0.28em]"
                style={{ color: '#ccc', fontFamily: 'system-ui, sans-serif' }}>
@@ -108,7 +113,7 @@ export default async function IntegrationsPage() {
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em] text-right"
              style={{ color: '#d8d8d8', fontFamily: 'system-ui, sans-serif' }}>
-            © {new Date().getFullYear()} MXLLA ·{' '}
+            © {new Date().getFullYear()} Linezheets ·{' '}
             <span style={{ color: '#c9a84c' }}>Linezheets</span>
           </p>
         </div>
