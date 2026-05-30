@@ -1,6 +1,5 @@
 // backend/utils/geo.js
 const IPInfoWrapper = require("node-ipinfo");
-require('dotenv').config();
 
 // Pass the token directly into the default factory function
 const ipinfo = IPInfoWrapper(process.env.IPINFO_TOKEN);
