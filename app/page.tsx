@@ -10,7 +10,7 @@ function safeStr(raw: unknown, fallback = ''): string {
   if (typeof raw === 'string') return raw;
   if (typeof raw === 'number') return String(raw);
   return fallback;
-
+}
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
