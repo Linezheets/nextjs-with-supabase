@@ -264,4 +264,5 @@ router.get('/instagram/callback',
 );
 
 router.use(handleAuthFailure);
+
 module.exports = router;
