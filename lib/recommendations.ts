@@ -235,7 +235,7 @@ export function buildRecommendationEmail(p: RecommendationEmailProps): string {
         <tr>
           <td>
             <p style="margin:0;font-size:8px;font-family:Georgia,serif;letter-spacing:0.4em;color:#bbb;">
-              MXLLA PRIVATE SHOWROOM
+              LINEZHEETS PRIVATE SHOWROOM
             </p>
           </td>
           <td align="right">
@@ -380,7 +380,7 @@ export function buildPromotionEmail(p: PromotionEmailProps): string {
         ${esc(p.description || `As one of our valued ${p.tier} accounts, we're extending this exclusive offer to you.`)}
       </p>
       <p style="margin:20px 0 0;font-size:11px;color:#888;font-family:system-ui,sans-serif;line-height:1.7;">
-        Log in to the MXLLA Private Showroom to apply your discount. It will be activated automatically when you browse the marketplace.
+        Log in to the Linezheets Private Showroom to apply your discount. It will be activated automatically when you browse the marketplace.
       </p>
     </td></tr>
 
@@ -411,7 +411,7 @@ export function buildPromotionEmail(p: PromotionEmailProps): string {
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td>
-            <p style="margin:0;font-size:8px;font-family:Georgia,serif;letter-spacing:0.4em;color:#bbb;">MXLLA PRIVATE SHOWROOM</p>
+            <p style="margin:0;font-size:8px;font-family:Georgia,serif;letter-spacing:0.4em;color:#bbb;">LINEZHEETS PRIVATE SHOWROOM</p>
           </td>
           <td align="right">
             <p style="margin:0;font-size:8px;color:#ccc;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:0.2em;">
