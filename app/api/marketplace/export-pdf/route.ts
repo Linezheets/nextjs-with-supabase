@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
     size: 'A4',
     margin: 0,
     info: {
-      Title    : 'MXLLA Linesheet',
-      Author   : 'MXLLA Agency',
+      Title    : 'Linezheets Linesheet',
+      Author   : 'Linezheets',
       Subject  : 'Wholesale Product Selection',
       Creator  : 'Linezheets Platform',
     },
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 
   // Brand wordmark
   doc.font(SERIF).fontSize(20).fillColor(BLACK)
-     .text('MXLLA', MARGIN, 80, { characterSpacing: 12 });
+     .text('Linezheets', MARGIN, 80, { characterSpacing: 12 });
 
   doc.font(MONO).fontSize(6).fillColor(GREY)
      .text('PRIVATE WHOLESALE SHOWROOM', MARGIN, 108, { characterSpacing: 3 });
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     // Page header
     doc.rect(MARGIN, 30, W - MARGIN * 2, 0.5).fill(GOLD);
-    doc.font(SERIF).fontSize(9).fillColor(BLACK).text('MXLLA', MARGIN, 40, { characterSpacing: 6 });
+    doc.font(SERIF).fontSize(9).fillColor(BLACK).text('Linezheets', MARGIN, 40, { characterSpacing: 6 });
     doc.font(MONO).fontSize(6).fillColor(GREY).text('WHOLESALE SELECTION', 0, 40, { align: 'right', width: W - MARGIN, characterSpacing: 2 });
 
     const pageProducts = products.slice(pageIdx * PER_PAGE, (pageIdx + 1) * PER_PAGE);
