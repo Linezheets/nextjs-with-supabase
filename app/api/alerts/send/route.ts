@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from   : 'MXLLA Showroom <alerts@mxlla.com>',
+            from   : 'Linezheets <alerts@linezheets.com>',
             to     : [email],
             subject: title,
             html   : buildEmailHtml({ title, body: body ?? '', item_label: item_label ?? item_id, alert_type }),
@@ -113,7 +113,7 @@ function buildEmailHtml({ title, body, item_label, alert_type }: {
       <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-top:2px solid ${color};">
         <tr><td style="padding:40px 48px 32px;">
           <p style="margin:0 0 6px;font-size:9px;text-transform:uppercase;letter-spacing:0.5em;color:#c9a84c;">
-            MXLLA Private Showroom
+            Linezheets Private Showroom
           </p>
           <h1 style="margin:0 0 24px;font-size:26px;font-weight:400;color:#0a0a0a;line-height:1.15;
                      font-family:Georgia,'Times New Roman',serif;">
@@ -131,7 +131,7 @@ function buildEmailHtml({ title, body, item_label, alert_type }: {
         </td></tr>
         <tr><td style="padding:24px 48px;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:9px;color:#ccc;text-transform:uppercase;letter-spacing:0.3em;">
-            © MXLLA Agency · <span style="color:#c9a84c;">Linezheets</span> ·
+            © Linezheets · <span style="color:#c9a84c;">Linezheets</span> ·
             <a href="https://linezheets.com/dashboard/favorites" style="color:#bbb;text-decoration:none;">
               Manage alerts
             </a>
