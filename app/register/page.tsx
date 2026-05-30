@@ -93,7 +93,7 @@ export default function RegisterPage() {
       <header className="border-b border-white/10">
         <div className="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-[56px]">
           <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', color: '#fff', fontWeight: 400 }}>
-            MXLLA
+            LINEZHEETS
           </Link>
           <p className="text-[7.5px] uppercase tracking-[0.5em]" style={{ color: '#555' }}>Wholesale Platform</p>
           <Link href="/login" className="text-[7.5px] uppercase tracking-[0.4em] hover:opacity-60 transition-opacity" style={{ color: '#888' }}>
