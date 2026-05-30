@@ -187,7 +187,7 @@ export default function ManagePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
               {/* Title */}
               <FormField label="Event Title *" colSpan={2}>
-                <input value={form.title} onChange={f('title')} required style={inputStyle} placeholder="e.g. MXLLA SS27 Showroom" />
+                <input value={form.title} onChange={f('title')} required style={inputStyle} placeholder="e.g. Linezheets SS27 Showroom" />
               </FormField>
               {/* Type */}
               <FormField label="Event Type *">
@@ -224,7 +224,7 @@ export default function ManagePage() {
               </FormField>
               {/* Host */}
               <FormField label="Host / Brand Name">
-                <input value={form.host_name} onChange={f('host_name')} style={inputStyle} placeholder="MXLLA Agency" />
+                <input value={form.host_name} onChange={f('host_name')} style={inputStyle} placeholder="Linezheets" />
               </FormField>
               {/* Season */}
               <FormField label="Season / Event Tag">
