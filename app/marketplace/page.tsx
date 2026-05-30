@@ -43,7 +43,7 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
 
       <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>MXLLA</Link>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>LINEZHEETS</Link>
           <p className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>Marketplace</p>
           <div className="flex items-center gap-5">
             <Link href="/login" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888' }}>Sign In</Link>
@@ -275,7 +275,7 @@ function FullMarketplace({
       {/* Nav */}
       <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>MXLLA</Link>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>LINEZHEETS</Link>
 
           <nav className="flex items-center gap-8">
             <Link href="/marketplace" className="text-[8px] uppercase tracking-[0.4em]" style={{ color: '#111', borderBottom: '1px solid #111', paddingBottom: '1px' }}>Marketplace</Link>
