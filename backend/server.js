@@ -55,6 +55,46 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+const session = require('express-session');
+const passport = require('./config/passport'); // Automatically executes your passport strategies
+
+// 1. Session Middleware Setup (Must be placed BEFORE passport hooks)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'linezheets_dev_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 1000 * 60 * 60 * 24 // 24-hour expiration duration
+  }
+}));
+
+// 2. Initialize Passport Session Pipelines
+app.use(passport.initialize());
+app.use(passport.session());
+
+// 3. Security Guard Middleware for Secured Client Dashboards
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.status(401).json({ error: 'Unauthorized profile state' });
+}
+
+// 4. Secure B2B Dashboard Analytics Endpoint
+app.get('/dashboard', ensureAuthenticated, (req, res) => {
+  const profile = req.user;
+  res.json({
+    message: "Session authenticated successfully via social login",
+    user: {
+      id: profile.id,
+      email: profile.email,
+      name: profile.full_name,
+      avatar: profile.avatar_url,
+      lastLogin: profile.last_login,
+      loginIp: profile.last_login_ip,
+      telemetry: profile.last_login_location // Stores JSONB location metrics from ipinfo
+    }
+  });
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
