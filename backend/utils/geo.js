@@ -1,10 +1,9 @@
 // backend/utils/geo.js
-const IPInfo = require('node-ipinfo');
-require('dotenv').config();
+const IPInfoWrapper = require("node-ipinfo");
+require('dotenv').config(); 
 
-// Initializes the IPInfo client using your secret token
-const ipinfo = new IPInfo(process.env.IPINFO_TOKEN);
-
+// Pass the token directly into the default factory function
+const ipinfo = IPInfoWrapper(process.env.IPINFO_TOKEN);
 /**
  * Extracts and cleans the real client IP address, handling proxy chains securely.
  */
