@@ -226,5 +226,42 @@ router.get('/instagram/callback',
 router.use(handleAuthFailure);
 
 // This line should remain at the absolute bottom of your file!
+// ── PASSPORT MULTI-PROVIDER SOCIAL ROUTING ───────────────────────────────────
+const passport = require('passport');
 
+// Centralized error boundary for authentication pipeline failures
+const handleAuthFailure = (err, req, res, next) => {
+  console.error("OAuth Execution Failure:", err);
+  res.redirect('/login?error=AuthenticationFailed');
+};
+
+// Google OAuth
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login?error=GoogleAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// Facebook OAuth
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get('/facebook/callback', 
+  passport.authenticate('facebook', { failureRedirect: '/login?error=FacebookAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// Microsoft OAuth
+router.get('/microsoft', passport.authenticate('microsoft'));
+router.get('/microsoft/callback', 
+  passport.authenticate('microsoft', { failureRedirect: '/login?error=MicrosoftAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+// Instagram OAuth
+router.get('/instagram', passport.authenticate('instagram', { scope: ['user_profile'] }));
+router.get('/instagram/callback', 
+  passport.authenticate('instagram', { failureRedirect: '/login?error=InstagramAuthFailed' }),
+  (req, res) => res.redirect('/dashboard')
+);
+
+router.use(handleAuthFailure);
 module.exports = router;
