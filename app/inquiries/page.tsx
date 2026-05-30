@@ -53,7 +53,7 @@ export default async function InquiriesPage() {
           <Link href="/" style={{
             fontFamily: 'var(--font-serif), Georgia, serif',
             fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
-          }}>MXLLA</Link>
+          }}>LINEZHEETS</Link>
           <div className="flex items-center gap-8">
             <Link href="/marketplace"
                   className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
