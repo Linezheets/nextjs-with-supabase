@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   // Fire-and-forget — never reveal whether the email exists
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/reset-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://linezheets.com'}/auth/callback?next=/auth/reset-password`,
   }).catch(() => {});
 
   return NextResponse.json({ ok: true });

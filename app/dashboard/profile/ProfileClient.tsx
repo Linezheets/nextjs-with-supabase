@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import MFASection from '@/components/MFASection';
 
 type BuyerProfile = {
   id          : string;
@@ -334,6 +335,12 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Buye
           </Field>
         </div>
       </section>
+
+      <div className="border-t border-zinc-100" />
+
+      <MFASection />
+
+      <div className="border-t border-zinc-100" />
 
       {/* ── Save bar ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-6 pt-4">

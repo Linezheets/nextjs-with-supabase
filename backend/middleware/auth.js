@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
+
 // Verify JWT and attach user to request
 const authenticate = async (req, res, next) => {
   try {
@@ -9,7 +12,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
     const token = authHeader.slice(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const { rows } = await db.query(
       'SELECT id, email, role, first_name, last_name FROM users WHERE id = $1',

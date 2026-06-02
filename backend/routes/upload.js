@@ -12,6 +12,7 @@ const multer  = require('multer');
 const XLSX    = require('xlsx');
 const path    = require('path');
 const fs      = require('fs');
+const { authenticate, requireBrand } = require('../middleware/auth');
 
 // ─── Multer — store uploads in /tmp so nothing persists on disk ──────────────
 const upload = multer({
@@ -193,7 +194,7 @@ function parseNum(val) {
 }
 
 // ─── POST /api/upload/smart-sync ─────────────────────────────────────────────
-router.post('/smart-sync', upload.single('file'), (req, res) => {
+router.post('/smart-sync', authenticate, requireBrand, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded.' });
   }

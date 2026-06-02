@@ -31,7 +31,7 @@ async function getPublicCatalog() {
 
 function NavBar({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
+    <header className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-zinc-100">
       <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center h-[60px]">
 
         {/* Wordmark */}
@@ -118,7 +118,7 @@ export default async function LandingPage() {
         <div className="max-w-4xl py-32">
           <p className="text-[8px] uppercase tracking-[0.7em] mb-10"
              style={{ color: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
-            The Wholesale Intelligence Platform
+            The Digital Linesheet, Reinvented
           </p>
 
           <h1 style={{
@@ -132,14 +132,19 @@ export default async function LandingPage() {
           }}>
             Where Luxury<br />
             Brands Meet<br />
-            <em style={{ color: '#bbb', fontStyle: 'italic' }}>Retail Buyers</em>
+            <em style={{ color: '#bbb', fontStyle: 'italic' }}>Wholesale Buyers</em>
           </h1>
 
-          <p className="text-[15px] leading-[1.9] max-w-lg mb-12"
+          <p className="text-[15px] leading-[1.9] max-w-lg mb-4"
              style={{ color: '#888' }}>
-            Linezheets connects authorised wholesale buyers with designer houses —
+            Linezheets replaces static PDF linesheets with a live, buyer-ready digital catalog —
             combining a private showroom, intelligent stock management, and
             AI-powered merchandising in one platform.
+          </p>
+
+          <p className="text-[13px] leading-[1.8] max-w-lg mb-12"
+             style={{ color: '#bbb', fontFamily: 'var(--font-mono), monospace' }}>
+            Say goodbye to PDF linesheets. Say hello to buyers who actually buy.
           </p>
 
           <div className="flex items-center gap-4 flex-wrap">
@@ -169,6 +174,38 @@ export default async function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
+          STATS BAR — social proof
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-b border-zinc-100 bg-zinc-50">
+        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x divide-zinc-200">
+            {[
+              { value: brands.length > 0 ? `${brands.length}+` : '100+', label: 'Designer Brands' },
+              { value: categories.length > 0 ? `${categories.length}+` : '30+', label: 'Categories' },
+              { value: '40+',  label: 'Countries' },
+              { value: '100%', label: 'Verified Buyers' },
+            ].map(({ value, label }) => (
+              <div key={label} className="text-center md:px-8">
+                <p style={{
+                  fontFamily  : 'var(--font-serif), Georgia, serif',
+                  fontSize    : 'clamp(2rem, 4vw, 3rem)',
+                  fontWeight  : 400,
+                  color       : '#0a0a0a',
+                  lineHeight  : 1,
+                  marginBottom: '0.5rem',
+                }}>
+                  {value}
+                </p>
+                <p className="text-[7.5px] uppercase tracking-[0.45em]" style={{ color: '#aaa' }}>
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-zinc-100">
@@ -184,20 +221,20 @@ export default async function LandingPage() {
               {
                 n    : '01',
                 title: 'Apply',
-                body : 'Register your business and submit for verification. We accept authorised retailers, boutiques, and multi-brand stores.',
+                body : 'Register your business and submit for verification. We accept authorised retailers, boutiques, and multi-brand stores worldwide.',
               },
               {
                 n    : '02',
                 title: 'Get Approved',
-                body : 'Our team reviews your application. Approved buyers receive VIP access to the private showroom and wholesale pricing.',
+                body : 'Our team reviews your application. Approved buyers receive VIP access to the private showroom and exclusive wholesale pricing.',
               },
               {
                 n    : '03',
                 title: 'Trade',
-                body : 'Browse collections, communicate directly with designer houses, place orders, and manage your inventory — all in one place.',
+                body : 'Browse live digital linesheets, communicate directly with designer houses, place orders, and manage your inventory — all in one place.',
               },
             ].map(({ n, title, body }) => (
-              <div key={n} className="bg-white p-10 md:p-14">
+              <div key={n} className="bg-white p-10 md:p-14 group hover:bg-zinc-50 transition-colors">
                 <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '11px', color: '#ddd', marginBottom: '2.5rem' }}>
                   {n}
                 </p>
@@ -215,6 +252,79 @@ export default async function LandingPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          FOR BRANDS — quote + features
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-zinc-100">
+        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-28">
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left — Quote */}
+            <div>
+              <p className="text-[7.5px] uppercase tracking-[0.55em] mb-10"
+                 style={{ color: '#c9a84c' }}>
+                For Brands
+              </p>
+              <blockquote style={{
+                fontFamily  : 'var(--font-serif), Georgia, serif',
+                fontSize    : 'clamp(1.6rem, 3.5vw, 2.8rem)',
+                fontWeight  : 400,
+                lineHeight  : 1.15,
+                color       : '#0a0a0a',
+                marginBottom: '2rem',
+              }}>
+                Say goodbye to PDF&nbsp;linesheets.<br />
+                Say hello to buyers<br />
+                <em style={{ color: '#c9a84c' }}>who actually buy.</em>
+              </blockquote>
+              <p className="text-[14px] leading-[1.9] max-w-sm mb-10" style={{ color: '#888' }}>
+                Your collection deserves more than a static file. Linezheets puts your brand
+                in front of verified wholesale buyers — live, branded, and always up to date.
+                One link. Your full digital linesheet. Every buyer, anywhere in the world.
+              </p>
+              <Link href="/join"
+                    className="inline-block text-[8px] uppercase tracking-[0.4em] border-b pb-px
+                               hover:opacity-50 transition-opacity"
+                    style={{ color: '#c9a84c', borderColor: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
+                List Your Brand →
+              </Link>
+            </div>
+
+            {/* Right — feature list */}
+            <div className="space-y-px border border-zinc-100">
+              {[
+                {
+                  heading: 'Live Digital Linesheets',
+                  body   : 'Replace PDFs with always-current digital catalogs. Update prices, availability, and lookbooks instantly — no resending files.',
+                },
+                {
+                  heading: 'Verified Buyer Network',
+                  body   : 'Every buyer on the platform is verified. Stop chasing leads — connect with authorised retailers who are ready to order.',
+                },
+                {
+                  heading: 'B2B Market Expansion',
+                  body   : 'Expand your wholesale reach across 40+ countries without hiring a new sales team. Linezheets handles the infrastructure.',
+                },
+                {
+                  heading: 'Sales Analytics & Reports',
+                  body   : 'Track which products move, which buyers repeat, and where your revenue comes from — all in your brand dashboard.',
+                },
+              ].map(({ heading, body }) => (
+                <div key={heading} className="px-8 py-7 bg-white hover:bg-zinc-50 transition-colors border-b border-zinc-100 last:border-0">
+                  <p className="text-[8px] uppercase tracking-[0.3em] mb-2" style={{ color: '#333' }}>
+                    {heading}
+                  </p>
+                  <p className="text-[13px] leading-[1.8]" style={{ color: '#999' }}>
+                    {body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -259,7 +369,7 @@ export default async function LandingPage() {
                 { icon: '◆', label: 'Invoicing',            desc: 'Professional wholesale invoicing with consignment terms, payment tracking, and history.' },
                 { icon: '◻', label: 'In-Platform Comms',    desc: 'Email and messaging with designer houses directly inside the platform — no inbox switching.' },
               ].map(({ icon, label, desc }) => (
-                <div key={label} className="bg-zinc-50 p-8">
+                <div key={label} className="bg-zinc-50 p-8 hover:bg-white transition-colors">
                   <p className="text-[18px] mb-4" style={{ color: '#c9a84c' }}>{icon}</p>
                   <p className="text-[8px] uppercase tracking-[0.3em] mb-2" style={{ color: '#888' }}>
                     {label}
@@ -315,7 +425,7 @@ export default async function LandingPage() {
                 { icon: '✦', label: 'Shopify Sync',             desc: 'Push products, prices, and stock levels directly to Shopify or any connected store in real time.' },
                 { icon: '✦', label: 'Multi-Channel Sync',       desc: 'One inventory, everywhere — website, physical POS, marketplace, and wholesale portal always in sync.' },
               ].map(({ icon, label, desc }) => (
-                <div key={label} className="bg-black p-8 border border-zinc-900">
+                <div key={label} className="bg-black p-8 border border-zinc-900 hover:border-zinc-700 transition-colors">
                   <p className="text-[14px] mb-4" style={{ color: '#c9a84c' }}>{icon}</p>
                   <p className="text-[8px] uppercase tracking-[0.3em] mb-2" style={{ color: '#666' }}>
                     {label}
@@ -328,6 +438,126 @@ export default async function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          FOR BUYERS — quote + benefits
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-zinc-100">
+        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-28">
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left — feature list */}
+            <div className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-px bg-zinc-100">
+              {[
+                {
+                  icon : '○',
+                  label: 'One Platform, Every Brand',
+                  body : 'All the brands you carry — their catalogs, pricing, and availability — in one place. No more inbox hunting.',
+                },
+                {
+                  icon : '◌',
+                  label: 'Easier Order Management',
+                  body : 'Place, track, and manage wholesale orders with payment terms, installments, and invoicing handled automatically.',
+                },
+                {
+                  icon : '◍',
+                  label: 'Smarter Stock Control',
+                  body : 'Live inventory visibility across all your brands. Restock alerts, low-stock warnings, and automatic sync to your store.',
+                },
+                {
+                  icon : '●',
+                  label: 'Direct Brand Communication',
+                  body : 'Message designer houses directly inside the platform. No CC chains, no lost attachments, no inbox chaos.',
+                },
+                {
+                  icon : '◐',
+                  label: 'Finance at a Glance',
+                  body : 'Outstanding payments, installment schedules, and spend history across all brands — visible in one dashboard.',
+                },
+                {
+                  icon : '◑',
+                  label: 'Exclusive Event Access',
+                  body : 'Invitations to private showroom events, fashion weeks, and brand previews — managed directly in the platform.',
+                },
+              ].map(({ icon, label, body }) => (
+                <div key={label} className="bg-white p-8 hover:bg-zinc-50 transition-colors">
+                  <p className="text-[18px] mb-4" style={{ color: '#c9a84c' }}>{icon}</p>
+                  <p className="text-[8px] uppercase tracking-[0.3em] mb-2" style={{ color: '#888' }}>
+                    {label}
+                  </p>
+                  <p className="text-[12px] leading-[1.8]" style={{ color: '#aaa' }}>
+                    {body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Right — Quote */}
+            <div className="order-1 lg:order-2">
+              <p className="text-[7.5px] uppercase tracking-[0.55em] mb-10"
+                 style={{ color: '#c9a84c' }}>
+                For Buyers
+              </p>
+              <blockquote style={{
+                fontFamily  : 'var(--font-serif), Georgia, serif',
+                fontSize    : 'clamp(1.6rem, 3.5vw, 2.8rem)',
+                fontWeight  : 400,
+                lineHeight  : 1.15,
+                color       : '#0a0a0a',
+                marginBottom: '2rem',
+              }}>
+                Say goodbye to<br />
+                inbox chaos.<br />
+                <em style={{ color: '#c9a84c' }}>Say hello to easier buying.</em>
+              </blockquote>
+              <p className="text-[14px] leading-[1.9] max-w-sm mb-10" style={{ color: '#888' }}>
+                Every collection, curated and organised — exactly when you need it.
+                From discovery to order confirmation, without a single email attachment.
+                The way the best buyers shop wholesale.
+              </p>
+              <Link href="/join"
+                    className="inline-block text-[8px] uppercase tracking-[0.4em] border-b pb-px
+                               hover:opacity-50 transition-opacity"
+                    style={{ color: '#c9a84c', borderColor: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
+                Apply for Buyer Access →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MARQUEE QUOTES — scrolling ticker
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-zinc-100 bg-black text-white overflow-hidden py-6">
+        <div className="flex gap-16 whitespace-nowrap"
+             style={{ animation: 'marquee 30s linear infinite' }}>
+          {[
+            'One link. Your full collection. Every buyer.',
+            'Where brands meet buyers — and deals get done.',
+            'Your collection. Their next order. One platform.',
+            'The digital linesheet, reinvented.',
+            'Wholesale fashion, the way it should work.',
+            'Better brands. Faster decisions. Easier buying.',
+            'One link. Your full collection. Every buyer.',
+            'Where brands meet buyers — and deals get done.',
+            'Your collection. Their next order. One platform.',
+          ].map((quote, i) => (
+            <span key={i} className="text-[8.5px] uppercase tracking-[0.45em]"
+                  style={{ color: i % 3 === 1 ? '#c9a84c' : '#444', fontFamily: 'system-ui, sans-serif' }}>
+              {quote}
+              <span className="mx-8" style={{ color: '#333' }}>·</span>
+            </span>
+          ))}
+        </div>
+        <style>{`
+          @keyframes marquee {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+          }
+        `}</style>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -418,6 +648,70 @@ export default async function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
+          CTA SPLIT — final conversion section
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-zinc-100 bg-zinc-50">
+        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-0
+                        grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-zinc-200">
+
+          {/* Brand CTA */}
+          <div className="py-20 md:pr-16">
+            <p className="text-[7.5px] uppercase tracking-[0.55em] mb-6" style={{ color: '#c9a84c' }}>
+              For Brands
+            </p>
+            <h3 style={{
+              fontFamily  : 'var(--font-serif), Georgia, serif',
+              fontSize    : 'clamp(1.5rem, 3vw, 2.2rem)',
+              fontWeight  : 400,
+              lineHeight  : 1.1,
+              color       : '#111',
+              marginBottom: '1.25rem',
+            }}>
+              Stop chasing buyers<br />with email attachments.
+            </h3>
+            <p className="text-[13px] leading-[1.9] mb-8" style={{ color: '#888' }}>
+              Start closing wholesale with a platform built for how fashion actually moves.
+              One digital linesheet. Every buyer, everywhere.
+            </p>
+            <Link href="/join"
+                  className="inline-block px-10 py-3.5 text-[8px] uppercase tracking-[0.45em]
+                             bg-black text-white hover:bg-zinc-800 transition-colors"
+                  style={{ fontFamily: 'system-ui, sans-serif' }}>
+              List Your Brand
+            </Link>
+          </div>
+
+          {/* Buyer CTA */}
+          <div className="py-20 md:pl-16">
+            <p className="text-[7.5px] uppercase tracking-[0.55em] mb-6" style={{ color: '#c9a84c' }}>
+              For Buyers
+            </p>
+            <h3 style={{
+              fontFamily  : 'var(--font-serif), Georgia, serif',
+              fontSize    : 'clamp(1.5rem, 3vw, 2.2rem)',
+              fontWeight  : 400,
+              lineHeight  : 1.1,
+              color       : '#111',
+              marginBottom: '1.25rem',
+            }}>
+              Your next season&apos;s buys —<br />curated and ready to order.
+            </h3>
+            <p className="text-[13px] leading-[1.9] mb-8" style={{ color: '#888' }}>
+              No more chasing brands for updated PDFs. One platform for every brand
+              you carry — stock, orders, and finance, all without the spreadsheet scramble.
+            </p>
+            <Link href="/join"
+                  className="inline-block px-10 py-3.5 text-[8px] uppercase tracking-[0.45em]
+                             border border-zinc-300 text-zinc-600
+                             hover:border-zinc-800 hover:text-zinc-800 transition-colors"
+                  style={{ fontFamily: 'system-ui, sans-serif' }}>
+              Apply for Buyer Access
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
           FOOTER
       ══════════════════════════════════════════════════════════════════════ */}
       <footer className="border-t border-zinc-100 bg-white">
@@ -438,7 +732,8 @@ export default async function LandingPage() {
               Agency · Linezheets Platform
             </p>
             <p className="text-[11px] leading-[1.8]" style={{ color: '#bbb' }}>
-              Private wholesale marketplace for authorised luxury retailers.
+              The digital linesheet platform for luxury wholesale — connecting fashion brands
+              with verified retail buyers worldwide.
             </p>
           </div>
 
@@ -462,8 +757,10 @@ export default async function LandingPage() {
             {
               heading: 'Access',
               links  : [
-                { label: 'Apply Now', href: '/join' },
-                { label: 'Sign In',   href: '/login' },
+                { label: 'Apply Now',    href: '/join' },
+                { label: 'Sign In',      href: '/login' },
+                { label: 'For Brands',   href: '/join' },
+                { label: 'For Buyers',   href: '/join' },
               ],
             },
           ].map(({ heading, links }) => (
@@ -486,14 +783,37 @@ export default async function LandingPage() {
           ))}
         </div>
 
+        {/* SEO text — visible but subtle, keyword-rich for crawlers */}
+        <div className="max-w-screen-xl mx-auto px-8 md:px-16 pb-12">
+          <p className="text-[10px] leading-[2] max-w-2xl" style={{ color: '#ddd' }}>
+            Linezheets is a B2B wholesale fashion platform that replaces traditional linesheets and PDF line
+            sheets with live digital catalogs. Fashion brands use Linezheets to share collections with wholesale
+            buyers, manage B2B orders, sync inventory, and grow their retail network globally.
+            Wholesale buyers use Linezheets to browse brand catalogs, manage stock, place orders, and
+            communicate with designer houses — all without leaving the platform.
+          </p>
+        </div>
+
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 pb-8
                         flex items-center justify-between border-t border-zinc-50 pt-8">
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#ddd' }}>
-            © {new Date().getFullYear()} Linezheets
+            © {new Date().getFullYear()} Linezheets · All rights reserved
           </p>
-          <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#ddd' }}>
-            Powered by <span style={{ color: '#c9a84c' }}>Linezheets</span>
-          </p>
+          <div className="flex items-center gap-6">
+            <Link href="/legal"
+                  className="text-[7.5px] uppercase tracking-[0.2em] hover:opacity-50 transition-opacity"
+                  style={{ color: '#ddd' }}>
+              Legal
+            </Link>
+            <Link href="/contact"
+                  className="text-[7.5px] uppercase tracking-[0.2em] hover:opacity-50 transition-opacity"
+                  style={{ color: '#ddd' }}>
+              Contact
+            </Link>
+            <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#ddd' }}>
+              Powered by <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            </p>
+          </div>
         </div>
       </footer>
 

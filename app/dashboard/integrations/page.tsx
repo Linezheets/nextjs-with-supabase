@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import DashboardNav from '@/components/DashboardNav';
 import IntegrationsClient from './IntegrationsClient';
 
 export const metadata = { title: 'Integrations — Linezheets Buyer Portal' };
@@ -13,51 +14,7 @@ export default async function IntegrationsPage() {
     <div className="min-h-screen bg-white text-black"
          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
-      {/* ── Nav ─────────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <a href="/"
-             style={{
-               fontFamily  : 'var(--font-serif), Georgia, "Times New Roman", serif',
-               fontSize    : '15px',
-               letterSpacing: '0.5em',
-               fontWeight  : 400,
-             }}>
-            LINEZHEETS
-          </a>
-
-          <span className="text-[8px] uppercase tracking-[0.5em]"
-                style={{ color: '#bbb' }}>
-            Buyer Portal
-          </span>
-
-          <div className="flex items-center gap-6">
-            <a href="/dashboard"
-               className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-               style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
-              Dashboard
-            </a>
-            <a href="/dashboard/profile"
-               className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-               style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
-              Profile
-            </a>
-            <a href="/"
-               className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-               style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
-              Showroom
-            </a>
-            <form action="/api/auth/signout" method="post">
-              <button
-                type="submit"
-                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-                style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
-                Sign Out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <DashboardNav />
 
       <main className="pt-[60px]">
 

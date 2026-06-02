@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { redirect }      from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import BrandStoreClient from './BrandStoreClient';
 
@@ -7,7 +7,12 @@ export const metadata = { title: 'Brand Store — Linezheets' };
 export default async function BrandStorePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
   if (!user) redirect('/login');
+
+  // Only brand or admin users may access this section
+  const role = user.user_metadata?.role ?? user.app_metadata?.role;
+  if (role !== 'brand' && role !== 'admin') redirect('/dashboard');
 
   const sfRes = await supabase.from('brand_storefronts').select('*').eq('user_id', user.id).maybeSingle();
 

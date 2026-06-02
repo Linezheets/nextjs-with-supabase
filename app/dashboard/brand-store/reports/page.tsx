@@ -7,7 +7,10 @@ export const metadata = { title: 'Brand Reports — Linezheets' };
 export default async function BrandReportsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
   if (!user) redirect('/login');
+  const role = user.user_metadata?.role ?? user.app_metadata?.role;
+  if (role !== 'brand' && role !== 'admin') redirect('/dashboard');
 
   const { data: sf } = await supabase
     .from('brand_storefronts')

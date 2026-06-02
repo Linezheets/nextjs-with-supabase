@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
   const db = supabase as any;
   const { data: rpcRows, error: rpcErr } = await db.rpc('get_brand_sell_through', {
     p_brand_name: sf.brand_name,
+    ...(since ? { p_since: since } : {}),
   });
 
   if (rpcErr) {

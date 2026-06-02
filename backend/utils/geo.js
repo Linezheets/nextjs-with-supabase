@@ -21,4 +21,6 @@ async function getGeoLocation(ip) {
   }
 }
 
-module.exports = { getGeoLocation };
+const getLocationFromIP = getGeoLocation;
+
+module.exports = { getClientIp, getGeoLocation, getLocationFromIP };

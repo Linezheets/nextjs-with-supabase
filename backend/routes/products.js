@@ -40,7 +40,9 @@ router.get('/', async (req, res, next) => {
       page = 1, limit = 24
     } = req.query;
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const safePage  = Math.max(1, Math.min(parseInt(page)  || 1,  500));
+    const safeLimit = Math.max(1, Math.min(parseInt(limit) || 24, 100));
+    const offset = (safePage - 1) * safeLimit;
     const conditions = ["p.status = $1"];
     const params = [status];
     let idx = 2;
@@ -69,7 +71,7 @@ router.get('/', async (req, res, next) => {
        WHERE ${where}`, params
     );
 
-    params.push(parseInt(limit), offset);
+    params.push(safeLimit, offset);
     const { rows } = await db.query(
       `SELECT p.id, p.name, p.slug, p.wholesale_price, p.retail_price, p.images,
               p.season, p.min_order_qty, p.tags, p.total_sold, p.featured,
@@ -89,9 +91,9 @@ router.get('/', async (req, res, next) => {
       products: rows,
       pagination: {
         total: parseInt(countResult.rows[0].count),
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(countResult.rows[0].count / limit)
+        page: safePage,
+        limit: safeLimit,
+        pages: Math.ceil(countResult.rows[0].count / safeLimit)
       }
     });
   } catch (err) { next(err); }
@@ -129,9 +131,13 @@ router.get('/:id', async (req, res, next) => {
 // ── Brand: List own products ─────────────────────────────────────────────────
 router.get('/brand/mine', authenticate, requireBrand, ownBrand, async (req, res, next) => {
   try {
-    const { status, page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const cond = status ? `AND p.status = '${status}'` : '';
+    const { page = 1, limit = 50 } = req.query;
+    const { status } = req.query;
+    const safePage2  = Math.max(1, Math.min(parseInt(page)  || 1,  500));
+    const safeLimit2 = Math.max(1, Math.min(parseInt(limit) || 50, 200));
+    const offset = (safePage2 - 1) * safeLimit2;
+    const ALLOWED_STATUSES = ['active', 'inactive', 'draft', 'archived'];
+    const cond = (status && ALLOWED_STATUSES.includes(status)) ? `AND p.status = '${status}'` : '';
 
     const { rows } = await db.query(
       `SELECT p.*, c.name AS category_name,
@@ -142,7 +148,7 @@ router.get('/brand/mine', authenticate, requireBrand, ownBrand, async (req, res,
        WHERE p.brand_id = $1 ${cond}
        ORDER BY p.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [req.brandId, parseInt(limit), offset]
+      [req.brandId, safeLimit2, offset]
     );
     res.json({ products: rows });
   } catch (err) { next(err); }

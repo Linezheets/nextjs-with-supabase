@@ -44,6 +44,9 @@ router.delete('/:platform', authenticate, requireBrand, ownBrand, async (req, re
 
 // GET /api/integrations/shopify/auth — start OAuth install flow
 router.get('/shopify/auth', authenticate, requireBrand, ownBrand, (req, res) => {
+  if (!process.env.SHOPIFY_CLIENT_ID || !process.env.SHOPIFY_CLIENT_SECRET) {
+    return res.status(503).json({ error: 'Shopify integration not configured' });
+  }
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: 'shop parameter required (e.g. my-brand.myshopify.com)' });
 

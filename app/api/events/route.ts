@@ -39,16 +39,16 @@ export async function GET(req: NextRequest) {
     const { data, error, count } = await q;
     if (error) throw error;
 
-    // Attach interest counts
+    // Attach interest counts via a single grouped query
     const ids = (data || []).map((e: any) => e.id);
     let interestMap: Record<string, number> = {};
     if (ids.length) {
-      const { data: interests } = await (supabase as any)
+      const { data: counts } = await (supabase as any)
         .from('event_interests')
-        .select('event_id')
+        .select('event_id, count:event_id.count()')
         .in('event_id', ids);
-      (interests || []).forEach((r: any) => {
-        interestMap[r.event_id] = (interestMap[r.event_id] || 0) + 1;
+      (counts || []).forEach((r: any) => {
+        interestMap[r.event_id] = Number(r.count);
       });
     }
 
