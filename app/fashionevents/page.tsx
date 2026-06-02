@@ -190,7 +190,7 @@ export default function FashionEventsPage() {
   const [events,   setEvents]   = useState<FashionEvent[]>([]);
   const [featured, setFeatured] = useState<FashionEvent[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [view,     setView]     = useState<'grid'|'list'|'map'>('grid');
+  const [view,     setView]     = useState<'grid'|'list'|'calendar'|'map'>('grid');
   const [typeFilter, setTypeFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [futureOnly, setFutureOnly] = useState(true);
@@ -335,7 +335,7 @@ export default function FashionEventsPage() {
         <div style={{ flex: 1 }} />
 
         {/* View toggle */}
-        {(['grid','list','map'] as const).map(v => (
+        {(['grid','list','calendar','map'] as const).map(v => (
           <button key={v} onClick={() => setView(v)} style={{
             background: view === v ? 'rgba(201,168,76,0.15)' : 'transparent',
             border: `1px solid ${view === v ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}`,
@@ -344,7 +344,7 @@ export default function FashionEventsPage() {
             fontFamily: 'system-ui, sans-serif', fontSize: 9,
             letterSpacing: '0.3em', textTransform: 'uppercase',
           }}>
-            {v === 'grid' ? '⊞' : v === 'list' ? '≡' : '◎'} {v}
+            {v === 'grid' ? '⊞' : v === 'list' ? '≡' : v === 'calendar' ? '▦' : '◎'} {v}
           </button>
         ))}
 
@@ -428,11 +428,234 @@ export default function FashionEventsPage() {
               </Link>
             ))}
           </div>
+        ) : view === 'calendar' ? (
+          <CalendarView events={events} />
         ) : (
           /* ── Map View ── */
           <MapView events={events} />
         )}
       </section>
+    </div>
+  );
+}
+
+// ── Calendar View ─────────────────────────────────────────────────────────────
+function CalendarView({ events }: { events: FashionEvent[] }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const today    = new Date();
+  const baseDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const year     = baseDate.getFullYear();
+  const month    = baseDate.getMonth(); // 0-based
+
+  const firstDay  = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthName = baseDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+  // Group events by date_start (within this month)
+  const byDay: Record<number, FashionEvent[]> = {};
+  for (const e of events) {
+    if (!e.date_start) continue;
+    const d = new Date(e.date_start + 'T00:00:00');
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate();
+      if (!byDay[day]) byDay[day] = [];
+      byDay[day].push(e);
+    }
+    // Also mark days within a multi-day event range
+    if (e.date_end && e.date_end !== e.date_start) {
+      const end = new Date(e.date_end + 'T00:00:00');
+      const start = new Date(e.date_start + 'T00:00:00');
+      for (let t = new Date(start); t <= end; t.setDate(t.getDate() + 1)) {
+        if (t.getFullYear() === year && t.getMonth() === month) {
+          const day = t.getDate();
+          if (!byDay[day]) byDay[day] = [];
+          if (!byDay[day].find(ev => ev.id === e.id)) byDay[day].push(e);
+        }
+      }
+    }
+  }
+
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  // Pad to full weeks
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  return (
+    <div>
+      {/* Month nav */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 20,
+        marginBottom: 24, paddingTop: 8,
+      }}>
+        <button onClick={() => setMonthOffset(o => o - 1)} style={{
+          background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+          color: 'rgba(245,240,232,0.5)', padding: '6px 14px', cursor: 'pointer',
+          fontFamily: 'DM Mono, monospace', fontSize: 12,
+        }}>←</button>
+        <span style={{
+          fontFamily: 'var(--font-serif), Georgia, serif',
+          fontSize: '1.3rem', color: '#F5F0E8', minWidth: 220, textAlign: 'center',
+        }}>{monthName}</span>
+        <button onClick={() => setMonthOffset(o => o + 1)} style={{
+          background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+          color: 'rgba(245,240,232,0.5)', padding: '6px 14px', cursor: 'pointer',
+          fontFamily: 'DM Mono, monospace', fontSize: 12,
+        }}>→</button>
+        <button onClick={() => setMonthOffset(0)} style={{
+          background: 'transparent', border: '1px solid rgba(201,168,76,0.2)',
+          color: '#C9A84C', padding: '6px 14px', cursor: 'pointer',
+          fontFamily: 'system-ui, sans-serif', fontSize: 9,
+          letterSpacing: '0.3em', textTransform: 'uppercase',
+        }}>Today</button>
+      </div>
+
+      {/* Grid */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+        border: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        {/* Day labels */}
+        {DAY_LABELS.map(d => (
+          <div key={d} style={{
+            padding: '10px 12px',
+            fontFamily: 'system-ui, sans-serif', fontSize: 9,
+            letterSpacing: '0.3em', textTransform: 'uppercase',
+            color: 'rgba(245,240,232,0.2)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}>{d}</div>
+        ))}
+
+        {/* Day cells */}
+        {cells.map((day, i) => {
+          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+          const dayEvents = day ? (byDay[day] || []) : [];
+
+          return (
+            <div key={i} style={{
+              minHeight: 90,
+              background: day ? '#0A0A17' : '#07070E',
+              borderRight: (i + 1) % 7 === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+              padding: '8px 10px',
+              position: 'relative',
+              opacity: day ? 1 : 0.3,
+            }}>
+              {day && (
+                <div style={{
+                  fontFamily: 'DM Mono, monospace', fontSize: 10,
+                  color: isToday ? '#C9A84C' : 'rgba(245,240,232,0.25)',
+                  marginBottom: 6,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {isToday ? (
+                    <span style={{
+                      background: '#C9A84C', color: '#07070E',
+                      borderRadius: '50%', width: 18, height: 18,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 700,
+                    }}>{day}</span>
+                  ) : day}
+                </div>
+              )}
+              {/* Event pills — max 3, then +N */}
+              {dayEvents.slice(0, 3).map(e => {
+                const color = TYPE_COLORS[e.type] || '#C9A84C';
+                return (
+                  <Link key={e.id} href={`/fashionevents/${e.id}`}
+                    style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
+                    <div style={{
+                      background: `${color}18`,
+                      borderLeft: `2px solid ${color}`,
+                      padding: '2px 6px',
+                      fontSize: 9, color: '#F5F0E8',
+                      fontFamily: 'system-ui, sans-serif',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      cursor: 'pointer',
+                    }}
+                      onMouseEnter={el => (el.currentTarget.style.background = `${color}30`)}
+                      onMouseLeave={el => (el.currentTarget.style.background = `${color}18`)}
+                    >
+                      {e.title}
+                    </div>
+                  </Link>
+                );
+              })}
+              {dayEvents.length > 3 && (
+                <div style={{
+                  fontSize: 9, color: 'rgba(245,240,232,0.3)',
+                  fontFamily: 'DM Mono, monospace', marginTop: 2,
+                }}>+{dayEvents.length - 3} more</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Timetable: upcoming events this month sorted by date */}
+      {Object.keys(byDay).length > 0 && (
+        <div style={{ marginTop: 40 }}>
+          <p style={{
+            fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase',
+            color: 'rgba(245,240,232,0.2)', marginBottom: 16,
+          }}>
+            {monthName} — Timetable
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {Object.entries(byDay)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([day, dayEvs]) => {
+                const uniqueEvs = dayEvs.filter((e, i, arr) => arr.findIndex(x => x.id === e.id) === i);
+                return uniqueEvs.map(e => {
+                  const color = TYPE_COLORS[e.type] || '#C9A84C';
+                  return (
+                    <Link key={`${day}-${e.id}`} href={`/fashionevents/${e.id}`}
+                      style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'grid', gridTemplateColumns: '56px 8px 1fr auto',
+                        gap: 16, alignItems: 'center',
+                        padding: '12px 20px',
+                        background: '#0A0A17',
+                        border: '1px solid rgba(255,255,255,0.04)',
+                        transition: 'border-color 0.15s',
+                      }}
+                        onMouseEnter={el => (el.currentTarget.style.borderColor = `${color}30`)}
+                        onMouseLeave={el => (el.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)')}
+                      >
+                        <div style={{
+                          fontFamily: 'DM Mono, monospace', fontSize: 11,
+                          color: color, textAlign: 'right',
+                        }}>{String(day).padStart(2, '0')}</div>
+                        <div style={{ width: 2, alignSelf: 'stretch', background: `${color}40` }} />
+                        <div>
+                          <div style={{
+                            fontFamily: 'var(--font-serif), Georgia, serif',
+                            fontSize: '0.95rem', color: '#F5F0E8',
+                          }}>{e.title}</div>
+                          <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.35)', marginTop: 2 }}>
+                            {e.city}{e.country ? `, ${e.country}` : ''}
+                            {e.venue_name ? ` · ${e.venue_name}` : ''}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: 8, letterSpacing: '0.3em', textTransform: 'uppercase',
+                          color, padding: '3px 8px',
+                          border: `1px solid ${color}30`,
+                          fontFamily: 'system-ui, sans-serif',
+                          whiteSpace: 'nowrap',
+                        }}>{TYPE_LABELS[e.type] || e.type}</div>
+                      </div>
+                    </Link>
+                  );
+                });
+              })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
