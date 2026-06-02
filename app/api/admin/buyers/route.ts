@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/supabase/requireAdmin';
 import { createClient } from '@/lib/supabase/server';
 
 // GET /api/admin/buyers — list all buyers (id, email, store_name, status)
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('buyers')
     .select('id, email, store_name, status')

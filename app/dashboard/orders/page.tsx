@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import DashboardNav from '@/components/DashboardNav';
 import OrdersClient from './OrdersClient';
 
 export const metadata = { title: 'Orders — Linezheets Buyer Portal' };
@@ -9,36 +10,34 @@ export default async function OrdersPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: orders } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminSupabase = supabase as any;
+  const { data: orders } = await adminSupabase
     .from('buyer_orders')
-    .select('*')
+    .select('id, status, payment_status, total_usd, terms, notes, items, created_at')
     .eq('buyer_id', user.id)
     .order('created_at', { ascending: false });
+
+  const orderIds: string[] = (orders ?? []).map((o: { id: string }) => o.id);
+  const { data: allInstallments } = orderIds.length
+    ? await adminSupabase
+        .from('buyer_payments')
+        .select('id, order_id, installment_seq, amount_usd, status, due_date, method, created_at')
+        .in('order_id', orderIds)
+        .order('installment_seq', { ascending: true })
+    : { data: [] };
+
+  type RawInstallment = { order_id: string; [k: string]: unknown };
+  const installmentsByOrder: Record<string, RawInstallment[]> = {};
+  for (const row of (allInstallments ?? []) as RawInstallment[]) {
+    (installmentsByOrder[row.order_id] ??= []).push(row);
+  }
 
   return (
     <div className="min-h-screen bg-white text-black"
          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
-      {/* Nav */}
-      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <a href="/" style={{
-            fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
-            fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400,
-          }}>LINEZHEETS</a>
-          <span className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>Buyer Portal</span>
-          <div className="flex items-center gap-6">
-            <a href="/dashboard"                  className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Dashboard</a>
-            <a href="/dashboard/favorites"        className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Favourites</a>
-            <a href="/dashboard/integrations"     className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Integrations</a>
-            <a href="/dashboard/profile"          className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Profile</a>
-            <a href="/"                           className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Showroom</a>
-            <form action="/api/auth/signout" method="post">
-              <button type="submit" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888', fontFamily: 'system-ui' }}>Sign Out</button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <DashboardNav />
 
       <main className="pt-[60px]">
         {/* Masthead */}
@@ -61,7 +60,10 @@ export default async function OrdersPage() {
         </div>
 
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-16">
-          <OrdersClient initialOrders={(orders ?? []) as unknown as Parameters<typeof OrdersClient>[0]['initialOrders']} />
+          <OrdersClient
+            initialOrders={(orders ?? []) as unknown as Parameters<typeof OrdersClient>[0]['initialOrders']}
+            installmentsByOrder={installmentsByOrder as unknown as Parameters<typeof OrdersClient>[0]['installmentsByOrder']}
+          />
         </div>
       </main>
 

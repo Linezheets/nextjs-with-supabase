@@ -17,12 +17,13 @@ export default function RegisterPage() {
   const router   = useRouter();
   const supabase = createClient();
 
-  const [role,    setRole]    = useState<Role>('brand');
-  const [plan,    setPlan]    = useState<string>('studio');
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
-  const [showPw,  setShowPw]  = useState(false);
-  const [tab,     setTab]     = useState<'login' | 'register'>('register');
+  const [role,      setRole]      = useState<Role>('brand');
+  const [plan,      setPlan]      = useState<string>('studio');
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState('');
+  const [showPw,    setShowPw]    = useState(false);
+  const [tab,       setTab]       = useState<'login' | 'register'>('register');
+  const [confirmed, setConfirmed] = useState(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -63,7 +64,7 @@ export default function RegisterPage() {
     if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
 
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({
+    const { data, error: err } = await supabase.auth.signUp({
       email   : form.email,
       password: form.password,
       options : {
@@ -79,11 +80,33 @@ export default function RegisterPage() {
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
+    // Email confirmation enabled — session is null until the user clicks the link
+    if (!data.session) { setConfirmed(true); return; }
     router.push(role === 'brand' ? '/dashboard/brand-store' : '/dashboard');
     router.refresh();
   }
 
   const gold = '#c9a84c';
+
+  if (confirmed) return (
+    <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center px-4"
+         style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="text-center max-w-sm">
+        <p className="text-[9px] uppercase tracking-[0.6em] mb-6" style={{ color: gold }}>Check your inbox</p>
+        <p className="text-[13px] leading-relaxed" style={{ color: '#888' }}>
+          We sent a confirmation link to <span style={{ color: '#fff' }}>{form.email}</span>.
+          Click it to activate your account and sign in.
+        </p>
+        <button
+          onClick={() => setConfirmed(false)}
+          className="mt-8 text-[8px] uppercase tracking-[0.4em] hover:opacity-60 transition-opacity"
+          style={{ color: '#555' }}
+        >
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col"

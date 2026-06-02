@@ -4,19 +4,19 @@
  *
  * In Vercel: set these two vars in Project → Settings → Environment Variables
  *   SUPABASE_URL
- *   SUPABASE_ANON_KEY
+ *   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
  *
  * For local dev: create public/js/env.js (git-ignored) that sets
- *   window.__SUPABASE_URL and window.__SUPABASE_ANON_KEY
+ *   window.__SUPABASE_URL and window.__SUPABASE_PUBLISHABLE_KEY
  * OR just hardcode the values below during dev.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL      = window.__SUPABASE_URL      ?? '__SUPABASE_URL__';
-const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY ?? '__SUPABASE_ANON_KEY__';
+const SUPABASE_PUBLISHABLE_KEY = window.__SUPABASE_PUBLISHABLE_KEY ?? '__SUPABASE_PUBLISHABLE_KEY__';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     persistSession : true,
     autoRefreshToken: true,

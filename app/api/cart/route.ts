@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getBlob, setBlob } from '@/lib/session-store';
+import { sendEmail, cartChangeHtml } from '@/lib/email';
+
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? 'info@mxlla.com';
+
+function cartTotal(cart: CartItem[]) {
+  return cart.reduce((s, i) => s + (i.wholesale_price ?? 0) * i.quantity, 0);
+}
+
+function cartUnits(cart: CartItem[]) {
+  return cart.reduce((s, i) => s + i.quantity, 0);
+}
+
+function nowHKT() {
+  return new Date().toLocaleString('en-GB', { timeZone: 'Asia/Hong_Kong', dateStyle: 'medium', timeStyle: 'short' }) + ' HKT';
+}
 
 type CartItem = {
   variant_id     : string;
@@ -64,6 +79,27 @@ export async function POST(req: NextRequest) {
   }
 
   await setBlob(user.id, 'cart', cart);
+
+  const addedItem = existing
+    ? { ...existing }
+    : cart[cart.length - 1];
+
+  if (addedItem.wholesale_price) {
+    sendEmail({
+      to     : NOTIFY_EMAIL,
+      subject: `[Linezheets] Cart — ${user.email} added ${addedItem.name ?? addedItem.variant_id}`,
+      html   : cartChangeHtml({
+        action   : 'added',
+        email    : user.email ?? user.id,
+        time     : nowHKT(),
+        item     : { name: addedItem.name, brand_name: addedItem.brand_name, size: addedItem.size, quantity: addedItem.quantity, wholesale_price: addedItem.wholesale_price },
+        cartTotal: cartTotal(cart),
+        cartItems: cartUnits(cart),
+      }),
+      text: `Cart add: ${user.email} added ${addedItem.name} (WSP ${addedItem.wholesale_price}). Cart total: ${cartTotal(cart)}`,
+    }).catch((err: unknown) => console.error('[notify] cart add email failed:', err));
+  }
+
   return NextResponse.json({ cart, total: cart.reduce((s, i) => s + i.quantity, 0) });
 }
 
@@ -76,13 +112,48 @@ export async function DELETE(req: NextRequest) {
   const variantId = searchParams.get('item_id') ?? searchParams.get('variantId');
 
   if (variantId) {
-    const cart = ((await getBlob<CartItem[]>(user.id, 'cart')) ?? [])
-      .filter(i => i.variant_id !== variantId);
+    const before = (await getBlob<CartItem[]>(user.id, 'cart')) ?? [];
+    const removed = before.find(i => i.variant_id === variantId);
+    const cart = before.filter(i => i.variant_id !== variantId);
     await setBlob(user.id, 'cart', cart);
+
+    if (removed?.wholesale_price) {
+      sendEmail({
+        to     : NOTIFY_EMAIL,
+        subject: `[Linezheets] Cart — ${user.email} removed ${removed.name ?? variantId}`,
+        html   : cartChangeHtml({
+          action   : 'removed',
+          email    : user.email ?? user.id,
+          time     : nowHKT(),
+          item     : { name: removed.name, brand_name: removed.brand_name, size: removed.size, quantity: removed.quantity, wholesale_price: removed.wholesale_price },
+          cartTotal: cartTotal(cart),
+          cartItems: cartUnits(cart),
+        }),
+        text: `Cart remove: ${user.email} removed ${removed.name}. Cart total: ${cartTotal(cart)}`,
+      }).catch((err: unknown) => console.error('[notify] cart remove email failed:', err));
+    }
+
     return NextResponse.json({ cart });
   }
 
   // Clear entire cart
+  const before = (await getBlob<CartItem[]>(user.id, 'cart')) ?? [];
   await setBlob(user.id, 'cart', []);
+
+  if (cartTotal(before) > 0) {
+    sendEmail({
+      to     : NOTIFY_EMAIL,
+      subject: `[Linezheets] Cart — ${user.email} cleared their cart`,
+      html   : cartChangeHtml({
+        action   : 'cleared',
+        email    : user.email ?? user.id,
+        time     : nowHKT(),
+        cartTotal: 0,
+        cartItems: 0,
+      }),
+      text: `Cart cleared: ${user.email} emptied their cart.`,
+    }).catch((err: unknown) => console.error('[notify] cart clear email failed:', err));
+  }
+
   return NextResponse.json({ cart: [] });
 }

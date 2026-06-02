@@ -10,3 +10,4 @@ uploads/
 tmp/
 test-data/
 *.tsbuildinfo
+*.local

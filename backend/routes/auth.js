@@ -194,33 +194,47 @@ const handleAuthFailure = (err, req, res, next) => {
     res.redirect('/login?error=AuthenticationFailed');
 };
 
+// Guard: returns 503 if the strategy was never registered (missing credentials)
+const requireStrategy = (name) => (req, res, next) => {
+    try {
+        passport._strategy(name); // throws if not registered
+        next();
+    } catch {
+        res.status(503).json({ error: `${name} OAuth is not configured on this server` });
+    }
+};
+
 // Google OAuth
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', requireStrategy('google'), passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback',
-             passport.authenticate('google', { failureRedirect: '/login?error=GoogleAuthFailed' }),
-             (req, res) => res.redirect('/dashboard')
-           );
+    requireStrategy('google'),
+    passport.authenticate('google', { failureRedirect: '/login?error=GoogleAuthFailed' }),
+    (req, res) => res.redirect('/dashboard')
+);
 
 // Facebook OAuth
-router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get('/facebook', requireStrategy('facebook'), passport.authenticate('facebook', { scope: ['email'] }));
 router.get('/facebook/callback',
-             passport.authenticate('facebook', { failureRedirect: '/login?error=FacebookAuthFailed' }),
-             (req, res) => res.redirect('/dashboard')
-           );
+    requireStrategy('facebook'),
+    passport.authenticate('facebook', { failureRedirect: '/login?error=FacebookAuthFailed' }),
+    (req, res) => res.redirect('/dashboard')
+);
 
 // Microsoft OAuth
-router.get('/microsoft', passport.authenticate('microsoft'));
+router.get('/microsoft', requireStrategy('microsoft'), passport.authenticate('microsoft'));
 router.get('/microsoft/callback',
-             passport.authenticate('microsoft', { failureRedirect: '/login?error=MicrosoftAuthFailed' }),
-             (req, res) => res.redirect('/dashboard')
-           );
+    requireStrategy('microsoft'),
+    passport.authenticate('microsoft', { failureRedirect: '/login?error=MicrosoftAuthFailed' }),
+    (req, res) => res.redirect('/dashboard')
+);
 
 // Instagram OAuth
-router.get('/instagram', passport.authenticate('instagram', { scope: ['user_profile'] }));
+router.get('/instagram', requireStrategy('instagram'), passport.authenticate('instagram', { scope: ['user_profile'] }));
 router.get('/instagram/callback',
-             passport.authenticate('instagram', { failureRedirect: '/login?error=InstagramAuthFailed' }),
-             (req, res) => res.redirect('/dashboard')
-           );
+    requireStrategy('instagram'),
+    passport.authenticate('instagram', { failureRedirect: '/login?error=InstagramAuthFailed' }),
+    (req, res) => res.redirect('/dashboard')
+);
 
 router.use(handleAuthFailure);
 

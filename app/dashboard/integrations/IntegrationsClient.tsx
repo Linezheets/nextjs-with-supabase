@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // ── Integration definitions ───────────────────────────────────────────────────
 
@@ -9,6 +10,7 @@ export type Integration = {
   name: string;
   category: string;
   description: string;
+  oauth?: boolean;
   fields: { key: string; label: string; type?: string; placeholder?: string }[];
 };
 
@@ -40,9 +42,9 @@ const INTEGRATIONS: Integration[] = [
     name: 'Shopify Sync',
     category: 'E-Commerce',
     description: 'Sync products, inventory and orders with your Shopify storefront.',
+    oauth: true,
     fields: [
       { key: 'shop_domain', label: 'Shop Domain', placeholder: 'yourstore.myshopify.com' },
-      { key: 'access_token', label: 'Admin API Access Token', type: 'password', placeholder: 'shpat_...' },
     ],
   },
   // ERP
@@ -169,7 +171,110 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: strin
   cur[parts[parts.length - 1]] = value;
 }
 
-// ── Connect modal ─────────────────────────────────────────────────────────────
+// ── Shopify OAuth modal ───────────────────────────────────────────────────────
+
+function ShopifyConnectModal({ onClose }: { onClose: () => void }) {
+  const [shopDomain, setShopDomain] = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/integrations/shopify/auth?shop=${encodeURIComponent(shopDomain.trim())}`);
+      const data = await res.json() as { authUrl?: string; error?: string };
+      if (!res.ok || !data.authUrl) {
+        setError(data.error ?? 'Failed to initiate Shopify connection');
+        setLoading(false);
+        return;
+      }
+      window.location.href = data.authUrl;
+    } catch {
+      setError('Network error. Please try again.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.45)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white w-full max-w-md mx-4" style={{ borderTop: '2px solid #c9a84c' }}>
+        <div className="px-8 pt-8 pb-6 border-b border-zinc-100">
+          <p className="text-[7.5px] uppercase tracking-[0.5em] mb-2"
+             style={{ color: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
+            E-Commerce
+          </p>
+          <h2 style={{
+            fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
+            fontSize  : '1.5rem',
+            fontWeight: 400,
+            color     : '#111',
+          }}>
+            Shopify Sync
+          </h2>
+          <p className="mt-2 text-[11px] leading-relaxed"
+             style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
+            You will be redirected to Shopify to authorise access. No passwords are stored — only a scoped OAuth token.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
+          <div>
+            <label className="block text-[7.5px] uppercase tracking-[0.4em] mb-2"
+                   style={{ color: '#aaa', fontFamily: 'system-ui, sans-serif' }}>
+              Shop Domain
+            </label>
+            <input
+              type="text"
+              placeholder="yourstore.myshopify.com"
+              value={shopDomain}
+              onChange={e => setShopDomain(e.target.value)}
+              required
+              className="w-full border border-zinc-200 px-4 py-3 text-[12px] outline-none
+                         focus:border-zinc-400 transition-colors"
+              style={{ fontFamily: 'system-ui, sans-serif', color: '#333' }}
+            />
+          </div>
+
+          {error && (
+            <p className="text-[10px] uppercase tracking-[0.3em]"
+               style={{ color: '#c0392b', fontFamily: 'system-ui, sans-serif' }}>
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center gap-4 pt-2">
+            <button
+              type="submit"
+              disabled={loading || !shopDomain.trim()}
+              className="flex-1 py-3 text-[8px] uppercase tracking-[0.5em] text-white transition-opacity
+                         disabled:opacity-40"
+              style={{ background: '#111', fontFamily: 'system-ui, sans-serif' }}
+            >
+              {loading ? 'Redirecting…' : 'Connect with Shopify →'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
+              style={{ color: '#aaa', fontFamily: 'system-ui, sans-serif' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Connect modal (manual credentials) ───────────────────────────────────────
 
 function ConnectModal({
   integration,
@@ -180,16 +285,15 @@ function ConnectModal({
   onClose: () => void;
   onSave: (id: string) => void;
 }) {
-  const [form, setForm] = useState<Record<string, string>>({});
+  const [form, setForm]     = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError('');
 
-    // Build payload
     const payload: Record<string, unknown> = { platform: integration.id, config: {} };
     for (const [key, value] of Object.entries(form)) {
       if (key.startsWith('config.')) {
@@ -201,12 +305,12 @@ function ConnectModal({
 
     try {
       const res = await fetch('/api/integrations', {
-        method: 'POST',
+        method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body   : JSON.stringify(payload),
       });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await res.json() as { error?: string };
         setError(d.error ?? 'Connection failed');
       } else {
         onSave(integration.id);
@@ -226,8 +330,6 @@ function ConnectModal({
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white w-full max-w-md mx-4" style={{ borderTop: '2px solid #c9a84c' }}>
-
-        {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-zinc-100">
           <p className="text-[7.5px] uppercase tracking-[0.5em] mb-2"
              style={{ color: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
@@ -247,7 +349,6 @@ function ConnectModal({
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
           {integration.fields.map(field => (
             <div key={field.key}>
@@ -299,18 +400,109 @@ function ConnectModal({
   );
 }
 
+// ── Shopify sync actions (shown when connected) ───────────────────────────────
+
+function ShopifySyncActions({ lastSyncAt }: { lastSyncAt: string | null }) {
+  const [status, setStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  async function runSync(action: 'push-products' | 'sync-inventory') {
+    setStatus('loading');
+    setMessage('');
+    try {
+      const res  = await fetch('/api/integrations/shopify/sync', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ action }),
+      });
+      const data = await res.json() as {
+        pushed?: number;
+        synced?: number;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error ?? 'Sync failed');
+      if (action === 'push-products') {
+        setMessage(`${data.pushed ?? 0} product${data.pushed === 1 ? '' : 's'} pushed`);
+      } else {
+        setMessage(`${data.synced ?? 0} SKU${data.synced === 1 ? '' : 's'} updated`);
+      }
+      setStatus('success');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Sync failed');
+      setStatus('error');
+    }
+    setTimeout(() => setStatus('idle'), 4000);
+  }
+
+  const lastSync = lastSyncAt
+    ? new Date(lastSyncAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  return (
+    <div className="border-t border-zinc-50 pt-4 mt-1 space-y-3">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => runSync('push-products')}
+          disabled={status === 'loading'}
+          className="text-[7px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity disabled:opacity-30"
+          style={{ color: '#111', fontFamily: 'system-ui, sans-serif' }}
+        >
+          Push Products
+        </button>
+        <span style={{ color: '#e0e0e0' }}>·</span>
+        <button
+          onClick={() => runSync('sync-inventory')}
+          disabled={status === 'loading'}
+          className="text-[7px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity disabled:opacity-30"
+          style={{ color: '#111', fontFamily: 'system-ui, sans-serif' }}
+        >
+          Sync Inventory
+        </button>
+      </div>
+
+      {status === 'loading' && (
+        <p className="text-[7px] uppercase tracking-[0.3em]"
+           style={{ color: '#aaa', fontFamily: 'system-ui, sans-serif' }}>
+          Syncing…
+        </p>
+      )}
+      {status === 'success' && (
+        <p className="text-[7px] uppercase tracking-[0.3em]"
+           style={{ color: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
+          {message}
+        </p>
+      )}
+      {status === 'error' && (
+        <p className="text-[7px] uppercase tracking-[0.3em]"
+           style={{ color: '#c0392b', fontFamily: 'system-ui, sans-serif' }}>
+          {message}
+        </p>
+      )}
+
+      {lastSync && status === 'idle' && (
+        <p className="text-[7px] uppercase tracking-[0.3em]"
+           style={{ color: '#ddd', fontFamily: 'system-ui, sans-serif' }}>
+          Last sync {lastSync}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
   integration,
   connected,
   connectedAt,
+  lastSyncAt,
   onConnect,
   onDisconnect,
 }: {
   integration: Integration;
   connected: boolean;
   connectedAt?: string;
+  lastSyncAt?: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
@@ -330,8 +522,6 @@ function IntegrationCard({
     <div className={`border p-7 flex flex-col gap-5 transition-colors ${
       connected ? 'border-zinc-200' : 'border-zinc-100 hover:border-zinc-200'
     }`}>
-
-      {/* Status dot + name */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <p className="text-[7px] uppercase tracking-[0.45em] mb-2"
@@ -357,13 +547,16 @@ function IntegrationCard({
         </div>
       </div>
 
-      {/* Description */}
       <p className="text-[11px] leading-relaxed flex-1"
          style={{ color: '#999', fontFamily: 'system-ui, sans-serif' }}>
         {integration.description}
       </p>
 
-      {/* Footer */}
+      {/* Shopify sync actions */}
+      {connected && integration.id === 'shopify' && (
+        <ShopifySyncActions lastSyncAt={lastSyncAt ?? null} />
+      )}
+
       <div className="flex items-center justify-between pt-2 border-t border-zinc-50">
         {connected ? (
           <>
@@ -386,7 +579,7 @@ function IntegrationCard({
             className="text-[7.5px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity"
             style={{ color: '#111', fontFamily: 'system-ui, sans-serif' }}
           >
-            Connect →
+            {integration.oauth ? 'Connect with Shopify →' : 'Connect →'}
           </button>
         )}
       </div>
@@ -394,18 +587,49 @@ function IntegrationCard({
   );
 }
 
+// ── Banner ────────────────────────────────────────────────────────────────────
+
+function Banner({ type, message, onDismiss }: { type: 'success' | 'error'; message: string; onDismiss: () => void }) {
+  return (
+    <div
+      className="flex items-center justify-between px-6 py-4 mb-10"
+      style={{
+        background  : type === 'success' ? '#faf8f2' : '#fff5f5',
+        borderLeft  : `2px solid ${type === 'success' ? '#c9a84c' : '#c0392b'}`,
+      }}
+    >
+      <p className="text-[10px] uppercase tracking-[0.35em]"
+         style={{ color: type === 'success' ? '#c9a84c' : '#c0392b', fontFamily: 'system-ui, sans-serif' }}>
+        {message}
+      </p>
+      <button
+        onClick={onDismiss}
+        className="text-[9px] uppercase tracking-[0.3em] hover:opacity-50 transition-opacity ml-6"
+        style={{ color: '#aaa', fontFamily: 'system-ui, sans-serif' }}
+      >
+        Dismiss
+      </button>
+    </div>
+  );
+}
+
 // ── Main client component ─────────────────────────────────────────────────────
 
 export default function IntegrationsClient() {
-  const [connected, setConnected] = useState<ConnectedMap>({});
-  const [loading, setLoading] = useState(true);
-  const [activeModal, setActiveModal] = useState<Integration | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const searchParams = useSearchParams();
+  const router       = useRouter();
 
-  useEffect(() => {
+  const [connected, setConnected]       = useState<ConnectedMap>({});
+  const [loading, setLoading]           = useState(true);
+  const [activeModal, setActiveModal]   = useState<Integration | null>(null);
+  const [shopifyModal, setShopifyModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const fetchIntegrations = useCallback(() => {
     fetch('/api/integrations')
       .then(r => r.json())
-      .then(({ integrations }) => {
+      .then(({ integrations }: { integrations?: { platform: string; connected_at: string; last_sync_at: string | null; active: boolean }[] }) => {
         const map: ConnectedMap = {};
         for (const i of integrations ?? []) {
           map[i.platform] = { connected_at: i.connected_at, last_sync_at: i.last_sync_at, active: i.active };
@@ -414,6 +638,28 @@ export default function IntegrationsClient() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchIntegrations();
+  }, [fetchIntegrations]);
+
+  // Handle OAuth redirect params
+  useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error     = searchParams.get('error');
+
+    if (connected === 'shopify') {
+      setBanner({ type: 'success', message: 'Shopify connected successfully' });
+      fetchIntegrations();
+      router.replace('/dashboard/integrations');
+    } else if (error === 'shopify_denied') {
+      setBanner({ type: 'error', message: 'Shopify authorisation was cancelled' });
+      router.replace('/dashboard/integrations');
+    } else if (error === 'shopify_failed' || error === 'shopify_invalid') {
+      setBanner({ type: 'error', message: 'Shopify connection failed — please try again' });
+      router.replace('/dashboard/integrations');
+    }
+  }, [searchParams, router, fetchIntegrations]);
 
   async function handleDisconnect(id: string) {
     await fetch(`/api/integrations?platform=${id}`, { method: 'DELETE' });
@@ -431,13 +677,20 @@ export default function IntegrationsClient() {
     }));
   }
 
+  function handleConnect(integration: Integration) {
+    if (integration.oauth) {
+      setShopifyModal(true);
+    } else {
+      setActiveModal(integration);
+    }
+  }
+
   const connectedCount = Object.keys(connected).length;
 
   const displayed = activeCategory === 'All'
     ? INTEGRATIONS
     : INTEGRATIONS.filter(i => i.category === activeCategory);
 
-  // Group by category for the grid
   const byCategory: Record<string, Integration[]> = {};
   for (const i of displayed) {
     (byCategory[i.category] ??= []).push(i);
@@ -445,11 +698,23 @@ export default function IntegrationsClient() {
 
   return (
     <>
+      {shopifyModal && (
+        <ShopifyConnectModal onClose={() => setShopifyModal(false)} />
+      )}
+
       {activeModal && (
         <ConnectModal
           integration={activeModal}
           onClose={() => setActiveModal(null)}
           onSave={handleSave}
+        />
+      )}
+
+      {banner && (
+        <Banner
+          type={banner.type}
+          message={banner.message}
+          onDismiss={() => setBanner(null)}
         />
       )}
 
@@ -461,8 +726,8 @@ export default function IntegrationsClient() {
             onClick={() => setActiveCategory(cat)}
             className="text-[7.5px] uppercase tracking-[0.4em] transition-colors"
             style={{
-              fontFamily: 'system-ui, sans-serif',
-              color: activeCategory === cat ? '#111' : '#bbb',
+              fontFamily  : 'system-ui, sans-serif',
+              color       : activeCategory === cat ? '#111' : '#bbb',
               borderBottom: activeCategory === cat ? '1px solid #111' : '1px solid transparent',
               paddingBottom: '2px',
             }}
@@ -534,7 +799,8 @@ export default function IntegrationsClient() {
                 integration={integration}
                 connected={!!connected[integration.id]}
                 connectedAt={connected[integration.id]?.connected_at}
-                onConnect={() => setActiveModal(integration)}
+                lastSyncAt={connected[integration.id]?.last_sync_at}
+                onConnect={() => handleConnect(integration)}
                 onDisconnect={() => handleDisconnect(integration.id)}
               />
             ))}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { setBlob } from '@/lib/session-store';
 
 export async function GET() {
   const supabase = await createClient();
@@ -43,11 +44,15 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Clear cart after order placed
+  // Clear cart after order placed (cart lives in session_store, not buyer_cart)
   if (brand_name) {
-    await supabase.from('buyer_cart').delete().eq('user_id', user.id).eq('brand_name', brand_name);
+    // Partial clear: remove only items for this brand
+    const { getBlob } = await import('@/lib/session-store');
+    type CartItem = { brand_name?: string | null; [k: string]: unknown };
+    const current = (await getBlob<CartItem[]>(user.id, 'cart')) ?? [];
+    await setBlob(user.id, 'cart', current.filter(i => i.brand_name !== brand_name));
   } else {
-    await supabase.from('buyer_cart').delete().eq('user_id', user.id);
+    await setBlob(user.id, 'cart', []);
   }
 
   return NextResponse.json({ order: data });

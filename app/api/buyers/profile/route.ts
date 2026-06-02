@@ -9,17 +9,34 @@ const EDITABLE_FIELDS = [
   'market_segment', 'annual_buy_budget',
 ] as const;
 
+// The buyers table may use either 'id' or 'auth_user_id' as the FK to auth.users.
+// The activate route upserts using { id: user.id }, so we query by 'id' first
+// and fall back to 'auth_user_id' for rows created via the legacy backend.
+async function fetchBuyerRow(
+  supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
+  userId: string,
+): Promise<Record<string, unknown> | null> {
+  const { data: byId } = await supabase
+    .from('buyers')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+  if (byId) return byId as Record<string, unknown>;
+
+  const { data: byAuthId } = await supabase
+    .from('buyers')
+    .select('*')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+  return (byAuthId ?? null) as Record<string, unknown> | null;
+}
+
 export async function GET(req: NextRequest) {
   const { user, supabase } = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: buyer, error } = await supabase
-    .from('buyers')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle() as { data: Record<string, unknown> | null; error: { message: string } | null };
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const buyer = await fetchBuyerRow(supabase as any, user.id);
 
   const profile = {
     id         : user.id,
@@ -52,14 +69,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
-  const { data, error } = await supabase
-    .from('buyers')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .update(updates as any)
-    .eq('id', user.id)
-    .select()
-    .single();
+  // Try updating by 'id' first (activate flow), then fall back to 'auth_user_id'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  let result = await db.from('buyers').update(updates).eq('id', user.id).select().maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ buyer: data });
+  if (!result.data && !result.error) {
+    // Row may be keyed by auth_user_id
+    result = await db.from('buyers').update(updates).eq('auth_user_id', user.id).select().single();
+  }
+
+  if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
+  return NextResponse.json({ buyer: result.data });
 }

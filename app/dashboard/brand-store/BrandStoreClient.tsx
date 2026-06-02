@@ -391,6 +391,11 @@ export default function BrandStoreClient({
              style={{ color: '#c9a84c', fontFamily: 'system-ui' }}>
             Sell-Through →
           </a>
+          <a href="/dashboard/brand-store/orders"
+             className="text-[7.5px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity"
+             style={{ color: '#c9a84c', fontFamily: 'system-ui' }}>
+            Orders →
+          </a>
         </div>
       )}
 

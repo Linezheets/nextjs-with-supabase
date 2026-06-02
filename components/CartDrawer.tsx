@@ -231,19 +231,58 @@ function CartDrawer({ items, onClose, onRemove, onPlaceOrder }: {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
+type RawCartItem = {
+  variant_id     : string;
+  product_id     : string;
+  sku            : string | null;
+  name           : string | null;
+  size           : string;
+  color          : string | null;
+  quantity       : number;
+  wholesale_price: number | null;
+  msrp           : number | null;
+  image          : string | null;
+  brand_name     : string | null;
+};
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items,  setItems]  = useState<CartItem[]>([]);
-  const [open,   setOpen]   = useState(false);
-  const [picker, setPicker] = useState<CatalogItem | null>(null);
+  const [items,   setItems]   = useState<CartItem[]>([]);
+  const [rawCart, setRawCart] = useState<RawCartItem[]>([]);
+  const [open,    setOpen]    = useState(false);
+  const [picker,  setPicker]  = useState<CatalogItem | null>(null);
   const [placing, setPlacing] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const res = await fetch('/api/cart');
-      if (res.ok) {
-        const { cart } = await res.json();
-        setItems(cart ?? []);
+      if (!res.ok) return;
+      const { cart } = await res.json();
+      const raw: RawCartItem[] = cart ?? [];
+      setRawCart(raw);
+      // Group per-size variants into a single CartItem per product
+      const grouped = new Map<string, CartItem>();
+      for (const r of raw) {
+        const pid = r.product_id ?? r.variant_id;
+        if (!grouped.has(pid)) {
+          grouped.set(pid, {
+            item_id        : pid,
+            brand_name     : r.brand_name ?? '',
+            title          : r.name ?? '',
+            style_number   : r.sku ?? null,
+            colour         : r.color ?? null,
+            image_url      : r.image ?? null,
+            retail_price   : r.msrp ?? 0,
+            wholesale_price: r.wholesale_price ?? 0,
+            sizes          : {},
+            qty            : 0,
+          });
+        }
+        const entry = grouped.get(pid)!;
+        const q = Number(r.quantity);
+        if (r.size) entry.sizes[r.size] = (entry.sizes[r.size] ?? 0) + q;
+        entry.qty += q;
       }
+      setItems([...grouped.values()]);
     } catch { /* ignore */ }
   }, []);
 
@@ -254,43 +293,78 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const qty = Object.values(sizes).reduce((s, v) => s + v, 0);
     if (qty === 0) return;
 
-    await fetch('/api/cart', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({
-        item_id        : String(catalogItem.id),
-        brand_name     : String(catalogItem.brand_name ?? ''),
-        title          : String(catalogItem.title ?? catalogItem.name ?? ''),
-        style_number   : catalogItem.style_number ?? null,
-        colour         : null,
-        image_url      : catalogItem.image_url ?? (Array.isArray(catalogItem.image_urls) ? catalogItem.image_urls[0] : null),
-        retail_price   : Number(catalogItem.retail_price ?? catalogItem.price_usd ?? 0),
-        wholesale_price: ws,
-        sizes,
-      }),
-    });
+    // Post one variant entry per size so the cart API (which stores one row per variant) works correctly
+    await Promise.all(
+      Object.entries(sizes)
+        .filter(([, q]) => q > 0)
+        .map(([size, quantity]) =>
+          fetch('/api/cart', {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body   : JSON.stringify({
+              variantId      : `${catalogItem.id}_${size}`,
+              quantity,
+              sku            : catalogItem.style_number ?? null,
+              name           : String(catalogItem.title ?? catalogItem.name ?? ''),
+              size,
+              wholesale_price: ws,
+              msrp           : Number(catalogItem.retail_price ?? catalogItem.price_usd ?? 0),
+              image          : catalogItem.image_url ?? (Array.isArray(catalogItem.image_urls) ? catalogItem.image_urls[0] : null),
+              brand_name     : String(catalogItem.brand_name ?? ''),
+            }),
+          })
+        )
+    );
     await refresh();
     setOpen(true);
   }
 
   async function removeItem(item_id: string) {
-    await fetch(`/api/cart?item_id=${encodeURIComponent(item_id)}`, { method: 'DELETE' });
+    // Delete all per-size variants belonging to this product
+    const variants = rawCart.filter(r => (r.product_id ?? r.variant_id) === item_id);
+    const targets  = variants.length > 0 ? variants.map(v => v.variant_id) : [item_id];
+    await Promise.all(
+      targets.map(vid =>
+        fetch(`/api/cart?item_id=${encodeURIComponent(vid)}`, { method: 'DELETE' })
+      )
+    );
     setItems(p => p.filter(i => i.item_id !== item_id));
+    setRawCart(p => p.filter(r => (r.product_id ?? r.variant_id) !== item_id));
   }
 
   async function placeOrder() {
     if (!items.length || placing) return;
     setPlacing(true);
     const total = items.reduce((s, i) => s + i.wholesale_price * i.qty, 0);
-    await fetch('/api/orders', {
+
+    // Expand grouped items back to flat per-size rows for the order record
+    const orderItems = items.flatMap(item =>
+      Object.entries(item.sizes)
+        .filter(([, qty]) => qty > 0)
+        .map(([size, quantity]) => ({
+          name           : item.title,
+          size,
+          quantity,
+          wholesale_price: item.wholesale_price,
+          brand_name     : item.brand_name,
+          sku            : item.style_number,
+          image          : item.image_url,
+        }))
+    );
+
+    const res = await fetch('/api/orders', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ items, total_usd: total }),
+      body   : JSON.stringify({ items: orderItems, total_usd: total }),
     });
+
+    if (!res.ok) { setPlacing(false); return; }
+
+    const { order } = await res.json();
     await refresh();
     setOpen(false);
     setPlacing(false);
-    window.location.href = '/dashboard/orders';
+    window.location.href = `/checkout?order_id=${order.id}`;
   }
 
   return (

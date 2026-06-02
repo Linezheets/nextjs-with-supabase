@@ -18,7 +18,8 @@ export async function GET() {
     if (configError) return NextResponse.json({ error: configError.message }, { status: 500 });
 
     // 2. Fetch global platform integrations catalog using the Admin Client (New Logic)
-    const { data: globalIntegrations, error: globalError } = await supabaseAdmin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: globalIntegrations, error: globalError } = await (supabaseAdmin as any)
       .from('integrations')
       .select('*');
 

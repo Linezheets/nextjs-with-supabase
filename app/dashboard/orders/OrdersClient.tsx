@@ -1,8 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+type Installment = {
+  id             : string;
+  installment_seq: number;
+  amount_usd     : number;
+  status         : string;
+  due_date       : string | null;
+  method         : string;
+  created_at     : string;
+};
 
 type OrderItem = {
   item_id        : string;
@@ -18,13 +28,14 @@ type OrderItem = {
 };
 
 type Order = {
-  id        : string;
-  status    : string;
-  total_usd : number;
-  terms     : string | null;
-  notes     : string | null;
-  items     : OrderItem[];
-  created_at: string;
+  id             : string;
+  status         : string;
+  payment_status : string | null;
+  total_usd      : number;
+  terms          : string | null;
+  notes          : string | null;
+  items          : OrderItem[];
+  created_at     : string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -37,8 +48,222 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled : '#aaa',
 };
 
+const PAYMENT_LABEL: Record<string, { label: string; color: string }> = {
+  unpaid             : { label: 'Unpaid',      color: '#df1b41' },
+  pending_wire       : { label: 'Wire Pending', color: '#c9a84c' },
+  payment_processing : { label: 'Processing',  color: '#7cb9e8' },
+  paid               : { label: 'Paid',        color: '#52b788' },
+  payment_failed     : { label: 'Failed',      color: '#df1b41' },
+};
+
+function PaymentBadge({ order }: { order: Order }) {
+  const ps = order.payment_status ?? 'unpaid';
+  const info = PAYMENT_LABEL[ps] ?? { label: ps, color: '#aaa' };
+  const canPay = ps === 'unpaid' || ps === 'payment_failed';
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-[7px] uppercase tracking-[0.35em] px-2 py-0.5"
+            style={{ background: info.color, color: '#fff', fontFamily: 'system-ui' }}>
+        {info.label}
+      </span>
+      {canPay && (
+        <a
+          href={`/checkout?order_id=${order.id}`}
+          className="text-[7px] uppercase tracking-[0.35em] px-3 py-1.5 border border-black hover:bg-black hover:text-white transition-colors"
+          style={{ fontFamily: 'system-ui', color: '#111' }}
+        >
+          Pay Now →
+        </a>
+      )}
+    </div>
+  );
+}
+
 function fmtUSD(n: number) {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ── Invoice download / view actions ──────────────────────────────────────────
+
+function InvoiceActions({ orderId }: { orderId: string }) {
+  const [loading,  setLoading]  = useState<false | 'invoice' | 'proforma'>(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  async function triggerDownload(fmt: 'invoice' | 'proforma') {
+    if (loading) return;
+    setLoading(fmt);
+    setMenuOpen(false);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/invoice?format=${fmt}`);
+      if (!res.ok) throw new Error('Failed');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${fmt}-${orderId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Could not generate invoice. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const busy = !!loading;
+
+  return (
+    <div ref={menuRef} className="relative flex items-center">
+      {/* Primary download button */}
+      <button
+        onClick={() => triggerDownload('invoice')}
+        disabled={busy}
+        className="flex items-center gap-1.5 text-[7px] uppercase tracking-[0.35em] px-3 py-1.5
+                   border-t border-b border-l border-zinc-200 hover:border-zinc-700
+                   transition-colors disabled:opacity-40"
+        style={{ fontFamily: 'system-ui', color: busy ? '#ccc' : '#888' }}
+        title="Download invoice PDF"
+      >
+        {loading === 'invoice' ? (
+          <span className="inline-block w-2 h-2 rounded-full border border-current border-t-transparent animate-spin" />
+        ) : '↓'}
+        {' '}Invoice
+      </button>
+
+      {/* Chevron — opens dropdown */}
+      <button
+        onClick={() => setMenuOpen(v => !v)}
+        disabled={busy}
+        className="text-[8px] px-2 py-1.5 border border-zinc-200 hover:border-zinc-700
+                   transition-colors disabled:opacity-40"
+        style={{ color: '#bbb', lineHeight: 1 }}
+        aria-label="More invoice options"
+      >
+        {menuOpen ? '▴' : '▾'}
+      </button>
+
+      {/* Dropdown */}
+      {menuOpen && (
+        <div className="absolute right-0 top-full mt-1 border border-zinc-200 bg-white z-20 min-w-[148px] shadow-sm">
+          <button
+            onClick={() => { setMenuOpen(false); window.open(`/api/orders/${orderId}/invoice`, '_blank'); }}
+            className="w-full text-left px-4 py-2.5 text-[7px] uppercase tracking-[0.35em]
+                       hover:bg-zinc-50 transition-colors"
+            style={{ fontFamily: 'system-ui', color: '#555' }}
+          >
+            View in browser ↗
+          </button>
+          <div className="border-t border-zinc-100" />
+          <button
+            onClick={() => triggerDownload('proforma')}
+            disabled={loading === 'proforma'}
+            className="w-full text-left px-4 py-2.5 text-[7px] uppercase tracking-[0.35em]
+                       hover:bg-zinc-50 transition-colors disabled:opacity-40 flex items-center gap-2"
+            style={{ fontFamily: 'system-ui', color: '#555' }}
+          >
+            {loading === 'proforma' && (
+              <span className="inline-block w-2 h-2 rounded-full border border-current border-t-transparent animate-spin" />
+            )}
+            Proforma ↓
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const INST_STATUS: Record<string, { label: string; color: string }> = {
+  pending    : { label: 'Due',      color: '#c9a84c' },
+  processing : { label: 'Processing', color: '#7cb9e8' },
+  paid       : { label: 'Paid',     color: '#52b788' },
+  failed     : { label: 'Failed',   color: '#df1b41' },
+  overdue    : { label: 'Overdue',  color: '#df1b41' },
+};
+
+function InstallmentSchedule({ installments }: { installments: Installment[] }) {
+  const [open, setOpen] = useState(false);
+  if (installments.length < 2) return null;
+
+  const paid    = installments.filter(i => i.status === 'paid').length;
+  const total   = installments.length;
+  const nextDue = installments.find(i => i.status !== 'paid' && i.status !== 'waived');
+
+  return (
+    <div className="border-t border-zinc-100">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-8 py-3 hover:bg-zinc-50 transition-colors"
+        style={{ fontFamily: 'system-ui' }}
+      >
+        <div className="flex items-center gap-4">
+          <span className="text-[7.5px] uppercase tracking-[0.4em]" style={{ color: '#888' }}>
+            Instalments
+          </span>
+          <span className="text-[7.5px] uppercase tracking-[0.3em]" style={{ color: '#c9a84c', fontFamily: 'var(--font-mono), monospace' }}>
+            {paid}/{total} Paid
+          </span>
+          {nextDue?.due_date && (
+            <span className="text-[7.5px] uppercase tracking-[0.3em]" style={{ color: '#bbb' }}>
+              · Next: {new Date(nextDue.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px]" style={{ color: '#bbb' }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="px-8 pb-6">
+          <div className="border border-zinc-100">
+            {installments.map((inst, idx) => {
+              const info = INST_STATUS[inst.status] ?? { label: inst.status, color: '#aaa' };
+              const dueStr = inst.due_date
+                ? new Date(inst.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : inst.installment_seq === 1
+                  ? new Date(inst.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : '—';
+              return (
+                <div key={inst.id}
+                     className={`flex items-center justify-between px-6 py-3 ${idx < installments.length - 1 ? 'border-b border-zinc-50' : ''}`}>
+                  <div className="flex items-center gap-6">
+                    <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '10px', color: '#bbb', minWidth: '18px' }}>
+                      {inst.installment_seq}
+                    </span>
+                    <span className="text-[7px] uppercase tracking-[0.25em] px-2 py-0.5"
+                          style={{ background: info.color, color: '#fff', fontFamily: 'system-ui' }}>
+                      {info.label}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-[0.3em]" style={{ color: '#bbb', fontFamily: 'system-ui' }}>
+                      {inst.method}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: '#aaa', fontFamily: 'system-ui' }}>
+                      {dueStr}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '12px', color: inst.status === 'paid' ? '#52b788' : '#c9a84c' }}>
+                      {fmtUSD(Number(inst.amount_usd))}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function groupByBrand(items: OrderItem[]): Record<string, OrderItem[]> {
@@ -64,7 +289,7 @@ function activeSizes(items: OrderItem[]): string[] {
 
 // ── Line-sheet view (per-brand table) ────────────────────────────────────────
 
-function LineSheetOrder({ order }: { order: Order }) {
+function LineSheetOrder({ order, installments }: { order: Order; installments: Installment[] }) {
   const byBrand = groupByBrand(order.items);
   const date = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -78,12 +303,14 @@ function LineSheetOrder({ order }: { order: Order }) {
                 style={{ background: STATUS_COLOR[order.status] ?? '#ccc', color: '#fff', fontFamily: 'system-ui' }}>
             {order.status}
           </span>
+          <PaymentBadge order={order} />
         </div>
         <div className="flex items-center gap-8">
           <p className="text-[8px] uppercase tracking-[0.3em]" style={{ color: '#aaa', fontFamily: 'system-ui' }}>{date}</p>
           <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '13px', color: '#c9a84c' }}>
             {fmtUSD(Number(order.total_usd))}
           </p>
+          <InvoiceActions orderId={order.id} />
         </div>
       </div>
 
@@ -184,13 +411,15 @@ function LineSheetOrder({ order }: { order: Order }) {
           <p className="text-[11px]" style={{ color: '#666', fontFamily: 'system-ui' }}>{order.notes}</p>
         </div>
       )}
+
+      <InstallmentSchedule installments={installments} />
     </div>
   );
 }
 
 // ── Grid view (brand-grouped product cards) ───────────────────────────────────
 
-function GridOrder({ order }: { order: Order }) {
+function GridOrder({ order, installments }: { order: Order; installments: Installment[] }) {
   const byBrand = groupByBrand(order.items);
   const date = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -204,12 +433,14 @@ function GridOrder({ order }: { order: Order }) {
                 style={{ background: STATUS_COLOR[order.status] ?? '#ccc', color: '#fff', fontFamily: 'system-ui' }}>
             {order.status}
           </span>
+          <PaymentBadge order={order} />
         </div>
         <div className="flex items-center gap-8">
           <p className="text-[8px] uppercase tracking-[0.3em]" style={{ color: '#aaa', fontFamily: 'system-ui' }}>{date}</p>
           <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '13px', color: '#c9a84c' }}>
             {fmtUSD(Number(order.total_usd))}
           </p>
+          <InvoiceActions orderId={order.id} />
         </div>
       </div>
 
@@ -261,6 +492,8 @@ function GridOrder({ order }: { order: Order }) {
           </div>
         </div>
       ))}
+
+      <InstallmentSchedule installments={installments} />
     </div>
   );
 }
@@ -293,7 +526,13 @@ function EmptyOrders() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
+export default function OrdersClient({
+  initialOrders,
+  installmentsByOrder = {},
+}: {
+  initialOrders      : Order[];
+  installmentsByOrder: Record<string, Installment[]>;
+}) {
   const [view,   setView]   = useState<'linesheet' | 'grid'>('linesheet');
   const [filter, setFilter] = useState<string>('all');
 
@@ -360,8 +599,8 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Order[]
       {/* Orders */}
       {orders.length === 0 ? <EmptyOrders /> : (
         view === 'linesheet'
-          ? orders.map(o => <LineSheetOrder key={o.id} order={o} />)
-          : orders.map(o => <GridOrder      key={o.id} order={o} />)
+          ? orders.map(o => <LineSheetOrder key={o.id} order={o} installments={installmentsByOrder[o.id] ?? []} />)
+          : orders.map(o => <GridOrder      key={o.id} order={o} installments={installmentsByOrder[o.id] ?? []} />)
       )}
     </>
   );

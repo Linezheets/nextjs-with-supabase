@@ -18,7 +18,7 @@ async function parseQuery(q: string): Promise<ParsedQuery> {
 
   const client = new Anthropic({ apiKey });
   const msg = await client.messages.create({
-    model     : 'claude-haiku-4-5-20251001',
+    model     : 'claude-haiku-4-5',
     max_tokens: 256,
     system    : 'You are a search query parser for a luxury fashion wholesale platform. Extract structured filters from the user query. Respond with ONLY valid JSON, no explanation.',
     messages  : [{

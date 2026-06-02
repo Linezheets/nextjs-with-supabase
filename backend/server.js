@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  LINEZHEETS SERVER  v3.0  —  Supabase-backed
 // ─────────────────────────────────────────────────────────────────────────────
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '.env'), override: true });
 
 const express  = require('express');
 const cors     = require('cors');
@@ -91,7 +91,8 @@ async function sendOrderConfirmation(toEmail, order) {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'lz-dev-jwt-secret-2025';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -99,11 +100,11 @@ const PORT = process.env.PORT || 4000;
 // ─── Supabase client ──────────────────────────────────────────────────────────
 // Server uses the service-role key (bypasses RLS) when available.
 // Falls back to anon key — make sure INSERT/UPDATE RLS policies allow it.
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.warn('⚠️  SUPABASE_URL / SUPABASE_ANON_KEY not set — running with seed data fallback');
+  console.warn('⚠️  SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY not set — running with seed data fallback');
 }
 
 const supabase = (SUPABASE_URL && SUPABASE_KEY)
@@ -143,7 +144,7 @@ const passport = require('./config/passport'); // Automatically executes your pa
 
 // 1. Session Middleware Setup (Must be placed BEFORE passport hooks)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'linezheets_dev_secret_key',
+  secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('SESSION_SECRET env var is required in production'); })() : 'lz-dev-session-local-only'),
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -5593,7 +5594,7 @@ Return ONLY this JSON object (no markdown, no explanation outside JSON):
 }`;
 
     const message = await anthropic.messages.create({
-      model      : 'claude-opus-4-5',
+      model      : 'claude-opus-4-8',
       max_tokens : 600,
       messages   : [{ role: 'user', content: prompt }],
     });
@@ -6650,8 +6651,8 @@ app.delete('/api/brands/:brandId/follow', async (req, res) => {
 // Uses a separate Supabase client with anon key so signInWithPassword works.
 const supabaseAuth = (() => {
   const { createClient: cc } = require('@supabase/supabase-js');
-  return (SUPABASE_URL && process.env.SUPABASE_ANON_KEY)
-    ? cc(SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+  return (SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+    ? cc(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
     : null;
 })();
 

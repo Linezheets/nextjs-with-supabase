@@ -25,18 +25,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // interest count
-    const { count: interestCount } = await (supabase as any)
-      .from('event_interests')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', id);
-
-    // rsvp count (approved + checked_in)
-    const { count: rsvpCount } = await (supabase as any)
-      .from('event_rsvps')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', id)
-      .in('status', ['approved','checked_in']);
+    const [{ count: interestCount }, { count: rsvpCount }] = await Promise.all([
+      (supabase as any)
+        .from('event_interests')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', id),
+      (supabase as any)
+        .from('event_rsvps')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', id)
+        .in('status', ['approved', 'checked_in']),
+    ]);
 
     return NextResponse.json({
       event: { ...data, interest_count: interestCount || 0, rsvp_count: rsvpCount || 0 },
