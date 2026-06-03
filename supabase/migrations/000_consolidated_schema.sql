@@ -1012,6 +1012,7 @@ END $$;
 -- 15. VIEWS
 -- ─────────────────────────────────────────────────────────────────────────────
 
+DROP VIEW IF EXISTS public.buyer_vip_catalog;
 CREATE OR REPLACE VIEW public.buyer_vip_catalog AS
 SELECT
   id,
