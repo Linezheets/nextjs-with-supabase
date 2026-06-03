@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import Link            from 'next/link';
+import { OrderScrollSection }       from '@/components/OrderScrollSection';
+import { DashboardShowcaseSection } from '@/components/DashboardShowcaseSection';
 
 export const revalidate = 3600;
 
@@ -257,6 +259,13 @@ export default async function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
+          ORDER UI SCROLL ANIMATION
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section className="border-t border-zinc-100">
+        <OrderScrollSection />
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
           FOR BRANDS — quote + features
       ══════════════════════════════════════════════════════════════════════ */}
       <section className="border-t border-zinc-100">
@@ -439,6 +448,11 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          DASHBOARD SHOWCASE — platform UI mockup sections
+      ══════════════════════════════════════════════════════════════════════ */}
+      <DashboardShowcaseSection />
 
       {/* ══════════════════════════════════════════════════════════════════════
           FOR BUYERS — quote + benefits
