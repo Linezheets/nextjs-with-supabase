@@ -21,7 +21,7 @@ $$;
 -- ─────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS public.inventory (
-  id               BIGSERIAL      PRIMARY KEY,
+  id               UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
   title            TEXT           NOT NULL DEFAULT '',
   sku              TEXT           UNIQUE,
   category         TEXT           NOT NULL DEFAULT 'GENERAL',
@@ -719,7 +719,7 @@ WHERE theme IS NOT NULL;
 CREATE TABLE IF NOT EXISTS public.brand_storefront_products (
   id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   storefront_id   UUID          NOT NULL REFERENCES public.brand_storefronts(id) ON DELETE CASCADE,
-  inventory_id    INT           NOT NULL,
+  inventory_id    UUID          NOT NULL,
   consumer_price  DECIMAL(14,2),
   featured        BOOLEAN       DEFAULT false,
   sort_order      INT           DEFAULT 0,
@@ -731,7 +731,7 @@ CREATE TABLE IF NOT EXISTS public.brand_storefront_products (
 CREATE TABLE IF NOT EXISTS public.brand_storefront_enquiries (
   id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   storefront_id UUID          NOT NULL REFERENCES public.brand_storefronts(id) ON DELETE CASCADE,
-  inventory_id  INT,
+  inventory_id  UUID,
   name          TEXT          NOT NULL,
   email         TEXT          NOT NULL,
   message       TEXT,
@@ -1070,7 +1070,7 @@ WHERE status = 'active';
 DROP FUNCTION IF EXISTS public.get_buyer_catalog(UUID);
 CREATE OR REPLACE FUNCTION public.get_buyer_catalog(p_buyer_id UUID)
 RETURNS TABLE (
-  id               BIGINT,
+  id               UUID,
   title            TEXT,
   sku              TEXT,
   category         TEXT,
@@ -1192,7 +1192,7 @@ GRANT EXECUTE ON FUNCTION public.get_buyer_catalog(UUID) TO authenticated, anon;
 DROP FUNCTION IF EXISTS public.get_brand_sell_through(TEXT);
 CREATE OR REPLACE FUNCTION public.get_brand_sell_through(p_brand_name TEXT)
 RETURNS TABLE (
-  inventory_id   BIGINT,
+  inventory_id   UUID,
   title          TEXT,
   sku            TEXT,
   category       TEXT,
