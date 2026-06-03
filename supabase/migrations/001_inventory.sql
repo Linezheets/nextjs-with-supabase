@@ -96,7 +96,7 @@ CREATE TRIGGER trg_inventory_updated_at
 CREATE INDEX IF NOT EXISTS idx_inventory_category  ON public.inventory (category);
 CREATE INDEX IF NOT EXISTS idx_inventory_season    ON public.inventory (season);
 CREATE INDEX IF NOT EXISTS idx_inventory_sku       ON public.inventory (sku);
-CREATE INDEX IF NOT EXISTS idx_inventory_stock     ON public.inventory (stock);
+CREATE INDEX IF NOT EXISTS idx_inventory_stock     ON public.inventory (stock_total);
 CREATE INDEX IF NOT EXISTS idx_inventory_brand     ON public.inventory (brand_name);
 
 -- 7.  Row-Level Security
