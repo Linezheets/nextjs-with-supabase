@@ -1067,6 +1067,7 @@ WHERE status = 'active';
 -- Returns the active catalog for a specific buyer, applying their
 -- pricing and visibility rules. Priority: sku > brand > category > global.
 
+DROP FUNCTION IF EXISTS public.get_buyer_catalog(UUID);
 CREATE OR REPLACE FUNCTION public.get_buyer_catalog(p_buyer_id UUID)
 RETURNS TABLE (
   id               BIGINT,
@@ -1188,6 +1189,7 @@ GRANT EXECUTE ON FUNCTION public.get_buyer_catalog(UUID) TO authenticated, anon;
 
 -- ── get_brand_sell_through ────────────────────────────────────────────────────
 
+DROP FUNCTION IF EXISTS public.get_brand_sell_through(TEXT);
 CREATE OR REPLACE FUNCTION public.get_brand_sell_through(p_brand_name TEXT)
 RETURNS TABLE (
   inventory_id   BIGINT,
@@ -1261,6 +1263,7 @@ GRANT EXECUTE ON FUNCTION public.get_brand_sell_through(TEXT) TO authenticated;
 --   IMMEDIATE          → stock on hand, decrement inventory.sizes + stock_total
 --   FUTURE_ALLOCATION  → delivery_window present, accept as pre-order (no decrement)
 
+DROP FUNCTION IF EXISTS public.allocate_order_stock_v2(JSONB);
 CREATE OR REPLACE FUNCTION public.allocate_order_stock_v2(p_items JSONB)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
