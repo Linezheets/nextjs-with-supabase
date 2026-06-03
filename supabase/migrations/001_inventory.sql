@@ -118,7 +118,7 @@ CREATE POLICY "inventory_write_authenticated"
 -- 8.  Seed starter SKUs (safe — skips if SKU already exists)
 INSERT INTO public.inventory
   (title, sku, category, gender, color, season, brand_name, brand_id, tags,
-   srp_usd, margin, moq, sizes, stock, delivery_window, image_urls, tier_pricing)
+   srp, margin, moq, sizes, stock_total, delivery_window, image_urls, tier_pricing)
 VALUES
   ('Silk Blazer','LZ-BLZ-001','OUTERWEAR','WOMEN','Ivory','SS27','Luxury Lab',1,
    ARRAY['ivory','luxury','blazer','ss27'],1200,0.50,5,
