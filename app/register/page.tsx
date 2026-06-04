@@ -48,13 +48,24 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: loginEmail, password: loginPw,
+    // Route through /api/auth/login so the notify email fires and rate limiting applies
+    const res = await fetch('/api/auth/login', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ email: loginEmail, password: loginPw }),
     });
+    const data = await res.json();
     setLoading(false);
-    if (err) { setError(err.message); return; }
-    router.push('/dashboard');
-    router.refresh();
+    if (!res.ok) { setError(data.error ?? 'Login failed'); return; }
+    // Check for MFA requirement
+    const supabaseClient = createClient();
+    const { data: aal } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
+      router.push('/mfa');
+    } else {
+      router.push(data.redirect ?? '/dashboard');
+      router.refresh();
+    }
   }
 
   async function handleRegister(e: React.FormEvent) {

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse }        from 'next/server';
+import { createClient }                    from '@/lib/supabase/server';
+import { encryptBuyerPii }                 from '@/lib/crypto/pii';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -43,7 +44,9 @@ export async function POST(req: NextRequest) {
   Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
 
   // Use raw upsert via rpc-style cast to bypass strict Insert types (id is PK)
-  const payload = { id: user.id, email: user.email!, store_name: user.user_metadata?.store_name ?? '', ...updates };
+  // CIS 3: encrypt PII before writing to DB
+  const encryptedUpdates = encryptBuyerPii(updates as Partial<{ phone: string | null; store_address: string | null }>);
+  const payload = { id: user.id, email: user.email!, store_name: user.user_metadata?.store_name ?? '', ...encryptedUpdates };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: buyer, error } = await (supabase.from('buyers') as any)
     .upsert(payload)

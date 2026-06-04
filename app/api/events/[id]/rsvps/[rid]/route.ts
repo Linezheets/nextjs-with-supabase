@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
-const AGENCY_EMAILS = ['info@linezheets.com'];
+const AGENCY_EMAILS = ['hello@linezheets.com'];
 
 export async function PATCH(
   req: NextRequest,

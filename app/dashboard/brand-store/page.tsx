@@ -1,6 +1,7 @@
-import { redirect }      from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import BrandStoreClient from './BrandStoreClient';
+import { redirect }        from 'next/navigation';
+import { createClient }   from '@/lib/supabase/server';
+import BrandStoreClient   from './BrandStoreClient';
+import MFAEnrollmentGate  from '@/app/dashboard/MFAEnrollmentGate';
 
 export const metadata = { title: 'Brand Store — Linezheets' };
 
@@ -13,6 +14,13 @@ export default async function BrandStorePage() {
   // Only brand or admin users may access this section
   const role = user.user_metadata?.role ?? user.app_metadata?.role;
   if (role !== 'brand' && role !== 'admin') redirect('/dashboard');
+
+  // ── Mandatory MFA gate ───────────────────────────────────────────────────
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const hasVerifiedFactor = (factors?.totp ?? []).some(f => f.status === 'verified');
+  if (!hasVerifiedFactor) {
+    return <MFAEnrollmentGate email={user.email ?? ''} />;
+  }
 
   const sfRes = await supabase.from('brand_storefronts').select('*').eq('user_id', user.id).maybeSingle();
 

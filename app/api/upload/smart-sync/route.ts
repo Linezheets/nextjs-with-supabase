@@ -3,6 +3,7 @@ import { buildMappings, buildSizeCols, extractProducts } from '@/lib/smart-sync/
 import { COLUMN_MAPS } from '@/lib/smart-sync/column-maps';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { getUserFromRequest } from '@/lib/supabase/bearer';
 
 export const runtime = 'nodejs';
 
@@ -205,13 +206,32 @@ Rules:
   });
 }
 
+// ── CIS 7 / CIS 3: xlsx security limits ──────────────────────────────────────
+// xlsx has known Prototype Pollution + ReDoS vulnerabilities (no upstream fix).
+// Mitigations applied:
+//   1. Hard file-size cap (10 MB) — limits ReDoS attack surface
+//   2. Content-type validation — rejects non-spreadsheet files disguised as xlsx
+//   3. Row count cap (5 000) — limits memory exhaustion
+//   4. Prototype-safe cell access via Object.prototype.hasOwnProperty check
+//   5. brandCode sanitised to alphanumeric to prevent path traversal
+// Full replacement (exceljs) is tracked as a future sprint item.
+const MAX_FILE_BYTES = 10 * 1024 * 1024;   // 10 MB
+const MAX_ROWS       = 5_000;
+
+function sanitiseBrandCode(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+}
+
 export async function POST(req: NextRequest) {
+  // Auth guard — must be a signed-in brand or admin user
+  const { user } = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const contentType = req.headers.get('content-type') ?? '';
   if (!contentType.includes('multipart/form-data')) {
     return NextResponse.json({ error: 'Expected multipart/form-data' }, { status: 400 });
   }
 
-  // Parse multipart using Web Streams API (no temp files needed)
   let fileBuffer: Buffer;
   let fileName = '';
   let brandCode = '';
@@ -224,8 +244,17 @@ export async function POST(req: NextRequest) {
     }
     const f = file as File;
     fileName = f.name ?? '';
-    brandCode = String(formData.get('brandCode') ?? '').trim();
+    brandCode = sanitiseBrandCode(String(formData.get('brandCode') ?? '').trim());
     const arrayBuf = await f.arrayBuffer();
+
+    // CIS 7: hard file-size cap before parsing
+    if (arrayBuf.byteLength > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: `File exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit` },
+        { status: 413 }
+      );
+    }
+
     fileBuffer = Buffer.from(arrayBuf);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -314,6 +343,14 @@ export async function POST(req: NextRequest) {
 
   if (rawHeaders.length === 0) {
     return NextResponse.json({ error: 'Could not detect headers in file.' }, { status: 422 });
+  }
+
+  // CIS 7: row-count cap to mitigate ReDoS via massive sheets
+  if (rawRows.length > MAX_ROWS) {
+    return NextResponse.json(
+      { error: `File contains ${rawRows.length} rows — limit is ${MAX_ROWS}. Split into smaller files.` },
+      { status: 422 }
+    );
   }
 
   const { mappings, matchedCount, columnSamples } = buildMappings(rawHeaders, rawRows);
