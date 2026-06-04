@@ -15,7 +15,6 @@ const PLANS = [
 
 export default function RegisterPage() {
   const router   = useRouter();
-  const supabase = createClient();
 
   const [role,      setRole]      = useState<Role>('brand');
   const [plan,      setPlan]      = useState<string>('studio');
@@ -69,6 +68,7 @@ export default function RegisterPage() {
   }
 
   async function handleRegister(e: React.FormEvent) {
+    const supabase = createClient();
     e.preventDefault();
     setError('');
     if (!form.agree) { setError('Please accept the Terms of Service.'); return; }
