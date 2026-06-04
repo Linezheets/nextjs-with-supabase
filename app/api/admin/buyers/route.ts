@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';;
 import { requireAdmin } from '@/lib/supabase/requireAdmin';
 import { createClient } from '@/lib/supabase/server';
 
 // GET /api/admin/buyers — list all buyers (id, email, store_name, status)
-export async function GET() {
-  const guard = await requireAdmin();
+export async function GET(req: NextRequest) {
+  const guard = await requireAdmin(req);
   if (!guard.ok) return guard.response;
 
   const supabase = await createClient();

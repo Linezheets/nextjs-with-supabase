@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const AGENCY_EMAILS = ['info@linezheets.com'];
+const AGENCY_EMAILS = ['hello@linezheets.com'];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: event_id } = await params;

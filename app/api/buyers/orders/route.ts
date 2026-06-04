@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/supabase/bearer';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logActivity }       from '@/lib/audit';
+import { setAuditUser }  from '@/lib/supabase/set-audit-user';
 
 export async function GET(req: NextRequest) {
   const { user, supabase } = await getUserFromRequest(req);
@@ -30,6 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { user, supabase } = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user) await setAuditUser(supabase, user);
 
   let body: {
     items      : Array<Record<string, unknown>>;
@@ -207,6 +210,24 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch { /* email is non-critical */ }
+
+  // Audit log — order placed
+  logActivity({
+    user_id : user.id,
+    email   : user.email,
+    role    : 'buyer',
+    action  : 'buyer_place_order',
+    resource: `order:${orderId}`,
+    status  : 'success',
+    detail  : `Order ${orderId} placed — ${normalised.length} SKU(s), $${total_usd ?? 0}`,
+    metadata: {
+      order_id       : orderId,
+      total_usd      : total_usd ?? 0,
+      item_count     : normalised.length,
+      fulfillment_type: orderFulfillmentType,
+      brand_name,
+    },
+  }, req);
 
   return NextResponse.json({ order, allocated: result.allocated });
 }

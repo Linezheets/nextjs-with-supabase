@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Discover global fashion weeks, tradeshows, showrooms, and runway events.',
 };
 
-const AGENCY_EMAILS = ['info@linezheets.com'];
+const AGENCY_EMAILS = ['hello@linezheets.com'];
 
 export default async function FashionEventsLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();

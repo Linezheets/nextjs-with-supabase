@@ -96,7 +96,7 @@ Rules: only include events with title AND city. Today is ${today}. Normalise cit
 
 async function extractEvents(sourceName: string, pageText: string, sourceUrl: string, anthropic: any) {
   const msg = await anthropic.messages.create({
-    model: 'claude-opus-4-8',
+    model: 'claude-opus-4-5',
     max_tokens: 4096,
     system: EXTRACT_SYSTEM(new Date().toISOString().slice(0, 10)),
     messages: [{ role: 'user', content: `Source: ${sourceName}\nURL: ${sourceUrl}\n\n${pageText}` }],

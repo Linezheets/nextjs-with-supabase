@@ -69,7 +69,7 @@ const SectionWithMockup: React.FC<SectionWithMockupProps> = ({
 
                     {/* App mockup/Image Content */}
                     <motion.div
-                        className={`relative mt-10 md:mt-0 mx-auto ${imageOrderClass} w-full max-w-[300px] md:max-w-[471px]`}
+                        className={`relative mt-10 md:mt-0 mx-auto ${imageOrderClass} w-full max-w-[300px] md:max-w-[471px] overflow-hidden rounded-[32px]`}
                         variants={itemVariants}
                     >
                         {/* Decorative Background Element */}
@@ -78,8 +78,8 @@ const SectionWithMockup: React.FC<SectionWithMockupProps> = ({
                              style={{
                                 top: reverseLayout ? 'auto' : '10%',
                                 bottom: reverseLayout ? '10%' : 'auto',
-                                left: reverseLayout ? 'auto' : '-20%',
-                                right: reverseLayout ? '-20%' : 'auto',
+                                left: reverseLayout ? 'auto' : '0%',
+                                right: reverseLayout ? '0%' : 'auto',
                                 transform: reverseLayout ? 'translate(0, 0)' : 'translateY(10%)',
                                 filter: 'blur(2px)'
                             }}
