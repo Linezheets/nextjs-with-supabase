@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
  * in the top-right of the public landing navbar.
  */
 export function NavBarAuth() {
-  const [loggedIn, setLoggedIn] = useState(null);
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
