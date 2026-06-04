@@ -22,6 +22,15 @@ export default async function BuyerDashboard() {
   const rawRole = String(user.user_metadata?.role ?? user.app_metadata?.role ?? '');
   if (rawRole === 'brand') redirect('/dashboard/brand-store');
 
+  // ── Pending approval gate ────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: buyerRow } = await (supabase as any)
+    .from('buyers')
+    .select('status')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (buyerRow?.status === 'pending') redirect('/pending-approval');
+
   // ── Mandatory MFA gate ───────────────────────────────────────────────────
   // VIP wholesale platform — every account must have a TOTP factor enrolled.
   // If the user has no verified factor, show the enrollment gate instead of

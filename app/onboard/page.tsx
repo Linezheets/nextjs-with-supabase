@@ -40,7 +40,7 @@ export default function OnboardPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Something went wrong'); return; }
-      router.push('/dashboard?welcome=1');
+      router.push('/pending-approval');
     } catch {
       setError('Network error — please try again.');
     } finally {

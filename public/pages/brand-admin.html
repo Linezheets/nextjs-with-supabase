@@ -1173,6 +1173,38 @@
       <p class="text-zinc-700 text-[10px] mt-3">Buyer will see your brand's products, log in with the temporary password, then set their own password and complete their profile.</p>
     </div>
 
+    <!-- ── Pending Applications ──────────────────────────────────────────── -->
+    <div id="pending-section" style="margin-bottom:28px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h4 class="font-luxury" style="font-size:1.1rem; font-weight:300; text-transform:uppercase; color:var(--gold);">Pending Applications</h4>
+          <span id="pending-badge" style="display:none; background:#c9a84c; color:#000; font-size:9px; font-family:'DM Mono',monospace; padding:2px 8px; letter-spacing:0.1em; border-radius:2px;">0</span>
+        </div>
+        <button onclick="loadPendingBuyers()" class="lz-btn lz-btn-ghost" style="font-size:10px; padding:4px 10px;">Refresh</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-zinc-800 text-zinc-500 uppercase tracking-widest text-[10px]">
+              <th class="text-left py-3 pr-6 font-normal">Store</th>
+              <th class="text-left py-3 pr-6 font-normal">Email</th>
+              <th class="text-left py-3 pr-4 font-normal">Country</th>
+              <th class="text-left py-3 pr-4 font-normal">Type</th>
+              <th class="text-left py-3 pr-4 font-normal">Applied</th>
+              <th class="text-right py-3 font-normal">Decision</th>
+            </tr>
+          </thead>
+          <tbody id="pending-tbody">
+            <tr><td colspan="6" class="py-6 text-center text-zinc-600 font-mono-dm text-[10px]">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin-bottom:24px; padding-top:24px;">
+      <h4 class="font-luxury" style="font-size:1.1rem; font-weight:300; text-transform:uppercase; color:var(--text); margin-bottom:14px;">All Buyers</h4>
+    </div>
+
     <!-- Buyers list -->
     <div class="overflow-x-auto">
       <table class="w-full text-xs">
@@ -4028,6 +4060,96 @@ function copyShareLink() {
   navigator.clipboard.writeText(input.value).then(() => showToast('Link copied to clipboard ✓'));
 }
 
+async function loadPendingBuyers() {
+  const tbody = document.getElementById('pending-tbody');
+  const badge = document.getElementById('pending-badge');
+  tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-zinc-600">Loading…</td></tr>';
+  try {
+    const res  = await fetch(`/api/admin/buyers?status=pending`, { credentials: 'include' });
+    if (!res.ok) { tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-zinc-600 text-[10px]">No access — admin only</td></tr>'; return; }
+    const data    = await res.json();
+    const buyers  = data.buyers || [];
+
+    // Update badge
+    if (buyers.length > 0) {
+      badge.textContent = buyers.length;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    if (!buyers.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-zinc-600 font-mono-dm text-[10px] uppercase tracking-widest">No pending applications</td></tr>';
+      return;
+    }
+
+    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    tbody.innerHTML = buyers.map(b => {
+      const applied = b.onboarded_at
+        ? new Date(b.onboarded_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'})
+        : b.created_at
+          ? new Date(b.created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'})
+          : '—';
+      return `<tr class="border-b border-zinc-900 hover:bg-zinc-900/20 transition-colors" id="pending-row-${b.id}">
+        <td class="py-3 pr-6">
+          <p class="font-luxury text-base">${esc(b.store_name || '—')}</p>
+          ${b.first_name ? `<p class="text-zinc-500 text-[10px]">${esc(b.first_name)} ${esc(b.last_name||'')}</p>` : ''}
+        </td>
+        <td class="py-3 pr-6 font-mono-dm text-zinc-400 text-[10px]">${esc(b.email)}</td>
+        <td class="py-3 pr-4 text-zinc-500 text-[10px]">${esc(b.country||'—')}</td>
+        <td class="py-3 pr-4 text-zinc-500 text-[10px] capitalize">${esc(b.store_type||'—')}</td>
+        <td class="py-3 pr-4 font-mono-dm text-zinc-600 text-[10px]">${applied}</td>
+        <td class="py-3 text-right" style="white-space:nowrap">
+          <button onclick="decideBuyer('${b.id}','active')"
+            style="background:#c9a84c;border:none;color:#000;padding:5px 12px;font-size:9px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-right:4px;transition:opacity .15s"
+            onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Approve</button>
+          <button onclick="decideBuyer('${b.id}','rejected')"
+            style="background:none;border:1px solid #555;color:#aaa;padding:5px 12px;font-size:9px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all .15s"
+            onmouseover="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseout="this.style.borderColor='#555';this.style.color='#aaa'">Reject</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-red-500 text-[10px]">${err.message}</td></tr>`;
+  }
+}
+
+async function decideBuyer(id, status) {
+  const label = status === 'active' ? 'approve' : 'reject';
+  let note = '';
+  if (status === 'rejected') {
+    note = prompt('Optional: reason for rejection (will be emailed to the buyer)') || '';
+  }
+  if (!confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} this buyer application?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/buyers/${id}/status`, {
+      method : 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body   : JSON.stringify({ status, note }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Error: ' + (data.error || 'Failed')); return; }
+    showToast(status === 'active' ? 'Buyer approved ✓ — confirmation email sent' : 'Application rejected');
+    // Remove row from pending table
+    const row = document.getElementById(`pending-row-${id}`);
+    if (row) row.remove();
+    // Refresh badge count
+    const badge = document.getElementById('pending-badge');
+    const remaining = document.querySelectorAll('#pending-tbody tr[id^="pending-row-"]').length;
+    if (remaining === 0) {
+      badge.style.display = 'none';
+      document.getElementById('pending-tbody').innerHTML =
+        '<tr><td colspan="6" class="py-6 text-center text-zinc-600 font-mono-dm text-[10px] uppercase tracking-widest">No pending applications</td></tr>';
+    } else {
+      badge.textContent = remaining;
+    }
+    // Refresh main buyers list
+    loadBuyers();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
 async function loadBuyers() {
   const tbody = document.getElementById('buyers-tbody');
   tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-zinc-600">Loading…</td></tr>';
@@ -4103,6 +4225,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadMarginSettings();
   loadSavedTerms();
   loadLive();
+  loadPendingBuyers();
   loadBuyers();
   loadShopifyStatus();
   loadWixStatus();

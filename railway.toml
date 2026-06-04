@@ -1,8 +1,12 @@
+# ── Railway: Express Backend (api.linezheets.com) ────────────────────────────
+# This service runs the Express backend on port 4000.
+# The Next.js frontend is deployed separately on Vercel (linezheets.com).
+
 [build]
-builder = "dockerfile"
+builder = "nixpacks"
 
 [deploy]
-startCommand = "node server.js"
+startCommand = "node backend/server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 60
 restartPolicyType = "on_failure"

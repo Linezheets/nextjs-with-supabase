@@ -1,7 +1,8 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server'; // used in getPublicCatalog
 import Link            from 'next/link';
 import { OrderScrollSection }       from '@/components/OrderScrollSection';
 import { DashboardShowcaseSection } from '@/components/DashboardShowcaseSection';
+import { NavBarAuth }               from '@/components/NavBarAuth';
 
 export const revalidate = 3600;
 
@@ -31,7 +32,7 @@ async function getPublicCatalog() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function NavBar({ isLoggedIn }: { isLoggedIn: boolean }) {
+function NavBar() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-zinc-100">
       <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center h-[60px]">
@@ -66,29 +67,9 @@ function NavBar({ isLoggedIn }: { isLoggedIn: boolean }) {
           </Link>
         </nav>
 
-        {/* Right nav */}
+        {/* Right nav — client component so auth state is always live */}
         <div className="ml-auto flex items-center gap-6">
-          {isLoggedIn ? (
-            <Link href="/dashboard"
-                  className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-                  style={{ color: '#c9a84c', fontFamily: 'system-ui, sans-serif' }}>
-              My Dashboard →
-            </Link>
-          ) : (
-            <>
-              <Link href="/login"
-                    className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-                    style={{ color: '#888', fontFamily: 'system-ui, sans-serif' }}>
-                Sign In
-              </Link>
-              <Link href="/join"
-                    className="text-[8px] uppercase tracking-[0.4em] px-5 py-2 bg-black text-white
-                               hover:bg-zinc-800 transition-colors"
-                    style={{ fontFamily: 'system-ui, sans-serif' }}>
-                Apply
-              </Link>
-            </>
-          )}
+          <NavBarAuth />
         </div>
 
       </div>
@@ -99,8 +80,6 @@ function NavBar({ isLoggedIn }: { isLoggedIn: boolean }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function LandingPage() {
-  const supabase   = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
   const items      = await getPublicCatalog();
   const brands     = [...new Set(items.map(i => safeStr(i.brand_name)).filter(Boolean))];
   const categories = [...new Set(items.map(i => safeStr(i.category)).filter(Boolean))];
@@ -109,7 +88,7 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-white text-black"
          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
-      <NavBar isLoggedIn={!!user} />
+      <NavBar />
 
       {/* ══════════════════════════════════════════════════════════════════════
           HERO

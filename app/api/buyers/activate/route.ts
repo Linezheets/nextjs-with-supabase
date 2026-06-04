@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updates: Record<string, any> = {
-    status      : 'active',
+    status      : 'pending',   // admin must approve before buyer can access dashboard
     onboarded_at: new Date().toISOString(),
     first_name  : first_name   ?? null,
     last_name   : last_name    ?? null,
@@ -55,5 +55,34 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ buyer, message: 'Profile activated' });
+  // ── Notify admin of new application ──────────────────────────────────────
+  const adminEmail = process.env.NOTIFY_EMAIL ?? process.env.ADMIN_EMAIL;
+  const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://linezheets.com';
+  if (adminEmail) {
+    try {
+      await fetch(`${siteUrl}/api/alerts/send`, {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({
+          to     : adminEmail,
+          subject: `New buyer application — ${buyer.store_name ?? user.email}`,
+          html   : `
+            <p>A new buyer has completed their application and is awaiting approval.</p>
+            <ul>
+              <li><strong>Name:</strong> ${buyer.first_name ?? ''} ${buyer.last_name ?? ''}</li>
+              <li><strong>Store:</strong> ${buyer.store_name ?? '—'}</li>
+              <li><strong>Email:</strong> ${user.email}</li>
+              <li><strong>Country:</strong> ${buyer.country ?? '—'}</li>
+              <li><strong>Store type:</strong> ${buyer.store_type ?? '—'}</li>
+            </ul>
+            <p><a href="${siteUrl}/pages/brand-admin.html#buyers">Review application →</a></p>
+          `,
+        }),
+      });
+    } catch {
+      // non-fatal — application still saved
+    }
+  }
+
+  return NextResponse.json({ buyer, message: 'Application submitted — pending approval' });
 }

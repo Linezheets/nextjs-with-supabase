@@ -21,7 +21,7 @@ export default function JoinPage() {
   const router   = useRouter();
   const supabase = createClient();
 
-  const [step, setStep]       = useState<1 | 2>(1);
+  const [step, setStep]       = useState<1 | 2 | 'done'>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
@@ -80,7 +80,9 @@ export default function JoinPage() {
       return;
     }
 
-    router.push('/dashboard');
+    // Supabase may require email confirmation — show success screen instead of
+    // redirecting to dashboard (where they'd be bounced back as unconfirmed).
+    setStep('done');
   }
 
   return (
@@ -154,30 +156,30 @@ export default function JoinPage() {
         <div className="flex-1 flex items-center justify-center px-8 py-20">
           <div className="w-full max-w-md">
 
-            {/* Progress bar */}
-            <div className="flex items-center gap-2 mb-14">
+            {/* Progress bar — hidden on done screen */}
+            {step !== 'done' && <div className="flex items-center gap-2 mb-14">
               {([1, 2] as const).map((s, i) => (
                 <div key={s} className="flex items-center gap-2">
-                  {i > 0 && <div className="w-10 h-px" style={{ background: step >= s ? '#111' : '#e8e8e8' }} />}
+                  {i > 0 && <div className="w-10 h-px" style={{ background: (step as number) >= s ? '#111' : '#e8e8e8' }} />}
                   <div className="flex items-center gap-2">
                     <div
                       className="w-6 h-6 flex items-center justify-center text-[8px]"
                       style={{
-                        background: step >= s ? '#000' : '#f4f4f4',
-                        color     : step >= s ? '#fff' : '#ccc',
+                        background: (step as number) >= s ? '#000' : '#f4f4f4',
+                        color     : (step as number) >= s ? '#fff' : '#ccc',
                         fontFamily: 'var(--font-mono), monospace',
                       }}
                     >
-                      {step > s ? '✓' : s}
+                      {(step as number) > s ? '✓' : s}
                     </div>
                     <span className="text-[8px] uppercase tracking-[0.3em]"
-                          style={{ color: step >= s ? '#333' : '#ccc' }}>
+                          style={{ color: (step as number) >= s ? '#333' : '#ccc' }}>
                       {s === 1 ? 'Business' : 'Account'}
                     </span>
                   </div>
                 </div>
               ))}
-            </div>
+            </div>}
 
             {/* Step 1 — Business */}
             {step === 1 && (
@@ -260,6 +262,34 @@ export default function JoinPage() {
             )}
 
             {/* Step 2 — Account */}
+            {step === 'done' && (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 mx-auto mb-8 flex items-center justify-center bg-black text-white text-lg">
+                  ✓
+                </div>
+                <h1 style={{
+                  fontFamily: 'var(--font-serif), Georgia, serif',
+                  fontSize: '2rem', fontWeight: 400, color: '#111', marginBottom: '1.5rem',
+                }}>
+                  Application Received
+                </h1>
+                <p className="text-[13px] leading-[1.9] mb-4" style={{ color: '#666' }}>
+                  We've sent a confirmation email to <strong>{form.email}</strong>.
+                </p>
+                <p className="text-[12px] leading-[1.8] mb-10" style={{ color: '#aaa' }}>
+                  Click the link in your inbox to activate your account and access the Linezheets platform.
+                  Check your spam folder if you don't see it within a few minutes.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-block py-3 px-8 text-[8.5px] uppercase tracking-[0.5em] bg-black text-white hover:bg-zinc-900 transition-colors"
+                  style={{ fontFamily: 'system-ui, sans-serif' }}
+                >
+                  Go to Sign In
+                </Link>
+              </div>
+            )}
+
             {step === 2 && (
               <form onSubmit={handleSubmit}>
                 <h1 style={{
