@@ -19,7 +19,6 @@ const BUSINESS_TYPES = [
 
 export default function JoinPage() {
   const router   = useRouter();
-  const supabase = createClient();
 
   const [step, setStep]       = useState<1 | 2 | 'done'>(1);
   const [loading, setLoading] = useState(false);
@@ -46,6 +45,7 @@ export default function JoinPage() {
   }
 
   async function handleSubmit(e: React.FormEvent) {
+    const supabase = createClient();
     e.preventDefault();
     setError('');
 
