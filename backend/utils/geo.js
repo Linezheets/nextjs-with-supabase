@@ -23,4 +23,13 @@ async function getGeoLocation(ip) {
 
 const getLocationFromIP = getGeoLocation;
 
+function getClientIp(req) {
+  return (
+    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    req.headers['x-real-ip'] ||
+    req.socket?.remoteAddress ||
+    '127.0.0.1'
+  );
+}
+
 module.exports = { getClientIp, getGeoLocation, getLocationFromIP };
