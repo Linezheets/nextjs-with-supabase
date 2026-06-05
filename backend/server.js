@@ -122,7 +122,13 @@ if (!anthropic) console.warn('⚠️  ANTHROPIC_API_KEY not set — AI enhance f
 // ─── Middleware ────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:3001',
+  'http://localhost:4000',
   'https://linezheets-platform.vercel.app',
+  // Railway URL — used when Next.js on Railway calls Express on Railway internally
+  'https://linezheets-backend-production.up.railway.app',
+  // Production domain
+  'https://linezheets.com',
+  'https://www.linezheets.com',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 app.use(cors({
