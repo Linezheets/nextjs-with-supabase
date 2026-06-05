@@ -15,7 +15,7 @@ export default async function InventoryPage() {
 
   const { data: sf } = await admin
     .from('brand_storefronts')
-    .select('brand_name')
+    .select('brand_name, base_currency')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -37,5 +37,5 @@ export default async function InventoryPage() {
     out_of_stock: items.filter(i => Number(i.stock_total ?? 0) === 0).length,
   };
 
-  return <InventoryClient initialItems={items} summary={summary} brandName={brandName} />;
+  return <InventoryClient initialItems={items} summary={summary} brandName={brandName} currency={sf?.base_currency ?? 'USD'} />;
 }

@@ -40,6 +40,8 @@ export default async function ProfilePage() {
     market_segment   : buyer?.market_segment   ?? null,
     annual_buy_budget: buyer?.annual_buy_budget ?? null,
     status           : buyer?.status           ?? null,
+    vat_number       : buyer?.vat_number       ?? null,
+    tax_country      : buyer?.tax_country      ?? null,
   };
 
   const joinDate = new Date(user.created_at ?? Date.now()).toLocaleDateString('en-US', {

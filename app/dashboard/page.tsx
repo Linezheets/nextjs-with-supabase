@@ -2,7 +2,6 @@ import { redirect }        from 'next/navigation';
 import { createClient }    from '@/lib/supabase/server';
 import { getBuyerCatalog } from '@/lib/buyer-catalog';
 import DashboardClient     from './DashboardClient';
-import MFAEnrollmentGate  from './MFAEnrollmentGate';
 
 export const revalidate = 60;
 
@@ -21,25 +20,6 @@ export default async function BuyerDashboard() {
 
   const rawRole = String(user.user_metadata?.role ?? user.app_metadata?.role ?? '');
   if (rawRole === 'brand') redirect('/dashboard/brand-store');
-
-  // ── Pending approval gate ────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: buyerRow } = await (supabase as any)
-    .from('buyers')
-    .select('status')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (buyerRow?.status === 'pending') redirect('/pending-approval');
-
-  // ── Mandatory MFA gate ───────────────────────────────────────────────────
-  // VIP wholesale platform — every account must have a TOTP factor enrolled.
-  // If the user has no verified factor, show the enrollment gate instead of
-  // the full dashboard. Once enrolled they come back and see the dashboard.
-  const { data: factors } = await supabase.auth.mfa.listFactors();
-  const hasVerifiedFactor = (factors?.totp ?? []).some(f => f.status === 'verified');
-  if (!hasVerifiedFactor) {
-    return <MFAEnrollmentGate email={user.email ?? ''} />;
-  }
 
   // Fetch catalog + recent orders in parallel
   const [items, ordersResult] = await Promise.all([
@@ -73,7 +53,7 @@ export default async function BuyerDashboard() {
 
   const season = safeStr(items.find(i => i.season)?.season, 'SS 27');
 
-  const ADMIN_EMAILS = ['hello@linezheets.com', 'info@mxlla.com'];
+  const ADMIN_EMAILS = ['info@linezheets.com', 'info@mxlla.com'];
   const resolvedRole: 'buyer' | 'brand' | 'admin' =
     rawRole === 'admin' || ADMIN_EMAILS.includes(user.email ?? '') ? 'admin'
     : 'buyer';

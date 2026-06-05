@@ -3,15 +3,14 @@ const db = require('../middleware/db');
 const { authenticate, requireBuyer } = require('../middleware/auth');
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-// Use service-role key so server-side reads/writes bypass RLS correctly
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Supabase client — uses the publishable key (safe for server-side reads from public views)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('[marketplace] ❌ SUPABASE_URL or SUPABASE key missing — check environment variables');
-}
+console.log('[Supabase] URL loaded:', SUPABASE_URL ? SUPABASE_URL : '❌ MISSING — check .env.local');
+console.log('[Supabase] KEY loaded:', SUPABASE_KEY ? '✓ present' : '❌ MISSING — check .env.local');
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Shared field normaliser: buyer_vip_catalog → frontend shape ───────────────
 // Maps:  title → name  |  retail_price → price  |  image_url/image_urls → image

@@ -20,6 +20,7 @@ type PaymentTerms = {
 type Order = {
   id       : string;
   total_usd: number;
+  currency : string;
   items    : { name: string | null; size: string; quantity: number; wholesale_price: number | null; brand_name: string | null }[];
   notes    : string | null;
 };
@@ -238,7 +239,7 @@ export default function CheckoutClient({
   const elementsOptions = stripeMethodTypes.length > 0 ? {
     mode    : 'payment' as const,
     amount  : Math.round((order.total_usd ?? 0) * 100),
-    currency: 'usd',
+    currency: (order.currency ?? 'USD').toLowerCase(),
     payment_method_types: stripeMethodTypes,
     appearance: {
       theme    : 'stripe' as const,

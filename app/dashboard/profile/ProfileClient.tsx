@@ -13,6 +13,8 @@ type BuyerProfile = {
   store_address: string | null;
   city        : string | null;
   country     : string | null;
+  vat_number  : string | null;
+  tax_country : string | null;
   store_url   : string | null;
   instagram   : string | null;
   tiktok      : string | null;
@@ -31,7 +33,7 @@ const STORE_TYPES = ['boutique', 'department', 'online', 'multi-brand', 'concept
 const MARKET_SEGS = ['luxury', 'premium', 'contemporary', 'streetwear', 'fast-fashion'];
 const CATEGORY_OPTIONS = ['Womenswear', 'Menswear', 'Accessories', 'Footwear', 'Jewellery', 'Bags', 'RTW', 'Eveningwear', 'Swimwear', 'Kidswear'];
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="text-[7.5px] uppercase tracking-[0.45em] mb-2"
@@ -39,6 +41,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </p>
       {children}
+      {hint && (
+        <p className="text-[7px] mt-1" style={{ color: '#aaa', fontFamily: 'system-ui, sans-serif' }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -93,6 +100,8 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Buye
           store_address    : profile.store_address,
           city             : profile.city,
           country          : profile.country,
+          vat_number       : profile.vat_number,
+          tax_country      : profile.tax_country,
           store_url        : profile.store_url,
           instagram        : profile.instagram,
           tiktok           : profile.tiktok,
@@ -207,6 +216,13 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Buye
               value={profile.country ?? ''}
               onChange={e => set('country', e.target.value || null)}
               placeholder="Country"
+            />
+          </Field>
+          <Field label="VAT / Tax Number" hint="Your business VAT registration number for cross-border wholesale invoicing">
+            <Input
+              value={profile.vat_number ?? ''}
+              onChange={e => set('vat_number', e.target.value || null)}
+              placeholder="e.g. GB123456789, FR12345678901"
             />
           </Field>
           <Field label="Store Website">

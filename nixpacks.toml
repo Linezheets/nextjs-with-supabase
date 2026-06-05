@@ -1,6 +1,3 @@
-# nixpacks.toml — only used as fallback if railway.toml builder is not set
-# Primary build is via Dockerfile (builder = "dockerfile" in railway.toml)
-
 [phases.install]
 cmds = ["npm ci"]
 
@@ -8,5 +5,4 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [start]
-# Next.js standalone outputs server.js at .next/standalone/server.js
 cmd = "node .next/standalone/server.js"

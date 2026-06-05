@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ brandId: string }> }) {
+  // Wholesale prices (wsp_usd) are confidential — require authenticated buyer or brand
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { brandId } = await params;
   const { searchParams } = req.nextUrl;
   const category = searchParams.get('category');

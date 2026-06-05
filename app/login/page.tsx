@@ -4,24 +4,15 @@ import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-/** Only allow same-origin relative paths — rejects open redirect attacks. */
-function safeRedirect(raw: string | null): string {
-  const path = raw ?? '/dashboard';
-  if (path.startsWith('/') && !path.startsWith('//') && !path.includes('://')) return path;
-  return '/dashboard';
-}
-
 function LoginForm() {
   const searchParams  = useSearchParams();
   const router        = useRouter();
-  const redirectTo    = safeRedirect(searchParams.get('redirect'));
+  const redirectTo    = searchParams.get('redirect') ?? '/dashboard';
   const oauthError    = searchParams.get('error');
-  // Session timeout message passed by proxy.ts when a privileged session expires
-  const sessionMsg    = searchParams.get('msg');
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState(oauthError ?? sessionMsg ?? '');
+  const [error,    setError]    = useState(oauthError ?? '');
   const [loading,  setLoading]  = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 

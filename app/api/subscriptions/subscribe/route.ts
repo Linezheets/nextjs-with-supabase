@@ -7,9 +7,13 @@ const PRICE_MAP: Record<string, { monthly: string | undefined; annual: string | 
     monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY,
     annual : process.env.STRIPE_PRICE_STARTER_ANNUAL,
   },
-  studio: {
-    monthly: process.env.STRIPE_PRICE_STUDIO_MONTHLY,
-    annual : process.env.STRIPE_PRICE_STUDIO_ANNUAL,
+  agent: {
+    monthly: process.env.STRIPE_PRICE_AGENT_MONTHLY,
+    annual : process.env.STRIPE_PRICE_AGENT_ANNUAL,
+  },
+  enterprise: {
+    monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
+    annual : process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL,
   },
 };
 
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (!PRICE_MAP[tier]) {
-    return NextResponse.json({ error: 'Invalid tier. Choose: starter, studio' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid tier. Choose: starter, agent, enterprise' }, { status: 400 });
   }
 
   const priceId = PRICE_MAP[tier][billing as 'monthly' | 'annual'];

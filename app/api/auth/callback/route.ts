@@ -34,30 +34,26 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    // ── MFA check ──────────────────────────────────────────────────────────
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2') {
-      const mfaUrl = new URL('/mfa', origin);
-      if (next !== '/dashboard') mfaUrl.searchParams.set('redirect', next);
-      return NextResponse.redirect(mfaUrl);
-    }
+    const userRole = user.user_metadata?.role ?? user.app_metadata?.role;
+    const privRole = resolvePrivRole(user.email, userRole as string | null | undefined);
 
     // ── New-user check ──────────────────────────────────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    let buyer = (await db.from('buyers').select('id, first_name').eq('id', user.id).maybeSingle()).data;
-    if (!buyer) {
-      buyer = (await db.from('buyers').select('id, first_name').eq('auth_user_id', user.id).maybeSingle()).data;
-    }
-    if (!buyer || !buyer.first_name) {
-      return NextResponse.redirect(new URL('/onboard', origin));
+    // Skip for admins — they never have a buyer profile and should go straight
+    // to /dashboard. Only run for regular buyers and brand users.
+    if (!privRole) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      let buyer = (await db.from('buyers').select('id, first_name').eq('id', user.id).maybeSingle()).data;
+      if (!buyer) {
+        buyer = (await db.from('buyers').select('id, first_name').eq('auth_user_id', user.id).maybeSingle()).data;
+      }
+      if (!buyer || !buyer.first_name) {
+        return NextResponse.redirect(new URL('/onboard', origin));
+      }
     }
 
     // ── Privileged session stamp ────────────────────────────────────────────
-    // OAuth users also get the priv timebox if they are admin or brand.
-    // This redirect response carries the Set-Cookie headers.
-    const userRole = user.user_metadata?.role ?? user.app_metadata?.role;
-    const privRole = resolvePrivRole(user.email, userRole as string | null | undefined);
+    // Admin / brand accounts get a priv-session timebox cookie at login.
     const redirectRes = NextResponse.redirect(new URL(next, origin));
     if (privRole) {
       stampPrivSession(redirectRes.cookies, privRole);

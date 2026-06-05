@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
-
-const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE ?? '3') / 100;
+import { stripeCode, toCents } from '@/lib/currency';
 
 export async function POST(
   req: NextRequest,
@@ -21,7 +20,7 @@ export async function POST(
   // Verify the payment belongs to the authenticated user's order
   const { data: payment } = await admin
     .from('buyer_payments')
-    .select('id, order_id, amount_usd, status, installment_seq, stripe_customer_id, stripe_payment_method_id')
+    .select('id, order_id, amount_usd, amount, currency, status, installment_seq, stripe_customer_id, stripe_payment_method_id')
     .eq('id', paymentId)
     .maybeSingle();
 
@@ -41,38 +40,25 @@ export async function POST(
   const paymentMethodId = body.payment_method_id ?? payment.stripe_payment_method_id;
   if (!paymentMethodId) return NextResponse.json({ error: 'No payment method on file' }, { status: 400 });
 
-  // Resolve brand's Stripe Connect account
-  const brandName = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
-  let stripeAccountId: string | null = null;
-  if (brandName) {
-    const { data: sf } = await admin
-      .from('brand_storefronts')
-      .select('stripe_account_id, stripe_account_status')
-      .eq('brand_name', brandName)
-      .maybeSingle();
-    stripeAccountId = sf?.stripe_account_status === 'active' ? (sf.stripe_account_id ?? null) : null;
-  }
-
-  if (!stripeAccountId) {
-    return NextResponse.json({ error: 'Brand has no active Stripe Connect account' }, { status: 400 });
-  }
-
-  const amountCents = Math.round(parseFloat(payment.amount_usd) * 100);
-  const platformFee = Math.round(amountCents * PLATFORM_FEE_RATE);
+  const brandName      = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  const chargeAmount   = payment.amount ?? payment.amount_usd;
+  const chargeCurrency = payment.currency ?? 'USD';
+  const amountCents    = toCents(parseFloat(chargeAmount));
 
   try {
     const pi = await stripe.paymentIntents.create({
-      amount                : amountCents,
-      currency              : 'usd',
-      customer              : payment.stripe_customer_id,
-      payment_method        : paymentMethodId,
-      confirm               : true,
-      off_session           : true,
-      application_fee_amount: platformFee,
-      transfer_data         : { destination: stripeAccountId },
-      metadata              : {
+      amount        : amountCents,
+      currency      : stripeCode(chargeCurrency),
+      customer      : payment.stripe_customer_id,
+      payment_method: paymentMethodId,
+      confirm       : true,
+      off_session   : true,
+      // Escrow: no transfer_data / application_fee — held in platform account
+      transfer_group: payment.order_id,
+      metadata      : {
         order_id       : payment.order_id,
         installment_seq: String(payment.installment_seq),
+        brand_name     : brandName ?? '',
       },
     });
 

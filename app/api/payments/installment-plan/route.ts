@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
 import { addDays, addMonths, format } from 'date-fns';
-
-const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE ?? '3') / 100;
+import { stripeCode, toCents } from '@/lib/currency';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 type PlanDef = { count: number; schedule: number[]; labels: string[] };
 
@@ -22,6 +22,15 @@ function dueDate(planType: string, idx: number): string {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`installment:${ip}`, 10, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status : 429,
+      headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) },
+    });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, stripe_customer_id, items, payment_status')
+    .select('id, total_usd, currency, stripe_customer_id, items, payment_status')
     .eq('id', order_id)
     .eq('buyer_id', user.id)
     .maybeSingle();
@@ -57,18 +66,12 @@ export async function POST(req: NextRequest) {
   if (!order)                          return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   if (order.payment_status === 'paid') return NextResponse.json({ error: 'Order already paid' }, { status: 400 });
 
-  const total      = parseFloat(order.total_usd);
-  const brandName  = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  const total         = parseFloat(order.total_usd);
+  const orderCurrency = (order.currency ?? 'USD') as string;
+  const brandName     = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
 
-  let stripeAccountId: string | null = null;
-  if (brandName) {
-    const { data: sf } = await admin
-      .from('brand_storefronts')
-      .select('stripe_account_id, stripe_account_status')
-      .eq('brand_name', brandName)
-      .maybeSingle();
-    stripeAccountId = sf?.stripe_account_status === 'active' ? (sf.stripe_account_id ?? null) : null;
-  }
+  // Escrow model: no need to look up brand Stripe account at payment time.
+  // Funds are held in the platform account; released via /api/payments/release/[orderId] on delivery.
 
   // Create or reuse Stripe customer
   let customerId: string = order.stripe_customer_id ?? '';
@@ -101,9 +104,12 @@ export async function POST(req: NextRequest) {
       order_id                : order_id,
       stripe_customer_id      : customerId,
       stripe_payment_method_id: payment_method_id ?? null,
+      transfer_group          : order_id,
       method                  : 'card',
       status                  : 'pending',
       amount_usd              : amount,
+      amount                  : amount,
+      currency                : orderCurrency,
       installment_seq         : i + 1,
       due_date                : dueDate(plan_type, i),
     };
@@ -124,21 +130,20 @@ export async function POST(req: NextRequest) {
 
   // Charge first installment immediately if deposit or 3-month and PM provided
   let firstPaymentResult = null;
-  if ((plan_type === 'deposit_balance' || plan_type === '3month') && payment_method_id && stripeAccountId) {
-    const firstAmt  = Math.round(total * plan.schedule[0] * 100);
-    const platformFee = Math.round(firstAmt * PLATFORM_FEE_RATE);
+  if ((plan_type === 'deposit_balance' || plan_type === '3month') && payment_method_id) {
+    const firstAmt = toCents(total * plan.schedule[0]);
     try {
       const pi = await stripe.paymentIntents.create({
-        amount                : firstAmt,
-        currency              : 'usd',
-        customer              : customerId,
-        payment_method        : payment_method_id,
-        confirm               : true,
-        off_session           : false,
-        application_fee_amount: platformFee,
-        transfer_data         : { destination: stripeAccountId },
-        metadata              : { order_id, installment_seq: '1', plan_type },
-        description           : `${order_id} — Installment 1/${plan.count} (${plan.labels[0]})`,
+        amount        : firstAmt,
+        currency      : stripeCode(orderCurrency),
+        customer      : customerId,
+        payment_method: payment_method_id,
+        confirm       : true,
+        off_session   : false,
+        // Escrow: no transfer_data / application_fee — funds held in platform account
+        transfer_group: order_id,
+        metadata      : { order_id, installment_seq: '1', plan_type, brand_name: brandName ?? '' },
+        description   : `${order_id} — Installment 1/${plan.count} (${plan.labels[0]})`,
       });
 
       await admin.from('buyer_payments').update({

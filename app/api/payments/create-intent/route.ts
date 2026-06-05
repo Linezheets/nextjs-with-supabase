@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
-
-const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE ?? '3') / 100;
+import { resolveCommissionRateByName } from '@/lib/commission';
+import { stripeCode, toCents } from '@/lib/currency';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: max 10 payment intent creations per user per 10 minutes
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`pi:${ip}`, 10, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status : 429,
+      headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) },
+    });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,33 +36,15 @@ export async function POST(req: NextRequest) {
   // Verify order belongs to this buyer
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, stripe_customer_id, items')
+    .select('id, total_usd, currency, stripe_customer_id, items')
     .eq('id', order_id)
     .eq('buyer_id', user.id)
-    .single() as { data: { id: string; total_usd: number; stripe_customer_id: string | null; items: { brand_name?: string | null }[] } | null };
+    .single() as { data: { id: string; total_usd: number; currency: string | null; stripe_customer_id: string | null; items: { brand_name?: string | null }[] } | null };
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-  // Resolve brand's Stripe Connect account from the first item's brand_name
+  // We still record the brand name for metadata / escrow release lookup
   const brandName: string | null = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
-
-  let stripeAccountId: string | null = null;
-  if (brandName) {
-    const { data: sf } = await admin
-      .from('brand_storefronts')
-      .select('stripe_account_id, stripe_account_status')
-      .eq('brand_name', brandName)
-      .maybeSingle() as { data: { stripe_account_id: string | null; stripe_account_status: string | null } | null };
-
-    stripeAccountId = sf?.stripe_account_id ?? null;
-    if (stripeAccountId && sf?.stripe_account_status !== 'active') {
-      return NextResponse.json({ error: 'Brand has not completed Stripe onboarding' }, { status: 400 });
-    }
-  }
-
-  if (!stripeAccountId) {
-    return NextResponse.json({ error: 'Brand has not connected Stripe — cannot accept payment' }, { status: 400 });
-  }
 
   // Get or create Stripe Customer for this buyer
   let stripeCustomerId: string = order.stripe_customer_id ?? '';
@@ -67,27 +60,38 @@ export async function POST(req: NextRequest) {
       .eq('id', order_id);
   }
 
-  const amountCents = Math.round((order.total_usd ?? 0) * 100);
-  const platformFee = Math.round(amountCents * PLATFORM_FEE_RATE);
+  const orderCurrency = order.currency ?? 'USD';
+  const amountCents   = toCents(order.total_usd ?? 0);
+  // Commission is deducted at escrow-release time (separate charges+transfers model).
+  // No application_fee_amount or transfer_data on the PaymentIntent — funds held in
+  // the platform account until the order is fulfilled and releaseEscrow() is called.
+  void resolveCommissionRateByName; // imported for use at release; not used here
+
+  const stripeCurrency = stripeCode(orderCurrency);
+  // Wire only supports USD via us_bank_transfer; EUR/GBP orders use card/ACH
+  const wireTransferType = orderCurrency === 'GBP' ? 'gb_bank_transfer'
+    : orderCurrency === 'EUR' ? 'eu_bank_transfer'
+    : 'us_bank_transfer';
 
   // ── Wire / SEPA via Stripe Customer Balance bank transfer ─────────────────
   if (method === 'wire') {
     const pi = await stripe.paymentIntents.create({
       amount  : amountCents,
-      currency: 'usd',
+      currency: stripeCurrency,
       customer: stripeCustomerId,
       payment_method_types: ['customer_balance'],
       payment_method_data : { type: 'customer_balance' },
       payment_method_options: {
         customer_balance: {
           funding_type  : 'bank_transfer',
-          bank_transfer : { type: 'us_bank_transfer' },
+          bank_transfer : { type: wireTransferType as 'us_bank_transfer' },
         },
       },
-      application_fee_amount: platformFee,
-      transfer_data         : { destination: stripeAccountId },
+      // Escrow: funds held in platform account — no transfer_data / no application_fee.
+      // Transfer is created explicitly via /api/payments/release/[orderId] on delivery.
+      transfer_group: order_id,
       confirm : true,
-      metadata: { order_id, flow, method, brand_name: brandName ?? '' },
+      metadata: { order_id, flow, method, brand_name: brandName ?? '', currency: orderCurrency },
     });
 
     const instructions =
@@ -98,9 +102,12 @@ export async function POST(req: NextRequest) {
       order_id,
       stripe_customer_id      : stripeCustomerId,
       stripe_payment_intent_id: pi.id,
+      transfer_group          : order_id,
       method,
       status                  : 'pending',
       amount_usd              : order.total_usd,
+      amount                  : order.total_usd,
+      currency                : orderCurrency,
       installment_seq         : 1,
       bank_transfer_instructions: instructions as object,
     });
@@ -116,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     const pi = await stripe.paymentIntents.create({
       amount  : amountCents,
-      currency: 'usd',
+      currency: stripeCurrency,
       customer: stripeCustomerId,
       payment_method_types: ['us_bank_account'],
       payment_method_options: {
@@ -124,19 +131,21 @@ export async function POST(req: NextRequest) {
           financial_connections: { permissions: ['payment_method'] },
         },
       },
-      application_fee_amount: platformFee,
-      transfer_data         : { destination: stripeAccountId },
+      transfer_group: order_id,
       ...(setupFutureUsage ? { setup_future_usage: setupFutureUsage } : {}),
-      metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1' },
+      metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1', currency: orderCurrency },
     });
 
     await admin.from('buyer_payments').insert({
       order_id,
       stripe_customer_id      : stripeCustomerId,
       stripe_payment_intent_id: pi.id,
+      transfer_group          : order_id,
       method,
       status                  : 'pending',
       amount_usd              : amountCents / 100,
+      amount                  : amountCents / 100,
+      currency                : orderCurrency,
       installment_seq         : 1,
     });
 
@@ -148,22 +157,24 @@ export async function POST(req: NextRequest) {
 
   const pi = await stripe.paymentIntents.create({
     amount  : amountCents,
-    currency: 'usd',
+    currency: stripeCurrency,
     customer: stripeCustomerId,
     payment_method_types: ['card'],
-    application_fee_amount: platformFee,
-    transfer_data         : { destination: stripeAccountId },
+    transfer_group: order_id,
     ...(setupFutureUsage ? { setup_future_usage: setupFutureUsage } : {}),
-    metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1' },
+    metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1', currency: orderCurrency },
   });
 
   await admin.from('buyer_payments').insert({
     order_id,
     stripe_customer_id      : stripeCustomerId,
     stripe_payment_intent_id: pi.id,
+    transfer_group          : order_id,
     method,
     status                  : 'pending',
     amount_usd              : amountCents / 100,
+    amount                  : amountCents / 100,
+    currency                : orderCurrency,
     installment_seq         : 1,
   });
 

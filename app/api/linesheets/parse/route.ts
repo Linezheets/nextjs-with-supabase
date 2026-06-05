@@ -92,55 +92,66 @@ function parseRow(row: unknown[], colMap: Record<string, number>, brandUserId: s
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (user) await setAuditUser(supabase, user);
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user) await setAuditUser(supabase, user);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = createAdminClient() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = createAdminClient() as any;
 
-  const { data: sf } = await admin
-    .from('brand_storefronts')
-    .select('brand_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
+    const { data: sf } = await admin
+      .from('brand_storefronts')
+      .select('brand_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-  const brandName = sf?.brand_name ?? user.email ?? 'Brand';
+    const brandName = sf?.brand_name ?? user.email ?? 'Brand';
 
-  const formData = await req.formData();
-  const file = formData.get('file') as File | null;
-  if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
 
-  const allowed = ['.xlsx', '.xls', '.csv', '.ods'];
-  const ext = '.' + file.name.split('.').pop()!.toLowerCase();
-  if (!allowed.includes(ext)) {
-    return NextResponse.json({ error: 'Only Excel (.xlsx, .xls), CSV, and ODS files are supported' }, { status: 400 });
+    const allowed = ['.xlsx', '.xls', '.csv', '.ods'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!allowed.includes(ext)) {
+      return NextResponse.json({ error: 'Only Excel (.xlsx, .xls), CSV, and ODS files are supported' }, { status: 400 });
+    }
+
+    // Create import job record
+    const { data: job, error: jobError } = await admin
+      .from('linesheet_imports')
+      .insert({ brand_user_id: user.id, filename: file.name, status: 'processing' })
+      .select('id')
+      .single();
+
+    if (!job) {
+      const msg = jobError?.message ?? 'Failed to create import job';
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+
+    // Run async import — return job ID immediately
+    const buffer = Buffer.from(await file.arrayBuffer());
+    runImport(job.id, user.id, brandName, buffer, admin).catch(err => {
+      admin.from('linesheet_imports').update({
+        status      : 'failed',
+        errors      : JSON.stringify([{ message: err.message }]),
+        completed_at: new Date().toISOString(),
+      }).eq('id', job.id);
+    });
+
+    return NextResponse.json(
+      { jobId: job.id, message: 'Import started — poll /api/linesheets/jobs/' + job.id + ' for status' },
+      { status: 202 },
+    );
+  } catch (err) {
+    console.error('[/api/linesheets/parse]', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { status: 500 },
+    );
   }
-
-  // Create import job record
-  const { data: job } = await admin
-    .from('linesheet_imports')
-    .insert({ brand_user_id: user.id, filename: file.name, status: 'processing' })
-    .select('id')
-    .single();
-
-  if (!job) return NextResponse.json({ error: 'Failed to create import job' }, { status: 500 });
-
-  // Run async import — return job ID immediately
-  const buffer = Buffer.from(await file.arrayBuffer());
-  runImport(job.id, user.id, brandName, buffer, admin).catch(err => {
-    admin.from('linesheet_imports').update({
-      status      : 'failed',
-      errors      : JSON.stringify([{ message: err.message }]),
-      completed_at: new Date().toISOString(),
-    }).eq('id', job.id);
-  });
-
-  return NextResponse.json(
-    { jobId: job.id, message: 'Import started — poll /api/linesheets/jobs/' + job.id + ' for status' },
-    { status: 202 },
-  );
 }
 
 async function runImport(

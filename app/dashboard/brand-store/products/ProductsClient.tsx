@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 type Product = {
   id           : number;
@@ -25,6 +25,7 @@ type Props = {
   initialProducts: Record<string, unknown>[];
   brandName      : string;
   tier           : string;
+  currency       : string;
 };
 
 const GOLD  = '#c9a84c';
@@ -46,16 +47,265 @@ const EMPTY: Product = {
   image_urls: [], description: '', delivery_window: '', tags: [],
 };
 
-export default function ProductsClient({ initialProducts, brandName, tier }: Props) {
-  const [products, setProducts]   = useState<Product[]>(initialProducts as Product[]);
-  const [modal, setModal]         = useState<'none' | 'create' | 'edit'>('none');
+// ─── Image Upload ─────────────────────────────────────────────────────────────
+
+function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (urls: string[]) => void }) {
+  const fileInput  = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver,  setDragOver]  = useState(false);
+
+  const uploadFiles = useCallback(async (files: FileList | File[]) => {
+    const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!arr.length) return;
+    setUploading(true);
+    try {
+      const newUrls: string[] = [];
+      for (const file of arr) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res  = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (res.ok && json.url) newUrls.push(json.url);
+      }
+      onChange([...images, ...newUrls]);
+    } catch { alert('Image upload failed.'); }
+    finally { setUploading(false); }
+  }, [images, onChange]);
+
+  return (
+    <div style={{ gridColumn: '1 / -1' }}>
+      <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: 10 }}>
+        Product Images
+      </span>
+      {images.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+          {images.map((url, i) => (
+            <div key={i} style={{ position: 'relative', width: 80, height: 80 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', border: '1px solid #e5e5e5' }} />
+              <button type="button" onClick={() => onChange(images.filter((_, j) => j !== i))}
+                style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#df1b41', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div
+        onClick={() => fileInput.current?.click()}
+        onDrop={e => { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files); }}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        style={{ border: `2px dashed ${dragOver ? GOLD : '#e0e0e0'}`, background: dragOver ? 'rgba(201,168,76,0.04)' : '#fafafa', padding: '22px 20px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
+        {uploading
+          ? <p style={{ fontFamily: SANS, fontSize: 12, color: '#888' }}>Uploading…</p>
+          : <>
+              <p style={{ fontFamily: SANS, fontSize: 13, color: '#555', marginBottom: 4 }}>Drop images here or <span style={{ color: GOLD, textDecoration: 'underline' }}>click to browse</span></p>
+              <p style={{ fontFamily: SANS, fontSize: 11, color: '#bbb' }}>JPG, PNG, WEBP · up to 10MB each · multiple allowed</p>
+            </>
+        }
+        <input ref={fileInput} type="file" multiple accept="image/*" style={{ display: 'none' }}
+          onChange={e => e.target.files && uploadFiles(e.target.files)} />
+      </div>
+    </div>
+  );
+}
+
+// ─── AI Mass Upload Modal ─────────────────────────────────────────────────────
+
+function AIMassUploadModal({ onClose, onDone }: { onClose: () => void; onDone: (p: Product[]) => void }) {
+  const [step,    setStep]    = useState<'upload' | 'processing' | 'review'>('upload');
+  const [file,    setFile]    = useState<File | null>(null);
+  const [preview, setPreview] = useState<Product[]>([]);
+  const [saving,  setSaving]  = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  async function handleFile(f: File) {
+    setFile(f); setStep('processing');
+    const fd = new FormData(); fd.append('file', f);
+    try {
+      const res = await fetch('/api/products/ai-import', { method: 'POST', body: fd });
+      const j   = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'AI import failed');
+      setPreview(j.products ?? []); setStep('review');
+    } catch (e) { alert((e as Error).message); setStep('upload'); }
+  }
+
+  async function confirmImport() {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/products/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: preview }) });
+      const j   = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'Bulk import failed');
+      onDone(j.products ?? []); onClose();
+    } catch (e) { alert((e as Error).message); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: '#fff', width: '100%', maxWidth: 680, maxHeight: '88vh', overflowY: 'auto', padding: 40 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 28 }}>
+          <div>
+            <p style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase', color: GOLD, marginBottom: 6 }}>✦ AI Mass Upload</p>
+            <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: '#111' }}>Import Products with AI</h2>
+            <p style={{ fontFamily: SANS, fontSize: 12, color: '#888', marginTop: 6 }}>Upload a CSV, Excel, or PDF linesheet — AI maps all product data automatically.</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: '#bbb', cursor: 'pointer' }}>×</button>
+        </div>
+
+        {step === 'upload' && (
+          <>
+            <div onClick={() => fileInput.current?.click()}
+              style={{ border: '2px dashed #e0e0e0', padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: '#fafafa', marginBottom: 20 }}>
+              <p style={{ fontFamily: SANS, fontSize: 14, color: '#555', marginBottom: 6 }}>Drop file here or <span style={{ color: GOLD, textDecoration: 'underline' }}>browse</span></p>
+              <p style={{ fontFamily: SANS, fontSize: 11, color: '#bbb' }}>CSV · Excel (.xlsx) · PDF · Images — AI reads them all</p>
+              <input ref={fileInput} type="file" accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
+                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            </div>
+            <div style={{ background: '#f9f6ee', border: '1px solid rgba(201,168,76,0.25)', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontFamily: SANS, fontSize: 12, color: '#555', fontWeight: 500, marginBottom: 2 }}>Download CSV Template</p>
+                <p style={{ fontFamily: SANS, fontSize: 11, color: '#888' }}>Pre-formatted with all required columns</p>
+              </div>
+              <a href="/api/products/template" download style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none', border: `1px solid ${GOLD}`, padding: '7px 14px' }}>Download</a>
+            </div>
+          </>
+        )}
+
+        {step === 'processing' && (
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <p style={{ fontFamily: SERIF, fontSize: 18, color: '#111', marginBottom: 8 }}>AI is reading your file…</p>
+            <p style={{ fontFamily: SANS, fontSize: 12, color: '#888' }}>Extracting from <strong>{file?.name}</strong></p>
+          </div>
+        )}
+
+        {step === 'review' && (
+          <>
+            <div style={{ background: '#f0faf4', border: '1px solid #b2dfca', padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ color: '#2d7a4f' }}>✓</span>
+              <p style={{ fontFamily: SANS, fontSize: 13, color: '#2d7a4f' }}>AI found <strong>{preview.length} products</strong> — review before importing.</p>
+            </div>
+            <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #f0f0f0', marginBottom: 20 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: 'sticky', top: 0, background: '#fafafa' }}>
+                  <tr>{['Title','SKU','WSP','SRP','Category'].map(h => <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 7.5, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#bbb', fontWeight: 400, borderBottom: '1px solid #f0f0f0' }}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {preview.map((p, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                      <td style={{ padding: '10px 14px', fontFamily: SERIF, fontSize: 13 }}>{p.title || '—'}</td>
+                      <td style={{ padding: '10px 14px', fontFamily: MONO, fontSize: 11, color: '#888' }}>{p.sku || '—'}</td>
+                      <td style={{ padding: '10px 14px', fontFamily: MONO, fontSize: 12 }}>${p.wsp_usd}</td>
+                      <td style={{ padding: '10px 14px', fontFamily: MONO, fontSize: 12, color: '#666' }}>${p.srp}</td>
+                      <td style={{ padding: '10px 14px', fontFamily: SANS, fontSize: 11, color: '#666' }}>{p.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={confirmImport} disabled={saving}
+                style={{ flex: 1, background: saving ? '#ccc' : '#111', color: '#fff', border: 'none', padding: '13px 0', fontFamily: SANS, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', cursor: saving ? 'default' : 'pointer' }}>
+                {saving ? 'Importing…' : `Import ${preview.length} Products`}
+              </button>
+              <button onClick={() => setStep('upload')} style={{ padding: '13px 24px', background: '#fff', border: '1px solid #e5e5e5', fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', cursor: 'pointer', color: '#888' }}>Re-upload</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Shopify Sync Modal ───────────────────────────────────────────────────────
+
+function ShopifySyncModal({ onClose, onDone }: { onClose: () => void; onDone: (p: Product[]) => void }) {
+  const [shopUrl, setShopUrl] = useState('');
+  const [token,   setToken]   = useState('');
+  const [step,    setStep]    = useState<'connect' | 'syncing' | 'done'>('connect');
+  const [count,   setCount]   = useState(0);
+
+  async function handleSync() {
+    if (!shopUrl.trim() || !token.trim()) { alert('Fill in both fields.'); return; }
+    setStep('syncing');
+    try {
+      const res = await fetch('/api/integrations/shopify/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shop_url: shopUrl.trim(), access_token: token.trim() }) });
+      const j   = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'Shopify sync failed');
+      setCount(j.count ?? 0); setStep('done');
+      if (j.products?.length) onDone(j.products);
+    } catch (e) { alert((e as Error).message); setStep('connect'); }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: '#fff', width: '100%', maxWidth: 520, padding: 40 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 28 }}>
+          <div>
+            <p style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase', color: '#96bf48', marginBottom: 6 }}>⟳ Shopify Sync</p>
+            <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: '#111' }}>Import from Shopify</h2>
+            <p style={{ fontFamily: SANS, fontSize: 12, color: '#888', marginTop: 6 }}>Pull your entire catalogue directly from your Shopify store.</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: '#bbb', cursor: 'pointer' }}>×</button>
+        </div>
+        {step === 'connect' && (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>Shopify Store URL</span>
+                <input value={shopUrl} onChange={e => setShopUrl(e.target.value)} placeholder="yourstore.myshopify.com"
+                  style={{ padding: '10px 14px', border: '1px solid #e5e5e5', fontSize: 13, fontFamily: SANS, outline: 'none' }} />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>Admin API Access Token</span>
+                <input value={token} onChange={e => setToken(e.target.value)} type="password" placeholder="shpat_••••••••••••••••"
+                  style={{ padding: '10px 14px', border: '1px solid #e5e5e5', fontSize: 13, fontFamily: SANS, outline: 'none' }} />
+              </label>
+            </div>
+            <div style={{ background: '#f5f5f5', padding: '12px 16px', marginBottom: 20, borderLeft: `3px solid ${GOLD}` }}>
+              <p style={{ fontFamily: SANS, fontSize: 11, color: '#666', lineHeight: 1.7 }}>
+                In Shopify Admin → Apps → Develop apps → Create an app, enable <strong>read_products</strong> scope to generate your token.
+              </p>
+            </div>
+            <button onClick={handleSync}
+              style={{ width: '100%', background: '#96bf48', color: '#fff', border: 'none', padding: '13px 0', fontFamily: SANS, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              Connect & Sync Products
+            </button>
+          </>
+        )}
+        {step === 'syncing' && (
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <p style={{ fontFamily: SERIF, fontSize: 18, color: '#111', marginBottom: 8 }}>Syncing from Shopify…</p>
+            <p style={{ fontFamily: SANS, fontSize: 12, color: '#888' }}>Fetching products, variants, and images</p>
+          </div>
+        )}
+        {step === 'done' && (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div style={{ fontSize: 32, color: '#2d7a4f', marginBottom: 12 }}>✓</div>
+            <p style={{ fontFamily: SERIF, fontSize: 20, color: '#111', marginBottom: 8 }}>{count} products synced</p>
+            <p style={{ fontFamily: SANS, fontSize: 12, color: '#888', marginBottom: 24 }}>Your Shopify catalogue is now in Linezheets.</p>
+            <button onClick={onClose} style={{ background: '#111', color: '#fff', border: 'none', padding: '11px 28px', fontFamily: SANS, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', cursor: 'pointer' }}>Done</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function ProductsClient({ initialProducts, brandName, tier, currency }: Props) {
+  const [products, setProducts]       = useState<Product[]>(initialProducts as Product[]);
+  const [modal, setModal]             = useState<'none' | 'create' | 'edit'>('none');
+  const [uploadModal, setUploadModal] = useState<'none' | 'ai' | 'shopify'>('none');
   const [form, setForm]           = useState<Product>(EMPTY);
   const [saving, setSaving]       = useState(false);
   const [err, setErr]             = useState('');
   const [search, setSearch]       = useState('');
   const [filterStatus, setFilter] = useState('all');
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency ?? 'USD', maximumFractionDigits: 0 }).format(n);
 
   const visible = products.filter(p => {
     const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) || (p.sku ?? '').toLowerCase().includes(search.toLowerCase());
@@ -142,10 +392,20 @@ export default function ProductsClient({ initialProducts, brandName, tier }: Pro
               {maxProducts > 0 && ` / ${maxProducts} on ${tier}`}
             </p>
           </div>
-          <button onClick={openCreate}
-            style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 24px', fontFamily: SANS, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', cursor: 'pointer' }}>
-            + New Product
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button onClick={() => setUploadModal('shopify')}
+              style={{ background: '#fff', color: '#555', border: '1px solid #e5e5e5', padding: '9px 16px', fontFamily: SANS, fontSize: 8.5, letterSpacing: '0.28em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#96bf48' }}>⟳</span> Shopify Sync
+            </button>
+            <button onClick={() => setUploadModal('ai')}
+              style={{ background: '#fff', color: '#555', border: `1px solid ${GOLD}`, padding: '9px 16px', fontFamily: SANS, fontSize: 8.5, letterSpacing: '0.28em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: GOLD }}>✦</span> AI Mass Upload
+            </button>
+            <button onClick={openCreate}
+              style={{ background: '#111', color: '#fff', border: 'none', padding: '9px 20px', fontFamily: SANS, fontSize: 8.5, letterSpacing: '0.28em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              + New Product
+            </button>
+          </div>
         </div>
       </div>
 
@@ -225,7 +485,11 @@ export default function ProductsClient({ initialProducts, brandName, tier }: Pro
         )}
       </div>
 
-      {/* Modal */}
+      {/* Upload modals */}
+      {uploadModal === 'ai' && <AIMassUploadModal onClose={() => setUploadModal('none')} onDone={ps => setProducts(prev => [...ps, ...prev])} />}
+      {uploadModal === 'shopify' && <ShopifySyncModal onClose={() => setUploadModal('none')} onDone={ps => setProducts(prev => [...ps, ...prev])} />}
+
+      {/* Product create/edit modal */}
       {modal !== 'none' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ background: '#fff', width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', padding: 40 }}>
@@ -239,6 +503,7 @@ export default function ProductsClient({ initialProducts, brandName, tier }: Pro
             {err && <p style={{ color: '#df1b41', fontFamily: SANS, fontSize: '12px', marginBottom: 16 }}>{err}</p>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <ImageUploadArea images={form.image_urls} onChange={urls => setForm(f => ({ ...f, image_urls: urls }))} />
               {([
                 ['Title *', 'title', 'text', true],
                 ['SKU', 'sku', 'text', false],

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import stripe from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
+import { stripeCode, toCents } from '@/lib/currency';
 
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? 'info@mxlla.com';
-const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE ?? '3') / 100;
 
 type DuePayment = {
   id                      : string;
@@ -12,6 +12,8 @@ type DuePayment = {
   stripe_customer_id      : string;
   stripe_payment_method_id: string;
   amount_usd              : number;
+  amount                  : number | null;
+  currency                : string | null;
   installment_seq         : number;
 };
 
@@ -20,10 +22,6 @@ type OrderRow = {
   items     : { brand_name?: string | null }[];
 };
 
-type StorefrontRow = {
-  stripe_account_id    : string | null;
-  stripe_account_status: string | null;
-};
 
 // Vercel Cron calls this daily at 08:00 UTC.
 // Protected by CRON_SECRET to prevent unauthenticated triggers.
@@ -39,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   const { data: due } = await admin
     .from('buyer_payments')
-    .select('id, order_id, stripe_customer_id, stripe_payment_method_id, amount_usd, installment_seq')
+    .select('id, order_id, stripe_customer_id, stripe_payment_method_id, amount_usd, amount, currency, installment_seq')
     .eq('status', 'pending')
     .lte('due_date', today)
     .not('stripe_payment_method_id', 'is', null) as { data: DuePayment[] | null };
@@ -60,35 +58,23 @@ export async function GET(req: NextRequest) {
       const brandName: string | null =
         Array.isArray(order?.items) ? (order!.items[0]?.brand_name ?? null) : null;
 
-      let stripeAccountId: string | null = null;
-      if (brandName) {
-        const { data: sf } = await admin
-          .from('brand_storefronts')
-          .select('stripe_account_id, stripe_account_status')
-          .eq('brand_name', brandName)
-          .maybeSingle() as { data: StorefrontRow | null };
-        stripeAccountId = sf?.stripe_account_status === 'active' ? (sf.stripe_account_id ?? null) : null;
-      }
+      const chargeAmount   = payment.amount ?? payment.amount_usd;
+      const chargeCurrency = payment.currency ?? 'USD';
+      const amountCents    = toCents(chargeAmount);
 
-      if (!stripeAccountId) {
-        throw new Error(`Brand "${brandName}" has no active Stripe Connect account`);
-      }
-
-      const amountCents = Math.round(payment.amount_usd * 100);
-      const platformFee = Math.round(amountCents * PLATFORM_FEE_RATE);
-
+      // Escrow: no transfer_data / application_fee — funds held in platform account
       const pi = await stripe.paymentIntents.create({
-        amount                : amountCents,
-        currency              : 'usd',
-        customer              : payment.stripe_customer_id,
-        payment_method        : payment.stripe_payment_method_id,
-        off_session           : true,
-        confirm               : true,
-        application_fee_amount: platformFee,
-        transfer_data         : { destination: stripeAccountId },
-        metadata              : {
+        amount        : amountCents,
+        currency      : stripeCode(chargeCurrency),
+        customer      : payment.stripe_customer_id,
+        payment_method: payment.stripe_payment_method_id,
+        off_session   : true,
+        confirm       : true,
+        transfer_group: payment.order_id,
+        metadata      : {
           order_id       : payment.order_id,
           installment_seq: String(payment.installment_seq),
+          brand_name     : brandName ?? '',
           source         : 'cron',
         },
       });

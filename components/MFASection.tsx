@@ -86,15 +86,6 @@ export default function MFASection() {
     setError('');
     const supabase = createClient();
 
-    // Supabase requires AAL2 (MFA verified this session) to unenroll.
-    // Check first so we can show a clear message instead of a cryptic 422.
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal?.currentLevel !== 'aal2') {
-      setError('Sign out and log back in with your authenticator code before disabling 2FA.');
-      setBusy(false);
-      return;
-    }
-
     const { error } = await supabase.auth.mfa.unenroll({ factorId });
     if (error) {
       setError(error.message);

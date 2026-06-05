@@ -30,10 +30,12 @@ export default function InventoryClient({
   initialItems,
   summary: initSummary,
   brandName,
+  currency,
 }: {
   initialItems: Record<string, unknown>[];
   summary     : Summary;
   brandName   : string;
+  currency    : string;
 }) {
   const [items, setItems]     = useState<Item[]>(initialItems as Item[]);
   const [summary, setSummary] = useState(initSummary);
@@ -44,7 +46,7 @@ export default function InventoryClient({
   const [pending, setPending] = useState<Record<number, number>>({});
   const bulkRef = useRef<HTMLTextAreaElement>(null);
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency ?? 'USD', maximumFractionDigits: 0 }).format(n);
 
   const visible = items.filter(i => {
     const matchSearch = !search || i.title.toLowerCase().includes(search.toLowerCase()) || (i.sku ?? '').toLowerCase().includes(search.toLowerCase());

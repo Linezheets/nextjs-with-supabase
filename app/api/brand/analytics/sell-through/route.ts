@@ -38,11 +38,12 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const since = searchParams.get('since'); // ISO date string
 
-  const { data: sf } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sf } = await (supabase as any)
     .from('brand_storefronts')
-    .select('brand_name')
+    .select('brand_name, base_currency')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { brand_name: string; base_currency: string | null } | null };
 
   if (!sf) return NextResponse.json({ error: 'Brand storefront not found' }, { status: 404 });
 
@@ -117,7 +118,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json(buildResponse(rows, sf.brand_name));
+    return NextResponse.json(buildResponse(rows, sf.brand_name, sf.base_currency ?? 'USD'));
   }
 
   // Transform RPC rows
@@ -135,7 +136,7 @@ export async function GET(req: NextRequest) {
 
 // ── Build aggregated response ─────────────────────────────────────────────────
 
-function buildResponse(rows: SellThroughRow[], brandName: string) {
+function buildResponse(rows: SellThroughRow[], brandName: string, currency = 'USD') {
   // By color
   const colorMap: Record<string, { units_ordered: number; revenue_usd: number; sku_count: number; sell_through_sum: number }> = {};
   for (const r of rows) {
@@ -196,6 +197,7 @@ function buildResponse(rows: SellThroughRow[], brandName: string) {
 
   return {
     brand_name: brandName,
+    currency,
     skus: rows,
     by_color: byColor,
     by_category: byCategory,

@@ -88,9 +88,11 @@ function ScoreBar({ score, breakdown }: { score: number; breakdown?: TopAccount[
   );
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+function makeFmt(currency: string) {
+  return (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: currency ?? 'USD', maximumFractionDigits: 0 }).format(n);
 }
+const fmt = makeFmt('USD'); // module-level fallback; replaced per-component once currency loads
 
 // ── Account List ──────────────────────────────────────────────────────────────
 
@@ -99,12 +101,15 @@ function AccountList({
   selected,
   onToggle,
   minTier,
+  currency,
 }: {
-  accounts: TopAccount[];
-  selected: Set<string>;
-  onToggle: (id: string) => void;
-  minTier: string;
+  accounts : TopAccount[];
+  selected : Set<string>;
+  onToggle : (id: string) => void;
+  minTier  : string;
+  currency?: string;
 }) {
+  const fmt = makeFmt(currency ?? 'USD');
   const tierOrder: AccountTier[] = ['rising', 'silver', 'gold', 'platinum'];
   const minIdx = tierOrder.indexOf(minTier as AccountTier);
 
@@ -474,6 +479,7 @@ export default function PromotionsPage() {
   const [accounts, setAccounts] = useState<TopAccount[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [currency, setCurrency] = useState('USD');
   const [loading, setLoading] = useState(true);
   const [rightPanel, setRightPanel] = useState<'create' | 'assign'>('create');
   const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
@@ -487,13 +493,17 @@ export default function PromotionsPage() {
       fetch('/api/brand/promotions/top-accounts').then(r => r.json()),
       fetch('/api/brand/promotions').then(r => r.json()),
       fetch('/api/brand/recommendations/inventory').then(r => r.json()),
-    ]).then(([accs, promos, inv]) => {
+      fetch('/api/brand-store').then(r => r.json()).catch(() => null),
+    ]).then(([accs, promos, inv, sf]) => {
       setAccounts(Array.isArray(accs) ? accs : []);
       setPromotions(Array.isArray(promos) ? promos : []);
+      if (sf?.base_currency) setCurrency(sf.base_currency);
       setInventory(Array.isArray(inv) ? inv : []);
       setLoading(false);
     });
   }, []);
+
+  const fmtCurrency = makeFmt(currency);
 
   const toggleAccount = useCallback((id: string) => {
     setSelectedAccounts(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -589,6 +599,7 @@ export default function PromotionsPage() {
             selected={selectedAccounts}
             onToggle={toggleAccount}
             minTier={selectedPromo?.min_tier ?? 'rising'}
+            currency={currency}
           />
         </div>
 
@@ -650,7 +661,7 @@ export default function PromotionsPage() {
                 )}
                 <div className="flex gap-4 mt-3 text-[8px]" style={{ color: '#555' }}>
                   {selectedPromo.min_qty && <span>Min qty: {selectedPromo.min_qty}</span>}
-                  {selectedPromo.min_spend && <span>Min spend: {fmt(selectedPromo.min_spend)}</span>}
+                  {selectedPromo.min_spend && <span>Min spend: {fmtCurrency(selectedPromo.min_spend)}</span>}
                   {selectedPromo.target_category && <span>Category: {selectedPromo.target_category}</span>}
                   {selectedPromo.expires_at && <span>Expires: {selectedPromo.expires_at.slice(0, 10)}</span>}
                   <span>Min tier: {selectedPromo.min_tier}</span>

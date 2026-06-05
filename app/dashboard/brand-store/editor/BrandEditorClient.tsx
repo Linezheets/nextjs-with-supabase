@@ -6,18 +6,24 @@ import type { Section, Theme } from '@/app/dashboard/store/editor/EditorClient';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type BrandStorefront = {
-  id             : string;
-  slug           : string;
-  display_name   : string;
-  brand_name     : string;
-  tagline        : string | null;
-  description    : string | null;
-  contact_email  : string | null;
-  instagram      : string | null;
-  website        : string | null;
-  published      : boolean;
-  custom_domain  : string | null;
-  domain_verified: boolean;
+  id              : string;
+  slug            : string;
+  display_name    : string;
+  brand_name      : string;
+  tagline         : string | null;
+  description     : string | null;
+  contact_email   : string | null;
+  instagram       : string | null;
+  website         : string | null;
+  published       : boolean;
+  custom_domain   : string | null;
+  domain_verified : boolean;
+  // Tax / compliance
+  vat_number      : string | null;
+  tax_country     : string | null;
+  company_reg_number: string | null;
+  // Pricing
+  base_currency   : string | null;
 };
 
 type InventoryItem = {
@@ -427,12 +433,16 @@ export default function BrandEditorClient({
         brand_name  : storefront.brand_name,
         tagline     : storefront.tagline,
         description : storefront.description,
-        contact_email: storefront.contact_email,
-        instagram   : storefront.instagram,
-        website     : storefront.website,
-        published   : storefront.published,
-        custom_domain: storefront.custom_domain,
-        theme       : themeToSave,
+        contact_email     : storefront.contact_email,
+        instagram         : storefront.instagram,
+        website           : storefront.website,
+        published         : storefront.published,
+        custom_domain     : storefront.custom_domain,
+        vat_number        : storefront.vat_number,
+        tax_country       : storefront.tax_country,
+        company_reg_number: storefront.company_reg_number,
+        base_currency     : storefront.base_currency,
+        theme             : themeToSave,
       }),
     });
     setSaving(false);
@@ -582,6 +592,36 @@ export default function BrandEditorClient({
                   )}
                 </div>
               ))}
+
+              {/* ── Tax & Compliance ─────────────────────────────── */}
+              <div className="pt-4 border-t border-zinc-100">
+                <p className="text-[7.5px] uppercase tracking-[0.4em] mb-4" style={{ color: '#aaa', fontFamily: 'system-ui' }}>
+                  Tax &amp; Compliance
+                </p>
+                <p className="text-[9px] mb-4" style={{ color: '#999', fontFamily: 'system-ui', lineHeight: 1.6 }}>
+                  These details appear on proforma invoices and invoices for customs and accounting purposes.
+                  You are responsible for your own VAT obligations in your territory.
+                </p>
+                {([
+                  { key: 'vat_number',         label: 'VAT Number',           placeholder: 'e.g. FR12345678901, GB123456789' },
+                  { key: 'tax_country',         label: 'Tax Country (ISO)',     placeholder: 'e.g. FR, GB, HK, US' },
+                  { key: 'company_reg_number',  label: 'Company Reg. Number',  placeholder: 'e.g. SIRET, Companies House number' },
+                  { key: 'base_currency',       label: 'Pricing Currency',      placeholder: 'USD, EUR or GBP' },
+                ] as const).map(({ key, label, placeholder }) => (
+                  <div key={key} className="mb-4">
+                    <p style={{ fontSize: '7.5px', textTransform: 'uppercase', letterSpacing: '0.4em', color: '#aaa', fontFamily: 'system-ui', marginBottom: '6px' }}>
+                      {label}
+                    </p>
+                    <input
+                      value={(storefront as Record<string, string | null | boolean>)[key] as string ?? ''}
+                      onChange={e => setStorefront(s => ({ ...s, [key]: e.target.value || null }))}
+                      placeholder={placeholder}
+                      className="w-full border-b border-zinc-200 py-1.5 text-[12px] bg-transparent outline-none"
+                      style={{ color: '#333', fontFamily: 'system-ui' }}
+                    />
+                  </div>
+                ))}
+              </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
                 <div>

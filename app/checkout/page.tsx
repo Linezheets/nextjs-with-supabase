@@ -28,6 +28,7 @@ export default async function CheckoutPage({
       data: {
         id       : string;
         total_usd: number;
+        currency : string;
         items    : { name: string | null; size: string; quantity: number; wholesale_price: number | null; brand_name: string | null }[];
         notes    : string | null;
       } | null;

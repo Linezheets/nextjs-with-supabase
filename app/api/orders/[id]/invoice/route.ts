@@ -157,6 +157,16 @@ export async function GET(
   doc.fontSize(6.5).fillColor(GRAY).text('BILL TO', M, y, { characterSpacing: 1 });
   doc.fontSize(9).fillColor(BLACK).text(order.buyer_name ?? user.email ?? '—', M, y + 11);
 
+  // Buyer VAT / country (if captured)
+  let buyerTaxY = y + 24;
+  if (order.buyer_country) {
+    doc.fontSize(7.5).fillColor(GRAY).text(order.buyer_country, M, buyerTaxY);
+    buyerTaxY += 12;
+  }
+  if (order.buyer_vat_number) {
+    doc.fontSize(7.5).fillColor(GRAY).text(`VAT: ${order.buyer_vat_number}`, M, buyerTaxY);
+  }
+
   // Right column meta
   const metaW = 170;
   const metaX = RIGHT - metaW;
@@ -170,6 +180,16 @@ export async function GET(
   if (order.terms) {
     doc.fontSize(6.5).fillColor(GRAY).text('PAYMENT TERMS', metaX, y + 52, { width: metaW, align: 'right', characterSpacing: 1 });
     doc.fontSize(8).fillColor(BLACK).text(order.terms, metaX, y + 63, { width: metaW, align: 'right' });
+  }
+
+  // Seller VAT (if captured)
+  if (order.seller_vat_number || order.seller_tax_country) {
+    const sellerTaxLine = [
+      order.seller_tax_country,
+      order.seller_vat_number ? `VAT: ${order.seller_vat_number}` : null,
+    ].filter(Boolean).join(' · ');
+    doc.fontSize(6.5).fillColor(GRAY).text('SELLER VAT', metaX, y + 78, { width: metaW, align: 'right', characterSpacing: 1 });
+    doc.fontSize(7.5).fillColor(GRAY).text(sellerTaxLine, metaX, y + 89, { width: metaW, align: 'right' });
   }
 
   y += 96;
