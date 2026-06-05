@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   await supabase.auth.signOut();
 
   const res = NextResponse.redirect(
-    new URL('/', process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001')
+    new URL('/', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001')
   );
   clearPrivSession(res.cookies);
   return res;

@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   ],
   authors     : [{ name: 'Linezheets' }],
   creator     : 'Linezheets',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://linezheets.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://linezheets.com'),
   alternates  : { canonical: '/' },
   openGraph: {
     type       : 'website',
