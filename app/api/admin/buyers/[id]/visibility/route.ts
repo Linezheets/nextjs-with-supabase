@@ -7,8 +7,8 @@ type Params = { params: Promise<{ id: string }> };
 const VALID_TYPES = ['hide_category', 'hide_brand', 'hide_sku', 'show_only_category', 'show_only_brand'];
 
 // GET  /api/admin/buyers/:id/visibility
-export async function GET(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin(req);
+export async function GET(_req: NextRequest, { params }: Params) {
+  const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   const supabase = await createClient();
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 // POST  /api/admin/buyers/:id/visibility
 // Body: { rule_type, target, note? }
 export async function POST(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   const supabase = await createClient();
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 // PATCH  /api/admin/buyers/:id/visibility
 // Body: { rule_id, active?, note? }
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   const supabase = await createClient();
@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 // DELETE  /api/admin/buyers/:id/visibility?rule_id=xxx
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   const supabase = await createClient();

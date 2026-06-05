@@ -11,3 +11,4 @@ tmp/
 test-data/
 *.tsbuildinfo
 *.local
+supabase/.temp/

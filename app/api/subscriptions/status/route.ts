@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 const TIER_LIMITS: Record<string, { max_products: number; ai_features: boolean; marketplace: boolean }> = {
-  starter   : { max_products: 50,  ai_features: false, marketplace: false },
-  studio    : { max_products: -1,  ai_features: true,  marketplace: true  },
+  starter   : { max_products: 200, ai_features: false, marketplace: true  },
+  agent     : { max_products: -1,  ai_features: true,  marketplace: true  },
   enterprise: { max_products: -1,  ai_features: true,  marketplace: true  },
 };
 

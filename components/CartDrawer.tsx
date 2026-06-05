@@ -124,6 +124,29 @@ function CartDrawer({ items, onClose, onRemove, onPlaceOrder }: {
   onRemove     : (id: string) => void;
   onPlaceOrder : () => void;
 }) {
+  const [exporting, setExporting] = useState(false);
+
+  async function downloadSelectionPdf() {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/buyers/cart/export-pdf');
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(j.error ?? 'Could not generate PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `linezheets-selection-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const byBrand = items.reduce<Record<string, CartItem[]>>((acc, i) => {
     (acc[i.brand_name || 'Unknown'] ??= []).push(i); return acc;
   }, {});
@@ -217,6 +240,17 @@ function CartDrawer({ items, onClose, onRemove, onPlaceOrder }: {
                     style={{ background: '#111', fontFamily: 'system-ui' }}>
               Place Order →
             </button>
+            <button
+              onClick={downloadSelectionPdf}
+              disabled={exporting}
+              className="w-full py-2.5 text-[8px] uppercase tracking-[0.4em] border transition-opacity hover:opacity-60 disabled:opacity-40"
+              style={{ borderColor: '#e0e0e0', color: '#888', background: '#fff', fontFamily: 'system-ui', cursor: exporting ? 'default' : 'pointer' }}
+            >
+              {exporting ? 'Generating PDF…' : '↓ Download Selection PDF'}
+            </button>
+            <p className="text-[7px] text-center" style={{ color: '#ccc', fontFamily: 'system-ui' }}>
+              For internal approval — not a purchase order
+            </p>
             <a href="/dashboard/orders"
                className="block text-center text-[8px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity"
                style={{ color: '#aaa', fontFamily: 'system-ui' }}>

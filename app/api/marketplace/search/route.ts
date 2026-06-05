@@ -56,7 +56,12 @@ Return JSON with these fields (null if not present):
 }
 
 export async function GET(req: NextRequest) {
+  // Invite-only platform — require authenticated session.
+  // Also guards the Anthropic AI call from unauthenticated cost abuse.
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { searchParams } = req.nextUrl;
   const q      = searchParams.get('q') ?? '';
   const limit  = Math.min(Number(searchParams.get('limit') ?? 48), 200);

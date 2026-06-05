@@ -14,7 +14,7 @@ export default async function BrandStoreLayout({ children }: { children: React.R
   return (
     <>
       <BrandStoreNav />
-      <div style={{ paddingTop: '48px' }}>{children}</div>
+      <div style={{ paddingTop: '52px', minHeight: '100vh', background: '#fafafa' }}>{children}</div>
     </>
   );
 }

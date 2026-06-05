@@ -7,8 +7,8 @@ const SERIF = 'var(--font-serif), Georgia, "Times New Roman", serif';
 const MONO  = 'DM Mono, ui-monospace, monospace';
 const SANS  = 'system-ui, -apple-system, sans-serif';
 
-type Payment = { id: string; installment_seq: number; amount_usd: number; status: string; due_date: string; method: string };
-type Order   = { id: string; status: string; payment_status: string; total_usd: number; items: Record<string,unknown>[]; buyer_name: string | null; notes: string | null; created_at: string; [key: string]: unknown };
+type Payment = { id: string; installment_seq: number; amount_usd: number; amount?: number; currency?: string; status: string; due_date: string; method: string };
+type Order   = { id: string; status: string; payment_status: string; total_usd: number; currency?: string; items: Record<string,unknown>[]; buyer_name: string | null; notes: string | null; created_at: string; [key: string]: unknown };
 
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   new        : { bg: '#f5f5f5',  color: '#888'    },
@@ -44,11 +44,17 @@ export default function OrderDetailClient({
   const [newStatus, setNew] = useState(order.status);
   const [tracking, setTracking] = useState('');
   const [carrier, setCarrier]   = useState('');
-  const [saving, setSaving]     = useState(false);
-  const [err, setErr]           = useState('');
-  const [tab, setTab]           = useState<'details' | 'payments'>('details');
+  const [saving, setSaving]         = useState(false);
+  const [err, setErr]               = useState('');
+  const [tab, setTab]               = useState<'details' | 'payments'>('details');
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeType, setDisputeType] = useState('dispute');
+  const [disputeDesc, setDisputeDesc] = useState('');
+  const [disputeSaving, setDisputeSaving] = useState(false);
+  const [disputeDone, setDisputeDone]     = useState(false);
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  const orderCurrency = order.currency ?? 'USD';
+  const fmt = (n: number, cur?: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: cur ?? orderCurrency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
   async function updateStatus() {
     if (newStatus === order.status) return;
@@ -63,6 +69,19 @@ export default function OrderDetailClient({
     setSaving(false);
     if (!res.ok) { setErr(json.error); return; }
     setOrder(o => ({ ...o, status: newStatus }));
+  }
+
+  async function raiseDispute() {
+    if (disputeDesc.trim().length < 20) return;
+    setDisputeSaving(true);
+    const res = await fetch('/api/disputes', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ order_id: order.id, type: disputeType, description: disputeDesc }),
+    });
+    setDisputeSaving(false);
+    if (res.ok) { setDisputeDone(true); setDisputeOpen(false); }
+    else { const j = await res.json(); setErr(j.error ?? 'Failed to submit'); }
   }
 
   async function addTracking() {
@@ -206,7 +225,7 @@ export default function OrderDetailClient({
                       return (
                         <tr key={p.id} style={{ borderBottom: '1px solid #fafafa' }}>
                           <td style={{ padding: '12px 20px', fontFamily: MONO, fontSize: '12px', color: '#888' }}>{p.installment_seq}</td>
-                          <td style={{ padding: '12px 20px', fontFamily: MONO, fontSize: '14px', color: '#111' }}>{fmt(p.amount_usd)}</td>
+                          <td style={{ padding: '12px 20px', fontFamily: MONO, fontSize: '14px', color: '#111' }}>{fmt(p.amount ?? p.amount_usd, p.currency)}</td>
                           <td style={{ padding: '12px 20px', fontFamily: SANS, fontSize: '12px', color: '#666' }}>
                             {p.due_date ? new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                           </td>
@@ -269,6 +288,62 @@ export default function OrderDetailClient({
                 fontFamily: SANS, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#666', textDecoration: 'none' }}>
               Download Invoice PDF
             </a>
+
+            {/* ── Dispute / Refund Request (buyer-side only) ── */}
+            {!isBrand && (
+              <div style={{ background: '#fff', padding: 24 }}>
+                <p style={{ fontFamily: SANS, fontSize: '9px', letterSpacing: '0.4em', textTransform: 'uppercase', color: '#bbb', marginBottom: 16 }}>
+                  Issue or Dispute
+                </p>
+                {disputeDone ? (
+                  <p style={{ fontSize: '11px', color: '#2d7a4f', fontFamily: SANS }}>
+                    ✓ Request submitted — our team will be in touch within 2 business days.
+                  </p>
+                ) : !disputeOpen ? (
+                  <button onClick={() => setDisputeOpen(true)}
+                    style={{ width: '100%', padding: '10px 0', background: '#fff', border: '1px solid #e5e5e5',
+                      color: '#888', fontFamily: SANS, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                    Raise a dispute or refund request
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <select value={disputeType} onChange={e => setDisputeType(e.target.value)}
+                      style={{ padding: '8px 12px', border: '1px solid #e5e5e5', fontSize: '11px', fontFamily: SANS, outline: 'none' }}>
+                      <option value="dispute">Dispute (general issue)</option>
+                      <option value="refund_request">Refund Request</option>
+                      <option value="return_request">Return Request</option>
+                      <option value="credit_note_request">Credit Note Request</option>
+                    </select>
+                    <textarea
+                      value={disputeDesc}
+                      onChange={e => setDisputeDesc(e.target.value)}
+                      placeholder="Describe the issue in detail (minimum 20 characters)…"
+                      rows={4}
+                      style={{ padding: '8px 12px', border: '1px solid #e5e5e5', fontSize: '12px', fontFamily: SANS,
+                        outline: 'none', resize: 'vertical', lineHeight: 1.5 }}
+                    />
+                    <p style={{ fontSize: '9px', color: '#bbb', fontFamily: SANS }}>
+                      Refunds in wholesale are reviewed case-by-case. Our team will respond within 2 business days.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={raiseDispute}
+                        disabled={disputeSaving || disputeDesc.trim().length < 20}
+                        style={{ flex: 1, padding: '10px 0', background: disputeDesc.trim().length < 20 ? '#f5f5f5' : '#111',
+                          color: disputeDesc.trim().length < 20 ? '#aaa' : '#fff', border: 'none',
+                          fontFamily: SANS, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase',
+                          cursor: disputeDesc.trim().length < 20 ? 'default' : 'pointer' }}>
+                        {disputeSaving ? 'Submitting…' : 'Submit'}
+                      </button>
+                      <button onClick={() => { setDisputeOpen(false); setDisputeDesc(''); }}
+                        style={{ padding: '10px 16px', background: '#fff', border: '1px solid #e5e5e5',
+                          color: '#888', fontFamily: SANS, fontSize: '9px', cursor: 'pointer' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -4,7 +4,10 @@ import { checkPrivSession, resolvePrivRole, timeoutMessage } from './priv-sessio
 import { logActivity } from '@/lib/audit';
 import { setAuditUser } from './set-audit-user';
 
-const ADMIN_EMAILS = ['hello@linezheets.com', 'info@mxlla.com'];
+// Driven by env so adding/removing admins doesn't require a code deploy.
+// ADMIN_EMAILS is a comma-separated list: "hello@linezheets.com,info@mxlla.com"
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'hello@linezheets.com,info@mxlla.com')
+  .split(',').map(e => e.trim()).filter(Boolean);
 
 /**
  * Verify the request comes from an authenticated admin user WITH an active

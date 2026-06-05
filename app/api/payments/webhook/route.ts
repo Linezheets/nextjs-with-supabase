@@ -4,6 +4,18 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
 import type Stripe from 'stripe';
 
+// Grant or revoke brand role in Supabase auth metadata
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function setBrandRole(admin: any, userId: string, active: boolean) {
+  try {
+    await admin.auth.admin.updateUserById(userId, {
+      app_metadata: { role: active ? 'brand' : null },
+    });
+  } catch (err) {
+    console.error('[webhook] setBrandRole failed:', err);
+  }
+}
+
 // Next.js App Router reads raw body via req.text() — no config needed
 
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? 'info@mxlla.com';
@@ -45,6 +57,8 @@ export async function POST(req: NextRequest) {
         : pi.payment_method?.id;
 
       await syncPaymentStatus(admin, pi.id, 'succeeded', pmId);
+      // payment_status = 'paid' means funds captured and held in escrow.
+      // Funds will be released to the brand when the order is marked delivered.
       await syncOrderStatus(admin, pi.metadata.order_id, 'paid');
 
       // If this was a card/ach with future use and installments remain, schedule them
@@ -112,15 +126,17 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription;
       const now = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('brand_storefronts')
+      const db = admin as any;
+      await db.from('brand_storefronts')
         .update({ subscription_status: 'canceled', updated_at: now })
         .eq('stripe_subscription_id', sub.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('brand_subscriptions')
+      await db.from('brand_subscriptions')
         .update({ status: 'canceled', canceled_at: now, updated_at: now })
         .eq('stripe_subscription_id', sub.id);
+      // Revoke brand role when subscription ends
+      const { data: sf } = await db.from('brand_storefronts')
+        .select('user_id').eq('stripe_subscription_id', sub.id).maybeSingle();
+      if (sf?.user_id) await setBrandRole(admin, sf.user_id, false);
       break;
     }
 
@@ -130,15 +146,17 @@ export async function POST(req: NextRequest) {
       if (!subId) break;
       const now = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('brand_storefronts')
+      const db = admin as any;
+      await db.from('brand_storefronts')
         .update({ subscription_status: 'active', updated_at: now })
         .eq('stripe_subscription_id', subId);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('brand_subscriptions')
+      await db.from('brand_subscriptions')
         .update({ status: 'active', updated_at: now })
         .eq('stripe_subscription_id', subId);
+      // Grant brand role in Supabase auth so middleware recognises the user as brand
+      const { data: sf } = await db.from('brand_storefronts')
+        .select('user_id').eq('stripe_subscription_id', subId).maybeSingle();
+      if (sf?.user_id) await setBrandRole(admin, sf.user_id, true);
       break;
     }
 

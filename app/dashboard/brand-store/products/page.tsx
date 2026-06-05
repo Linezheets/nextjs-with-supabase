@@ -15,7 +15,7 @@ export default async function ProductsPage() {
 
   const { data: sf } = await admin
     .from('brand_storefronts')
-    .select('brand_name, subscription_tier, subscription_status')
+    .select('brand_name, subscription_tier, subscription_status, base_currency')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -33,6 +33,7 @@ export default async function ProductsPage() {
       initialProducts={(products ?? []) as Record<string, unknown>[]}
       brandName={brandName}
       tier={sf?.subscription_tier ?? 'starter'}
+      currency={sf?.base_currency ?? 'USD'}
     />
   );
 }

@@ -1,0 +1,161 @@
+/**
+ * Escrow / fund release logic.
+ *
+ * Payments are captured into the platform's Stripe account (no transfer_data on
+ * the PaymentIntent). When an order is delivered/confirmed, we call releaseEscrow()
+ * which creates explicit Stripe transfers to the brand's Connect account — minus
+ * the platform commission.
+ */
+
+import stripe from '@/lib/stripe';
+import { createAdminClient } from '@/lib/supabase/server';
+import { resolveCommissionRateByName } from '@/lib/commission';
+import { stripeCode, toCents } from '@/lib/currency';
+
+type ReleaseResult = {
+  orderId    : string;
+  transferred: number;   // amount transferred in minor units (cents)
+  currency   : string;
+  transferId : string;   // Stripe transfer ID
+  fee        : number;   // platform commission kept (minor units)
+};
+
+/**
+ * Release escrowed funds for an order to the brand's Stripe Connect account.
+ * Safe to call multiple times — idempotent if already released.
+ */
+export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin = createAdminClient() as any;
+
+  // 1. Load order
+  const { data: order } = await admin
+    .from('buyer_orders')
+    .select('id, total_usd, currency, escrow_status, stripe_transfer_id, items')
+    .eq('id', orderId)
+    .single() as {
+      data: {
+        id              : string;
+        total_usd       : number;
+        currency        : string | null;
+        escrow_status   : string | null;
+        stripe_transfer_id: string | null;
+        items           : { brand_name?: string | null }[];
+      } | null;
+    };
+
+  if (!order) throw new Error(`Order ${orderId} not found`);
+
+  // Idempotent — already released
+  if (order.escrow_status === 'released' && order.stripe_transfer_id) {
+    return {
+      orderId,
+      transferred: 0,
+      currency   : order.currency ?? 'USD',
+      transferId : order.stripe_transfer_id,
+      fee        : 0,
+    };
+  }
+
+  const orderCurrency = order.currency ?? 'USD';
+  const brandName     = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+
+  if (!brandName) throw new Error(`Order ${orderId} has no brand_name in items`);
+
+  // 2. Load brand's Stripe Connect account
+  const { data: sf } = await admin
+    .from('brand_storefronts')
+    .select('stripe_account_id, stripe_account_status')
+    .eq('brand_name', brandName)
+    .maybeSingle() as {
+      data: { stripe_account_id: string | null; stripe_account_status: string | null } | null;
+    };
+
+  if (!sf?.stripe_account_id || sf.stripe_account_status !== 'active') {
+    throw new Error(`Brand "${brandName}" does not have an active Stripe Connect account`);
+  }
+
+  // 3. Sum all succeeded payments for this order
+  const { data: payments } = await admin
+    .from('buyer_payments')
+    .select('id, amount, amount_usd, currency, stripe_transfer_id')
+    .eq('order_id', orderId)
+    .eq('status', 'succeeded') as {
+      data: {
+        id              : string;
+        amount          : number | null;
+        amount_usd      : number;
+        currency        : string | null;
+        stripe_transfer_id: string | null;
+      }[] | null;
+    };
+
+  if (!payments?.length) throw new Error(`No succeeded payments found for order ${orderId}`);
+
+  // Use order total as the authoritative amount (avoids floating-point accumulation across installments)
+  const grossCents = toCents(order.total_usd);
+
+  // 4. Calculate commission and payout
+  const commissionRate = await resolveCommissionRateByName(brandName);
+  const feeCents       = Math.round(grossCents * commissionRate);
+  const payoutCents    = grossCents - feeCents;
+
+  // 5. Create Stripe transfer (separate charges + transfers model)
+  const transfer = await stripe.transfers.create({
+    amount         : payoutCents,
+    currency       : stripeCode(orderCurrency),
+    destination    : sf.stripe_account_id,
+    transfer_group : orderId,
+    metadata       : {
+      order_id       : orderId,
+      brand_name     : brandName,
+      gross_cents    : String(grossCents),
+      fee_cents      : String(feeCents),
+      commission_rate: String(commissionRate),
+    },
+  });
+
+  const now = new Date().toISOString();
+
+  // 6. Mark order as released
+  await admin
+    .from('buyer_orders')
+    .update({
+      escrow_status      : 'released',
+      escrow_released_at : now,
+      stripe_transfer_id : transfer.id,
+      updated_at         : now,
+    })
+    .eq('id', orderId);
+
+  // 7. Mark each payment row with the transfer ID
+  const paymentIds = payments.map(p => p.id);
+  await admin
+    .from('buyer_payments')
+    .update({ stripe_transfer_id: transfer.id, updated_at: now })
+    .in('id', paymentIds);
+
+  return {
+    orderId,
+    transferred: payoutCents,
+    currency   : orderCurrency,
+    transferId : transfer.id,
+    fee        : feeCents,
+  };
+}
+
+/**
+ * Should this order be auto-released on status change?
+ * Release when status becomes 'delivered' and payment is fully captured.
+ */
+export function shouldAutoRelease(
+  newStatus    : string,
+  paymentStatus: string,
+  escrowStatus : string,
+): boolean {
+  return (
+    newStatus     === 'delivered' &&
+    paymentStatus === 'paid' &&
+    escrowStatus  !== 'released'
+  );
+}

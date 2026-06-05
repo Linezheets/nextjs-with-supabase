@@ -8,9 +8,24 @@ import Link             from 'next/link';
 type Role = 'brand' | 'buyer';
 
 const PLANS = [
-  { id: 'starter',    label: 'Starter',    price: '$49',    period: '/mo', features: ['Up to 200 SKUs', 'Basic analytics', '1 user seat'],          popular: false },
-  { id: 'studio',     label: 'Studio',     price: '$149',   period: '/mo', features: ['Unlimited SKUs', 'AI features', '5 user seats'],             popular: true  },
-  { id: 'enterprise', label: 'Enterprise', price: 'Custom', period: '',    features: ['Unlimited everything', 'Dedicated support', 'Custom SLA'],   popular: false },
+  {
+    id: 'starter', label: 'Starter', price: '$49', annual: '$499',
+    period: '/mo', annualPeriod: '/yr',
+    features: ['Up to 200 SKUs', 'Marketplace listing', 'Basic analytics', '1 user seat'],
+    popular: false,
+  },
+  {
+    id: 'agent', label: 'Agent', price: '$149', annual: '$1,499',
+    period: '/mo', annualPeriod: '/yr',
+    features: ['Unlimited SKUs', 'AI merchandising tools', 'Advanced analytics', '5 user seats'],
+    popular: true,
+  },
+  {
+    id: 'enterprise', label: 'Enterprise', price: '$899', annual: '$8,999',
+    period: '/mo', annualPeriod: '/yr',
+    features: ['Unlimited everything', 'Dedicated account manager', 'Custom SLA', 'API access'],
+    popular: false,
+  },
 ] as const;
 
 export default function RegisterPage() {

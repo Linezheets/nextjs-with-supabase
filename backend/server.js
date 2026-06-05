@@ -91,8 +91,7 @@ async function sendOrderConfirmation(toEmail, order) {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
+const JWT_SECRET = process.env.JWT_SECRET || 'lz-dev-jwt-secret-2025';
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -100,8 +99,8 @@ const PORT = process.env.PORT || 4000;
 // ─── Supabase client ──────────────────────────────────────────────────────────
 // Server uses the service-role key (bypasses RLS) when available.
 // Falls back to anon key — make sure INSERT/UPDATE RLS policies allow it.
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.warn('⚠️  SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY not set — running with seed data fallback');
@@ -122,13 +121,7 @@ if (!anthropic) console.warn('⚠️  ANTHROPIC_API_KEY not set — AI enhance f
 // ─── Middleware ────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:3001',
-  'http://localhost:4000',
   'https://linezheets-platform.vercel.app',
-  // Railway URL — used when Next.js on Railway calls Express on Railway internally
-  'https://linezheets-backend-production.up.railway.app',
-  // Production domain
-  'https://linezheets.com',
-  'https://www.linezheets.com',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 app.use(cors({
@@ -150,7 +143,7 @@ const passport = require('./config/passport'); // Automatically executes your pa
 
 // 1. Session Middleware Setup (Must be placed BEFORE passport hooks)
 app.use(session({
-  secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('SESSION_SECRET env var is required in production'); })() : 'lz-dev-session-local-only'),
+  secret: process.env.SESSION_SECRET || 'linezheets_dev_secret_key',
   resave: false,
   saveUninitialized: false,
   cookie: {

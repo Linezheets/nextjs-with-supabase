@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { releaseEscrow, shouldAutoRelease } from '@/lib/escrow';
 
-const VALID_STATUSES = ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+const VALID_STATUSES = ['confirmed', 'processing', 'allocation_confirmed', 'shipped', 'delivered', 'cancelled'];
 
 export async function PATCH(
   req: NextRequest,
@@ -41,11 +42,23 @@ export async function PATCH(
     .update(patch)
     .eq('id', id)
     .filter('items', 'cs', JSON.stringify([{ brand_name: sf.brand_name }]))
-    .select()
+    .select('id, payment_status, escrow_status')
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data)  return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-  return NextResponse.json({ order: data });
+  // Auto-release escrow when order is marked delivered and payment is fully captured
+  let escrowRelease: { transfer_id: string; transferred: number } | null = null;
+  if (shouldAutoRelease(status, data.payment_status, data.escrow_status)) {
+    try {
+      const result = await releaseEscrow(id);
+      escrowRelease = { transfer_id: result.transferId, transferred: result.transferred / 100 };
+    } catch (err) {
+      // Log but don't fail the status update — admin can manually release
+      console.error('[order-status] escrow auto-release failed for', id, err);
+    }
+  }
+
+  return NextResponse.json({ order: data, escrow_release: escrowRelease });
 }

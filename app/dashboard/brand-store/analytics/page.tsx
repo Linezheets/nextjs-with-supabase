@@ -12,6 +12,7 @@ type Signal      = { type: 'reorder' | 'cut' | 'watch' | 'cancel'; title: string
 
 type AnalyticsData = {
   brand_name       : string;
+  currency         : string;
   skus             : SellThroughRow[];
   by_color         : ColorRow[];
   by_category      : CategoryRow[];
@@ -55,9 +56,12 @@ const SIGNAL_LABEL: Record<Signal['type'], string> = {
   cancel : '✕ Cancel',
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+function makeFmt(currency: string) {
+  return (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: currency ?? 'USD', maximumFractionDigits: 0 }).format(n);
 }
+// fallback until data loads
+const fmt = makeFmt('USD');
 
 function SellBar({ pct, status }: { pct: number; status: SellThroughRow['status'] }) {
   return (
@@ -79,6 +83,7 @@ function StatusDot({ status }: { status: SellThroughRow['status'] }) {
 // ── Overview panel ────────────────────────────────────────────────────────────
 
 function Overview({ data }: { data: AnalyticsData }) {
+  const fmt = makeFmt(data.currency ?? 'USD');
   const totalSkus = data.skus.length;
   const { strong, moving, slow, dead } = data.status_counts;
 
@@ -176,7 +181,8 @@ function Overview({ data }: { data: AnalyticsData }) {
 
 // ── SKU table ─────────────────────────────────────────────────────────────────
 
-function SkuTable({ skus }: { skus: SellThroughRow[] }) {
+function SkuTable({ skus, currency }: { skus: SellThroughRow[]; currency?: string }) {
+  const fmt = makeFmt(currency ?? 'USD');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'sell_through' | 'units' | 'revenue' | 'stock'>('sell_through');
@@ -294,6 +300,7 @@ function SkuTable({ skus }: { skus: SellThroughRow[] }) {
 // ── Color view ────────────────────────────────────────────────────────────────
 
 function ColorView({ data }: { data: AnalyticsData }) {
+  const fmt = makeFmt(data.currency ?? 'USD');
   const maxUnits = Math.max(1, ...data.by_color.map(c => c.units_ordered));
 
   return (
@@ -470,6 +477,9 @@ export default function AnalyticsPage() {
   const [view, setView] = useState<View>('overview');
   const [since, setSince] = useState('');
 
+  // Currency-aware formatter — updates once data loads
+  const fmtCurrency = useMemo(() => makeFmt(data?.currency ?? 'USD'), [data?.currency]);
+
   useEffect(() => {
     const url = since ? `/api/brand/analytics/sell-through?since=${since}` : '/api/brand/analytics/sell-through';
     setLoading(true);
@@ -549,7 +559,7 @@ export default function AnalyticsPage() {
         {!loading && !error && data && (
           <>
             {view === 'overview' && <Overview data={data} />}
-            {view === 'skus'     && <SkuTable skus={data.skus} />}
+            {view === 'skus'     && <SkuTable skus={data.skus} currency={data.currency} />}
             {view === 'color'    && <ColorView data={data} />}
             {view === 'size'     && <SizeView data={data} />}
             {view === 'signals'  && <Signals signals={data.production_signals} />}
