@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import Link            from 'next/link';
+import { DeviceShowcaseScroll } from '@/components/DeviceShowcaseScroll';
+import { getShowcaseData }      from '@/lib/showcase-data';
 
 export const revalidate = 3600;
 
@@ -102,6 +104,7 @@ export default async function LandingPage() {
   const items      = await getPublicCatalog();
   const brands     = [...new Set(items.map(i => safeStr(i.brand_name)).filter(Boolean))];
   const categories = [...new Set(items.map(i => safeStr(i.category)).filter(Boolean))];
+  const showcase   = await getShowcaseData();
 
   return (
     <div className="min-h-screen bg-white text-black"
@@ -527,6 +530,8 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      <DeviceShowcaseScroll data={showcase} />
 
       {/* ══════════════════════════════════════════════════════════════════════
           MARQUEE QUOTES — scrolling ticker

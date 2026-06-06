@@ -12,6 +12,7 @@ import {
   AnimatePresence,
 } from 'framer-motion';
 import { NavBarAuth } from '@/components/NavBarAuth';
+import { DeviceShowcaseScroll } from '@/components/DeviceShowcaseScroll';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1233,6 +1234,7 @@ export default function LandingClient({ items, brands, categories }: Props) {
       <AISection />
       <OperationsSection />
       <ForBuyersSection />
+      <DeviceShowcaseScroll />
       <MarqueeSection />
       <MarketplaceTeaser items={items} brands={brands} />
       <CTASection />
