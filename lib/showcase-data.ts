@@ -67,6 +67,12 @@ export interface ShowcaseData {
   };
 }
 
+// ── Empty default (for client components that can't call the server fetch) ────
+export const emptyShowcaseData: ShowcaseData = {
+  orders: [], inventory: [], brands: [], alerts: [], shortlist: [],
+  stats: { seasonRevenue: '€ 0', activeOrders: 0, pendingReview: 0, totalSkus: 0, inStock: 0, lowStock: 0 },
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtEur(usd: number): string {

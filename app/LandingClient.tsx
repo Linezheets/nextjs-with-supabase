@@ -13,6 +13,7 @@ import {
 } from 'framer-motion';
 import { NavBarAuth } from '@/components/NavBarAuth';
 import { DeviceShowcaseScroll } from '@/components/DeviceShowcaseScroll';
+import { emptyShowcaseData } from '@/lib/showcase-data';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1234,7 +1235,7 @@ export default function LandingClient({ items, brands, categories }: Props) {
       <AISection />
       <OperationsSection />
       <ForBuyersSection />
-      <DeviceShowcaseScroll />
+      <DeviceShowcaseScroll data={emptyShowcaseData} />
       <MarqueeSection />
       <MarketplaceTeaser items={items} brands={brands} />
       <CTASection />
