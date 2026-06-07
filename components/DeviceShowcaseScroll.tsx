@@ -25,7 +25,7 @@ import {
   Star,
 } from "lucide-react";
 
-// ─── Slide data ────────────────────────────────────────────────────────────
+// âââ Slide data ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 type DeviceType = "ipad" | "laptop" | "mac" | "mobile";
 
@@ -37,13 +37,13 @@ interface Slide {
   UI: React.FC<{ data: ShowcaseData }>;
 }
 
-// ── Static fallbacks (shown when DB has no data yet) ───────────────────────
+// ââ Static fallbacks (shown when DB has no data yet) âââââââââââââââââââââââ
 const FALLBACK_ORDERS: ShowcaseOrder[] = [
-  { id: "LZ-2024-0891", brand: "Maison Cléo",      buyer: "Le Bon Marché — Paris",    items: 14, value: "€ 38,400", status: "confirmed" },
-  { id: "LZ-2024-0890", brand: "Studio Nicholson", buyer: "Browns Fashion — London",  items: 8,  value: "€ 22,150", status: "pending"   },
-  { id: "LZ-2024-0887", brand: "Jacquemus",         buyer: "Ssense — Montréal",        items: 22, value: "€ 91,200", status: "shipped"    },
-  { id: "LZ-2024-0882", brand: "Auralee",           buyer: "Matches Fashion — London", items: 6,  value: "€ 14,880", status: "confirmed" },
-  { id: "LZ-2024-0879", brand: "Totême",            buyer: "Net-a-Porter — Global",    items: 18, value: "€ 54,600", status: "shipped"    },
+  { id: "LZ-2024-0891", brand: "Maison ClÃ©o",      buyer: "Le Bon MarchÃ© â Paris",    items: 14, value: "â¬ 38,400", status: "confirmed" },
+  { id: "LZ-2024-0890", brand: "Studio Nicholson", buyer: "Browns Fashion â London",  items: 8,  value: "â¬ 22,150", status: "pending"   },
+  { id: "LZ-2024-0887", brand: "Jacquemus",         buyer: "Ssense â MontrÃ©al",        items: 22, value: "â¬ 91,200", status: "shipped"    },
+  { id: "LZ-2024-0882", brand: "Auralee",           buyer: "Matches Fashion â London", items: 6,  value: "â¬ 14,880", status: "confirmed" },
+  { id: "LZ-2024-0879", brand: "TotÃªme",            buyer: "Net-a-Porter â Global",    items: 18, value: "â¬ 54,600", status: "shipped"    },
 ];
 const FALLBACK_INVENTORY: ShowcaseInventoryItem[] = [
   { sku: "MC-SS26-001", name: "Silk Bias Dress",   season: "SS26", stock: 24, avail: 18, reorder: false },
@@ -54,23 +54,23 @@ const FALLBACK_INVENTORY: ShowcaseInventoryItem[] = [
   { sku: "MC-SS26-002", name: "Linen Maxi Skirt",  season: "SS26", stock: 19, avail: 12, reorder: false },
 ];
 const FALLBACK_BRANDS: ShowcaseBrand[] = [
-  { name: "Totême",      tag: "New Season",   img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=300&q=70", isNew: true  },
-  { name: "Maison Cléo",tag: "48 New SKUs",  img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=300&q=70", isNew: true  },
+  { name: "TotÃªme",      tag: "New Season",   img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=300&q=70", isNew: true  },
+  { name: "Maison ClÃ©o",tag: "48 New SKUs",  img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=300&q=70", isNew: true  },
   { name: "Studio N.",   tag: "Price Updated",img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=300&q=70", isNew: false },
   { name: "Auralee",     tag: "Low Stock",    img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=300&q=70", isNew: false },
 ];
 const FALLBACK_ALERTS: ShowcaseAlert[] = [
   { brand: "Jacquemus",   time: "2m ago",    msg: "SS26 lookbook is now live. 22 new styles added.",    unread: true,  dot: "#c9a84c" },
-  { brand: "Maison Cléo", time: "14m ago",   msg: "Your order #LZ-2024-0891 has been confirmed.",       unread: true,  dot: "#4caf7d" },
-  { brand: "Totême",      time: "1h ago",    msg: "Price list updated for SS26 season.",                unread: false, dot: "#555"    },
-  { brand: "Auralee",     time: "3h ago",    msg: "Low stock alert: Wool Rib Knit — 3 units left.",    unread: false, dot: "#e07070" },
+  { brand: "Maison ClÃ©o", time: "14m ago",   msg: "Your order #LZ-2024-0891 has been confirmed.",       unread: true,  dot: "#4caf7d" },
+  { brand: "TotÃªme",      time: "1h ago",    msg: "Price list updated for SS26 season.",                unread: false, dot: "#555"    },
+  { brand: "Auralee",     time: "3h ago",    msg: "Low stock alert: Wool Rib Knit â 3 units left.",    unread: false, dot: "#e07070" },
   { brand: "Studio N.",   time: "Yesterday", msg: "Payment reminder: Invoice #INV-0334 due Friday.",   unread: false, dot: "#555"    },
 ];
 const FALLBACK_SHORTLIST: ShowcaseShortlistItem[] = [
-  { brand: "Jacquemus",  name: "Le Chiquito Bag",  sku: "JQ-SS26-007", price: "€ 890", note: "Priority", qty: 3 },
-  { brand: "Maison Cléo",name: "Silk Bias Dress",   sku: "MC-SS26-001", price: "€ 320", note: "",         qty: 6 },
-  { brand: "Auralee",    name: "Wool Rib Knit",      sku: "AU-SS26-022", price: "€ 480", note: "Low stock",qty: 4 },
-  { brand: "Totême",     name: "Relaxed Trousers",  sku: "TM-SS26-003", price: "€ 540", note: "Last 3",   qty: 2 },
+  { brand: "Jacquemus",  name: "Le Chiquito Bag",  sku: "JQ-SS26-007", price: "â¬ 890", note: "Priority", qty: 3 },
+  { brand: "Maison ClÃ©o",name: "Silk Bias Dress",   sku: "MC-SS26-001", price: "â¬ 320", note: "",         qty: 6 },
+  { brand: "Auralee",    name: "Wool Rib Knit",      sku: "AU-SS26-022", price: "â¬ 480", note: "Low stock",qty: 4 },
+  { brand: "TotÃªme",     name: "Relaxed Trousers",  sku: "TM-SS26-003", price: "â¬ 540", note: "Last 3",   qty: 2 },
 ];
 
 const statusCfg: Record<string, { label: string; color: string; Icon: React.ElementType }> = {
@@ -87,7 +87,7 @@ function OrderUI({ data }: { data: ShowcaseData }) {
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
         <div className="flex items-center gap-2">
           <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontSize: 11, letterSpacing: "0.4em" }}>LINEZHEETS</span>
-          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">· Orders</span>
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">Â· Orders</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-[#c9a84c]" />
@@ -97,7 +97,7 @@ function OrderUI({ data }: { data: ShowcaseData }) {
 
       <div className="grid grid-cols-3 divide-x divide-white/5 border-b border-white/5">
         {[
-          { label: "Season Revenue", value: stats.seasonRevenue || "€ 1.24M", Icon: TrendingUp },
+          { label: "Season Revenue", value: stats.seasonRevenue || "â¬ 1.24M", Icon: TrendingUp },
           { label: "Active Orders",  value: String(stats.activeOrders || 47),  Icon: ShoppingBag },
           { label: "Pending Review", value: String(stats.pendingReview || 6),  Icon: AlertCircle },
         ].map(({ label, value, Icon }) => (
@@ -142,14 +142,14 @@ function OrderUI({ data }: { data: ShowcaseData }) {
       </div>
 
       <div className="px-4 py-2 border-t border-white/5 flex items-center justify-between">
-        <p className="text-[7px] uppercase tracking-[0.3em] text-[#333]">Spring / Summer 2026 · Season Active</p>
+        <p className="text-[7px] uppercase tracking-[0.3em] text-[#333]">Spring / Summer 2026 Â· Season Active</p>
         <p className="text-[7px] uppercase tracking-[0.3em] text-[#333]">Updated just now</p>
       </div>
     </div>
   );
 }
 
-// ── 2. Laptop — Inventory Dashboard ────────────────────────────────────────
+// ââ 2. Laptop â Inventory Dashboard ââââââââââââââââââââââââââââââââââââââââ
 function InventoryUI({ data }: { data: ShowcaseData }) {
   const inventory = data.inventory.length ? data.inventory : FALLBACK_INVENTORY;
   const stats     = data.stats;
@@ -158,7 +158,7 @@ function InventoryUI({ data }: { data: ShowcaseData }) {
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
         <div className="flex items-center gap-2">
           <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontSize: 11, letterSpacing: "0.4em" }}>LINEZHEETS</span>
-          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">· Inventory</span>
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">Â· Inventory</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-[8px] uppercase tracking-[0.25em] text-[#555] border border-white/10 px-2 py-0.5 rounded">SS26</div>
@@ -222,7 +222,7 @@ function InventoryUI({ data }: { data: ShowcaseData }) {
   );
 }
 
-// ── 3. Mac — Drag-and-Drop PDF Linesheet Upload ─────────────────────────────
+// ââ 3. Mac â Drag-and-Drop PDF Linesheet Upload âââââââââââââââââââââââââââââ
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
   return (
@@ -230,7 +230,7 @@ function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
         <div className="flex items-center gap-2">
           <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontSize: 11, letterSpacing: "0.4em" }}>LINEZHEETS</span>
-          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">· AI Import</span>
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#555]">Â· AI Import</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-[#c9a84c] animate-pulse" />
@@ -249,7 +249,7 @@ function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
           <UploadCloud size={28} style={{ color: "#c9a84c" }} />
           <div className="text-center">
             <p className="text-[11px] text-[#ccc] mb-1">Drop your linesheet PDFs here</p>
-            <p className="text-[9px] text-[#555]">Supports PDF, Excel, Word — any format</p>
+            <p className="text-[9px] text-[#555]">Supports PDF, Excel, Word â any format</p>
           </div>
         </motion.div>
 
@@ -274,7 +274,7 @@ function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] text-[#ccc] truncate">{f.name}</p>
                 {f.status === "done" && (
-                  <p className="text-[8px] text-[#4caf7d]">{f.pages} pages · {f.skus} SKUs extracted</p>
+                  <p className="text-[8px] text-[#4caf7d]">{f.pages} pages Â· {f.skus} SKUs extracted</p>
                 )}
                 {f.status === "processing" && (
                   <div className="mt-1 h-0.5 w-full bg-white/10 rounded-full overflow-hidden">
@@ -309,11 +309,11 @@ function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
   );
 }
 
-// ── 4. Mobile — Brand Discovery Feed ───────────────────────────────────────
+// ââ 4. Mobile â Brand Discovery Feed âââââââââââââââââââââââââââââââââââââââ
 function DiscoveryUI() {
   const brands = [
-    { name: "Totême",           tag: "New Season",    img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&q=60", new: true  },
-    { name: "Maison Cléo",      tag: "48 New SKUs",   img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&q=60", new: true  },
+    { name: "TotÃªme",           tag: "New Season",    img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&q=60", new: true  },
+    { name: "Maison ClÃ©o",      tag: "48 New SKUs",   img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&q=60", new: true  },
     { name: "Studio Nicholson", tag: "Price Updated", img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=200&q=60", new: false },
     { name: "Auralee",          tag: "Low Stock",     img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=200&q=60", new: false },
   ];
@@ -326,7 +326,7 @@ function DiscoveryUI() {
         </div>
         <div className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-1.5">
           <Search size={10} style={{ color: "#555" }} />
-          <span className="text-[9px] text-[#444]">Search brands, collections…</span>
+          <span className="text-[9px] text-[#444]">Search brands, collectionsâ¦</span>
         </div>
       </div>
 
@@ -365,13 +365,13 @@ function DiscoveryUI() {
   );
 }
 
-// ── 5. Mobile — Buyer Notifications & Messaging ─────────────────────────────
+// ââ 5. Mobile â Buyer Notifications & Messaging âââââââââââââââââââââââââââââ
 function MessagingUI() {
   const msgs = [
     { brand: "Jacquemus",    time: "2m ago",   msg: "SS26 lookbook is now live. 22 new styles added.", unread: true,  dot: "#c9a84c" },
-    { brand: "Maison Cléo", time: "14m ago",  msg: "Your order #LZ-2024-0891 has been confirmed.",    unread: true,  dot: "#4caf7d" },
-    { brand: "Totême",       time: "1h ago",   msg: "Price list updated for SS26 season.",             unread: false, dot: "#555"    },
-    { brand: "Auralee",      time: "3h ago",   msg: "Low stock alert: Wool Rib Knit — 3 units left.", unread: false, dot: "#e07070" },
+    { brand: "Maison ClÃ©o", time: "14m ago",  msg: "Your order #LZ-2024-0891 has been confirmed.",    unread: true,  dot: "#4caf7d" },
+    { brand: "TotÃªme",       time: "1h ago",   msg: "Price list updated for SS26 season.",             unread: false, dot: "#555"    },
+    { brand: "Auralee",      time: "3h ago",   msg: "Low stock alert: Wool Rib Knit â 3 units left.", unread: false, dot: "#e07070" },
     { brand: "Studio N.",    time: "Yesterday",msg: "Payment reminder: Invoice #INV-0334 due Friday.", unread: false, dot: "#555"    },
   ];
   return (
@@ -414,13 +414,13 @@ function MessagingUI() {
   );
 }
 
-// ── 6. Mobile — Shortlist / Wishlist ────────────────────────────────────────
+// ââ 6. Mobile â Shortlist / Wishlist ââââââââââââââââââââââââââââââââââââââââ
 function ShortlistUI() {
   const items = [
-    { brand: "Jacquemus",   name: "Le Chiquito Bag",    sku: "JQ-SS26-007", price: "€ 890",  note: "Priority",  qty: 3 },
-    { brand: "Maison Cléo", name: "Silk Bias Dress",     sku: "MC-SS26-001", price: "€ 320",  note: "",          qty: 6 },
-    { brand: "Auralee",     name: "Wool Rib Knit",        sku: "AU-SS26-022", price: "€ 480",  note: "Low stock", qty: 4 },
-    { brand: "Totême",      name: "Relaxed Trousers",    sku: "TM-SS26-003", price: "€ 540",  note: "Last 3",    qty: 2 },
+    { brand: "Jacquemus",   name: "Le Chiquito Bag",    sku: "JQ-SS26-007", price: "â¬ 890",  note: "Priority",  qty: 3 },
+    { brand: "Maison ClÃ©o", name: "Silk Bias Dress",     sku: "MC-SS26-001", price: "â¬ 320",  note: "",          qty: 6 },
+    { brand: "Auralee",     name: "Wool Rib Knit",        sku: "AU-SS26-022", price: "â¬ 480",  note: "Low stock", qty: 4 },
+    { brand: "TotÃªme",      name: "Relaxed Trousers",    sku: "TM-SS26-003", price: "â¬ 540",  note: "Last 3",    qty: 2 },
   ];
   return (
     <div className="h-full w-full bg-[#111] rounded-[28px] overflow-hidden flex flex-col text-white">
@@ -446,14 +446,14 @@ function ShortlistUI() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-[#ccc]">{item.name}</p>
-              <p className="text-[8px] text-[#555]">{item.brand} · {item.sku}</p>
+              <p className="text-[8px] text-[#555]">{item.brand} Â· {item.sku}</p>
               {item.note && (
                 <span className="text-[7px] uppercase tracking-[0.15em] text-[#e07070]">{item.note}</span>
               )}
             </div>
             <div className="text-right flex-shrink-0">
               <p style={{ fontFamily: "var(--font-serif),Georgia,serif", fontSize: 11, color: "#fff" }}>{item.price}</p>
-              <p className="text-[8px] text-[#555]">× {item.qty}</p>
+              <p className="text-[8px] text-[#555]">Ã {item.qty}</p>
             </div>
           </motion.div>
         ))}
@@ -469,21 +469,21 @@ function ShortlistUI() {
   );
 }
 
-// ─── Slides config ──────────────────────────────────────────────────────────
+// âââ Slides config ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 const SLIDES: Slide[] = [
   {
     device: "ipad",
     label: "Every wholesale order,",
     italic: "beautifully managed.",
-    sub: "Track orders from placement to delivery — across every brand, every buyer, in real time.",
+    sub: "Track orders from placement to delivery â across every brand, every buyer, in real time.",
     UI: OrderUI,
   },
   {
     device: "laptop",
     label: "Every SKU and season,",
     italic: "neatly organised.",
-    sub: "Live inventory levels, reorder alerts, and availability — always current, always visible.",
+    sub: "Live inventory levels, reorder alerts, and availability â always current, always visible.",
     UI: InventoryUI,
   },
   {
@@ -497,26 +497,26 @@ const SLIDES: Slide[] = [
     device: "mobile",
     label: "Every new collection,",
     italic: "instantly discovered.",
-    sub: "Browse new arrivals, updated lookbooks, and price changes from all your brands — in one feed.",
+    sub: "Browse new arrivals, updated lookbooks, and price changes from all your brands â in one feed.",
     UI: DiscoveryUI,
   },
   {
     device: "mobile",
     label: "Every brand update,",
     italic: "always connected.",
-    sub: "Real-time notifications for order confirmations, stock alerts, and payment reminders — never miss a beat.",
+    sub: "Real-time notifications for order confirmations, stock alerts, and payment reminders â never miss a beat.",
     UI: MessagingUI,
   },
   {
     device: "mobile",
     label: "Every season's picks,",
     italic: "precisely shortlisted.",
-    sub: "Save, annotate, and send shortlists to brands in one tap — from discovery to order in seconds.",
+    sub: "Save, annotate, and send shortlists to brands in one tap â from discovery to order in seconds.",
     UI: ShortlistUI,
   },
 ];
 
-// ─── Device frame wrappers ──────────────────────────────────────────────────
+// âââ Device frame wrappers ââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function IPadFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -588,9 +588,9 @@ function DeviceWrapper({ device, children }: { device: DeviceType; children: Rea
   return <MobileFrame>{children}</MobileFrame>;
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// âââ Main Component âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-export function DeviceShowcaseScroll() {
+export function DeviceShowcaseScroll({ data }: { data: ShowcaseData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = React.useState(0);
 
@@ -618,7 +618,7 @@ export function DeviceShowcaseScroll() {
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
         <div className="w-full max-w-[1300px] mx-auto px-8 md:px-14 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
 
-          {/* Left — text */}
+          {/* Left â text */}
           <div>
             <AnimatePresence mode="wait">
               <motion.div
@@ -674,7 +674,7 @@ export function DeviceShowcaseScroll() {
             </div>
           </div>
 
-          {/* Right — device mockup */}
+          {/* Right â device mockup */}
           <div className="flex items-center justify-center">
             <AnimatePresence mode="wait">
               <motion.div
@@ -685,7 +685,7 @@ export function DeviceShowcaseScroll() {
                 transition={{ duration: 0.45, ease: [0.25, 0, 0, 1] }}
               >
                 <DeviceWrapper device={slide.device}>
-                  <SlideUI />
+                  <SlideUI data={data} />
                 </DeviceWrapper>
               </motion.div>
             </AnimatePresence>
