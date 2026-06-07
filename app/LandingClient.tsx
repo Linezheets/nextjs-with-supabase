@@ -108,23 +108,24 @@ function Grain() {
   );
 }
 
-// ─── Logo — uses the real PNG if present in /public ───────────────────────────
-// ⚠️  Drop your logo file at: /public/linezheets-logo.png
-// The navbar shows the mark + wordmark from the PNG.
-
-// Real logo PNG — shown as-is, no blend tricks.
-// Black background naturally vanishes into the dark nav.
-// objectFit:cover + objectPosition centers the LZ mark in the square crop.
+// ─── Logo mark — crops the geometric icon from the lockup PNG, stopping before the embedded wordmark.
+// Source (1382×768): mark ≈ x:415–968 (w:553), y:63–530 (h:467). Scale so mark height → size.
 function LogoMark({ size = 44, opacity = 1 }: { size?: number; opacity?: number }) {
+  const MARK = { x0: 415, y0: 63, w: 553, h: 467 };
+  const scale = size / MARK.h;
+  const bgW   = Math.round(1382 * scale);
+  const bgH   = Math.round(768  * scale);
+  const offX  = -Math.round(MARK.x0 * scale);
+  const offY  = -Math.round(MARK.y0 * scale);
+  const width = Math.round(MARK.w  * scale);
   return (
-    <div style={{ width: size, height: size, overflow: 'hidden', flexShrink: 0, opacity }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/linezheets-logo.png"
-        alt="Linezheets"
-        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '39% 52%', display: 'block' }}
-      />
-    </div>
+    <div style={{
+      width, height: size, flexShrink: 0, opacity, overflow: 'hidden',
+      backgroundImage: 'url(/linezheets-logo.png)',
+      backgroundSize: `${bgW}px ${bgH}px`,
+      backgroundPosition: `${offX}px ${offY}px`,
+      backgroundRepeat: 'no-repeat',
+    }} aria-label="Linezheets" role="img" />
   );
 }
 
@@ -260,15 +261,10 @@ function FuturisticNav() {
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem', height: 68, display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
 
         {/* Logo — left */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
           <LogoMark size={42} />
-          <div>
-            <div style={{ fontSize: 16, letterSpacing: '0.55em', fontFamily: 'var(--font-serif), Georgia, serif', color: 'white', fontWeight: 400, lineHeight: 1 }}>
-              LINEZHEETS
-            </div>
-            <div style={{ fontSize: 6, letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD_DIM, fontFamily: 'var(--font-mono), monospace', marginTop: 2 }}>
-              B2B Fashion Platform
-            </div>
+          <div style={{ fontSize: 16, letterSpacing: '0.55em', fontFamily: 'var(--font-serif), Georgia, serif', color: 'white', fontWeight: 400, lineHeight: 1, textTransform: 'uppercase' }}>
+            Linezheets
           </div>
         </Link>
 
