@@ -13,7 +13,8 @@ import {
 } from 'framer-motion';
 import { NavBarAuth } from '@/components/NavBarAuth';
 import { DeviceShowcaseScroll } from '@/components/DeviceShowcaseScroll';
-import { emptyShowcaseData } from '@/lib/showcase-data';
+import { emptyShowcaseData } from '@/lib/showcase-types';
+import type { ShowcaseData } from '@/lib/showcase-types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ interface Props {
   items: CatalogItem[];
   brands: string[];
   categories: string[];
+  showcase?: ShowcaseData;
 }
 
 function safeStr(raw: unknown, fallback = ''): string {
@@ -1223,7 +1225,7 @@ function FuturisticFooter() {
 
 // ─── ROOT EXPORT ──────────────────────────────────────────────────────────────
 
-export default function LandingClient({ items, brands, categories }: Props) {
+export default function LandingClient({ items, brands, categories, showcase }: Props) {
   return (
     <div style={{ background: '#000', color: 'white', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
       <Grain />
@@ -1235,7 +1237,7 @@ export default function LandingClient({ items, brands, categories }: Props) {
       <AISection />
       <OperationsSection />
       <ForBuyersSection />
-      <DeviceShowcaseScroll data={emptyShowcaseData} />
+      <DeviceShowcaseScroll data={showcase ?? emptyShowcaseData} />
       <MarqueeSection />
       <MarketplaceTeaser items={items} brands={brands} />
       <CTASection />
