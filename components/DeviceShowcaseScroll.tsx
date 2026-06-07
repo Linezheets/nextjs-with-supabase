@@ -310,13 +310,9 @@ function PDFUploadUI({ data: _data }: { data: ShowcaseData }) {
 }
 
 // ── 4. Mobile — Brand Discovery Feed ───────────────────────────────────────
-function DiscoveryUI() {
-  const brands = [
-    { name: "Totême",           tag: "New Season",    img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&q=60", new: true  },
-    { name: "Maison Cléo",      tag: "48 New SKUs",   img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&q=60", new: true  },
-    { name: "Studio Nicholson", tag: "Price Updated", img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=200&q=60", new: false },
-    { name: "Auralee",          tag: "Low Stock",     img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=200&q=60", new: false },
-  ];
+function DiscoveryUI({ data }: { data: ShowcaseData }) {
+  const rawBrands = data.brands.length ? data.brands : FALLBACK_BRANDS;
+  const brands = rawBrands.map(b => ({ name: b.name, tag: b.tag, img: b.img, new: b.isNew }));
   return (
     <div className="h-full w-full bg-[#111] rounded-[28px] overflow-hidden flex flex-col text-white">
       <div className="px-4 pt-4 pb-2 border-b border-white/5">
@@ -366,14 +362,8 @@ function DiscoveryUI() {
 }
 
 // ── 5. Mobile — Buyer Notifications & Messaging ─────────────────────────────
-function MessagingUI() {
-  const msgs = [
-    { brand: "Jacquemus",    time: "2m ago",   msg: "SS26 lookbook is now live. 22 new styles added.", unread: true,  dot: "#c9a84c" },
-    { brand: "Maison Cléo", time: "14m ago",  msg: "Your order #LZ-2024-0891 has been confirmed.",    unread: true,  dot: "#4caf7d" },
-    { brand: "Totême",       time: "1h ago",   msg: "Price list updated for SS26 season.",             unread: false, dot: "#555"    },
-    { brand: "Auralee",      time: "3h ago",   msg: "Low stock alert: Wool Rib Knit — 3 units left.", unread: false, dot: "#e07070" },
-    { brand: "Studio N.",    time: "Yesterday",msg: "Payment reminder: Invoice #INV-0334 due Friday.", unread: false, dot: "#555"    },
-  ];
+function MessagingUI({ data }: { data: ShowcaseData }) {
+  const msgs = data.alerts.length ? data.alerts : FALLBACK_ALERTS;
   return (
     <div className="h-full w-full bg-[#111] rounded-[28px] overflow-hidden flex flex-col text-white">
       <div className="px-4 pt-4 pb-3 border-b border-white/5 flex items-center justify-between">
@@ -415,13 +405,8 @@ function MessagingUI() {
 }
 
 // ── 6. Mobile — Shortlist / Wishlist ────────────────────────────────────────
-function ShortlistUI() {
-  const items = [
-    { brand: "Jacquemus",   name: "Le Chiquito Bag",    sku: "JQ-SS26-007", price: "€ 890",  note: "Priority",  qty: 3 },
-    { brand: "Maison Cléo", name: "Silk Bias Dress",     sku: "MC-SS26-001", price: "€ 320",  note: "",          qty: 6 },
-    { brand: "Auralee",     name: "Wool Rib Knit",        sku: "AU-SS26-022", price: "€ 480",  note: "Low stock", qty: 4 },
-    { brand: "Totême",      name: "Relaxed Trousers",    sku: "TM-SS26-003", price: "€ 540",  note: "Last 3",    qty: 2 },
-  ];
+function ShortlistUI({ data }: { data: ShowcaseData }) {
+  const items: ShowcaseShortlistItem[] = data.shortlist.length ? data.shortlist : FALLBACK_SHORTLIST;
   return (
     <div className="h-full w-full bg-[#111] rounded-[28px] overflow-hidden flex flex-col text-white">
       <div className="px-4 pt-4 pb-3 border-b border-white/5 flex items-center justify-between">
@@ -593,7 +578,6 @@ function DeviceWrapper({ device, children }: { device: DeviceType; children: Rea
 export function DeviceShowcaseScroll({ data }: { data: ShowcaseData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = React.useState(0);
-
   const { scrollYProgress } = useScroll({ target: containerRef });
 
   React.useEffect(() => {
@@ -615,80 +599,121 @@ export function DeviceShowcaseScroll({ data }: { data: ShowcaseData }) {
         borderTop: "1px solid rgba(201,168,76,0.12)",
       }}
     >
-      <div className="sticky top-0 h-screen overflow-hidden flex items-center">
-        <div className="w-full max-w-[1300px] mx-auto px-8 md:px-14 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+      <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+        <div className="w-full max-w-[1300px] mx-auto px-6 md:px-14">
 
-          {/* Left — text */}
-          <div>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeSlide}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.45, ease: [0.25, 0, 0, 1] }}
-              >
-                <h2
-                  style={{
-                    fontFamily: "var(--font-serif),Georgia,serif",
-                    fontSize: "clamp(1.8rem,3.5vw,3.2rem)",
-                    fontWeight: 400,
-                    lineHeight: 1.1,
-                    letterSpacing: "-0.02em",
-                    color: "#fff",
-                    marginBottom: "0.5rem",
-                  }}
+          {/* ── Desktop layout: side-by-side ── */}
+          <div className="hidden md:grid md:grid-cols-2 gap-16 lg:gap-20 items-center">
+
+            {/* Left — text */}
+            <div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeSlide}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.45, ease: [0.25, 0, 0, 1] }}
                 >
-                  {slide.label}
-                  <br />
+                  <h2 style={{
+                    fontFamily: "var(--font-serif),Georgia,serif",
+                    fontSize: "clamp(1.8rem,3.2vw,3rem)",
+                    fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.02em",
+                    color: "#fff", marginBottom: "0.5rem",
+                  }}>
+                    {slide.label}<br />
+                    <em style={{ color: "#bbb", fontStyle: "italic" }}>{slide.italic}</em>
+                  </h2>
+                  <p style={{
+                    fontFamily: "system-ui,sans-serif",
+                    fontSize: "clamp(0.8rem,1.1vw,0.9rem)",
+                    color: "#666", lineHeight: 1.8, marginTop: "1.5rem", maxWidth: "28ch",
+                  }}>
+                    {slide.sub}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+              <div className="flex items-center gap-2 mt-10">
+                {SLIDES.map((_, i) => (
+                  <div key={i} className="rounded-full transition-all duration-300"
+                    style={{ width: i === activeSlide ? 20 : 4, height: 4,
+                      background: i === activeSlide ? "#c9a84c" : "#2a2a2a" }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Right — device */}
+            <div className="flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div key={activeSlide}
+                  initial={{ opacity: 0, scale: 0.94, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -16 }}
+                  transition={{ duration: 0.45, ease: [0.25, 0, 0, 1] }}>
+                  <DeviceWrapper device={slide.device}>
+                    <SlideUI data={data} />
+                  </DeviceWrapper>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ── Mobile layout: text hero + scaled device below ── */}
+          <div className="md:hidden flex flex-col items-center justify-center gap-6 h-screen py-16">
+
+            {/* Text */}
+            <AnimatePresence mode="wait">
+              <motion.div key={activeSlide}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -14 }}
+                transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
+                className="text-center px-2"
+              >
+                <h2 style={{
+                  fontFamily: "var(--font-serif),Georgia,serif",
+                  fontSize: "clamp(1.5rem,7vw,2.2rem)",
+                  fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.02em", color: "#fff",
+                }}>
+                  {slide.label}<br />
                   <em style={{ color: "#bbb", fontStyle: "italic" }}>{slide.italic}</em>
                 </h2>
-                <p
-                  style={{
-                    fontFamily: "system-ui,sans-serif",
-                    fontSize: "clamp(0.8rem,1.2vw,0.95rem)",
-                    color: "#666",
-                    lineHeight: 1.8,
-                    marginTop: "1.5rem",
-                    maxWidth: "30ch",
-                  }}
-                >
+                <p style={{
+                  fontFamily: "system-ui,sans-serif", fontSize: "0.78rem",
+                  color: "#555", lineHeight: 1.7, marginTop: "0.8rem",
+                }}>
                   {slide.sub}
                 </p>
               </motion.div>
             </AnimatePresence>
 
-            {/* Slide dots */}
-            <div className="flex items-center gap-2 mt-10">
-              {SLIDES.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === activeSlide ? 20 : 4,
-                    height: 4,
-                    background: i === activeSlide ? "#c9a84c" : "#2a2a2a",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Right — device mockup */}
-          <div className="flex items-center justify-center">
+            {/* Scaled device preview */}
             <AnimatePresence mode="wait">
-              <motion.div
-                key={activeSlide}
-                initial={{ opacity: 0, scale: 0.94, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -16 }}
-                transition={{ duration: 0.45, ease: [0.25, 0, 0, 1] }}
+              <motion.div key={activeSlide}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
+                style={{
+                  transform: `scale(${slide.device === "mobile" ? 0.62 : 0.52})`,
+                  transformOrigin: "top center",
+                  flexShrink: 0,
+                }}
               >
                 <DeviceWrapper device={slide.device}>
                   <SlideUI data={data} />
                 </DeviceWrapper>
               </motion.div>
             </AnimatePresence>
+
+            {/* Dots */}
+            <div className="flex items-center gap-2">
+              {SLIDES.map((_, i) => (
+                <div key={i} className="rounded-full transition-all duration-300"
+                  style={{ width: i === activeSlide ? 16 : 4, height: 4,
+                    background: i === activeSlide ? "#c9a84c" : "#2a2a2a" }} />
+              ))}
+            </div>
           </div>
 
         </div>

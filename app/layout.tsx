@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-white text-black antialiased"><CartProvider>{children}</CartProvider><ChatWidget /></body>
+      <body className="bg-black text-white antialiased"><CartProvider>{children}</CartProvider><ChatWidget /></body>
     </html>
   );
 }

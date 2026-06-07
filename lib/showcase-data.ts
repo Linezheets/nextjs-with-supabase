@@ -7,71 +7,25 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 
-// ── Types exported for the component ─────────────────────────────────────────
+// Re-export types from the client-safe types file
+export type {
+  ShowcaseOrder,
+  ShowcaseInventoryItem,
+  ShowcaseBrand,
+  ShowcaseAlert,
+  ShowcaseShortlistItem,
+  ShowcaseData,
+} from '@/lib/showcase-types';
+export { emptyShowcaseData } from '@/lib/showcase-types';
 
-export interface ShowcaseOrder {
-  id: string;
-  brand: string;
-  buyer: string;        // city-level, never personal email
-  items: number;
-  value: string;        // formatted e.g. "€ 38,400"
-  status: 'confirmed' | 'pending' | 'shipped';
-}
-
-export interface ShowcaseInventoryItem {
-  sku: string;
-  name: string;
-  season: string;
-  stock: number;
-  avail: number;
-  reorder: boolean;
-}
-
-export interface ShowcaseBrand {
-  name: string;
-  tag: string;
-  img: string;
-  isNew: boolean;
-}
-
-export interface ShowcaseAlert {
-  brand: string;
-  time: string;
-  msg: string;
-  unread: boolean;
-  dot: string;
-}
-
-export interface ShowcaseShortlistItem {
-  brand: string;
-  name: string;
-  sku: string;
-  price: string;
-  note: string;
-  qty: number;
-}
-
-export interface ShowcaseData {
-  orders: ShowcaseOrder[];
-  inventory: ShowcaseInventoryItem[];
-  brands: ShowcaseBrand[];
-  alerts: ShowcaseAlert[];
-  shortlist: ShowcaseShortlistItem[];
-  stats: {
-    seasonRevenue: string;
-    activeOrders: number;
-    pendingReview: number;
-    totalSkus: number;
-    inStock: number;
-    lowStock: number;
-  };
-}
-
-// ── Empty default (for client components that can't call the server fetch) ────
-export const emptyShowcaseData: ShowcaseData = {
-  orders: [], inventory: [], brands: [], alerts: [], shortlist: [],
-  stats: { seasonRevenue: '€ 0', activeOrders: 0, pendingReview: 0, totalSkus: 0, inStock: 0, lowStock: 0 },
-};
+import type {
+  ShowcaseOrder,
+  ShowcaseInventoryItem,
+  ShowcaseBrand,
+  ShowcaseAlert,
+  ShowcaseShortlistItem,
+  ShowcaseData,
+} from '@/lib/showcase-types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
