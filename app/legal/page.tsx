@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { PublicNav } from '@/components/PublicNav';
+import { PublicFooter } from '@/components/PublicFooter';
 
 export const metadata = {
   title       : 'Legal — Linezheets',
@@ -365,29 +367,9 @@ const SECTIONS: { id: string; index: string; title: string; body: React.ReactNod
 
 export default function LegalPage() {
   return (
-    <div className="min-h-screen bg-white text-black" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="min-h-screen bg-white text-black" style={{ fontFamily: 'var(--font-mono), monospace' }}>
 
-      {/* Nav */}
-      <header className="border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{
-            fontFamily  : 'var(--font-serif), Georgia, serif',
-            fontSize    : '15px',
-            letterSpacing: '0.5em',
-            fontWeight  : 400,
-          }}>
-            LINEZHEETS
-          </Link>
-          <p className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>
-            Legal
-          </p>
-          <Link href="/join"
-                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-                style={{ color: '#888' }}>
-            Join
-          </Link>
-        </div>
-      </header>
+      <PublicNav label="Legal" />
 
       {/* Hero */}
       <section className="border-b border-zinc-100 bg-black text-white">
@@ -495,12 +477,11 @@ export default function LegalPage() {
               and brands obtain independent legal counsel before entering into wholesale transactions
               across international jurisdictions.
             </p>
-            <p className="mt-4 text-[9px] uppercase tracking-[0.4em]" style={{ color: '#ccc' }}>
-              © {new Date().getFullYear()} {COMPANY_FULL} · All rights reserved
-            </p>
           </div>
         </main>
       </div>
+
+      <PublicFooter />
 
       {/* Scoped styles */}
       <style>{`

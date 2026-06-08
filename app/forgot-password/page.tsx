@@ -1,6 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { LogoMark } from '@/components/LogoMark';
+
+const GOLD  = '#c9a84c';
+const MONO  = 'var(--font-mono), "DM Mono", monospace';
+const SERIF = 'var(--font-serif), Georgia, serif';
 
 export default function ForgotPasswordPage() {
   const [email,   setEmail]   = useState('');
@@ -30,129 +36,134 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col"
-         style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: '#000' }}>
 
       {/* Nav */}
-      <header className="border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <a href="/"
-             style={{
-               fontFamily  : 'var(--font-serif), Georgia, "Times New Roman", serif',
-               fontSize    : '15px',
-               letterSpacing: '0.5em',
-               fontWeight  : 400,
-             }}>
-            LINEZHEETS
-          </a>
-          <span className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>
+      <header style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#000' }}>
+        <div style={{
+          maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem',
+          height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+            <LogoMark size={28} />
+            <span style={{ fontFamily: SERIF, fontSize: '13px', letterSpacing: '0.45em', color: '#fff', fontWeight: 400 }}>
+              LINEZHEETS
+            </span>
+          </Link>
+          <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
             Private Access
           </span>
-          <a href="/join"
-             className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-             style={{ color: '#888' }}>
-            Request Access
-          </a>
+          <Link href="/join" style={{
+            fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase',
+            color: '#000', background: `linear-gradient(135deg,#e8c56b,${GOLD})`,
+            padding: '0.55rem 1.25rem', textDecoration: 'none', fontWeight: 600,
+          }}>
+            Apply for Access
+          </Link>
         </div>
       </header>
 
       {/* Body */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-sm">
+      <div style={{ flex: 1, display: 'flex', background: '#fff' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem' }}>
+          <div style={{ width: '100%', maxWidth: 380 }}>
 
-          <div className="mb-10">
-            <p className="text-[8px] uppercase tracking-[0.6em] mb-4" style={{ color: '#c9a84c' }}>
-              Buyer Portal
-            </p>
-            <h1 style={{
-              fontFamily: 'var(--font-serif), Georgia, "Times New Roman", serif',
-              fontSize  : 'clamp(2rem, 5vw, 3rem)',
-              fontWeight: 400,
-              lineHeight: 1,
-              color     : '#0a0a0a',
-            }}>
-              {sent ? 'Check Your Email' : 'Reset Password'}
-            </h1>
-          </div>
-
-          {sent ? (
-            <div className="space-y-6">
-              <p className="text-[11px] leading-relaxed tracking-[0.05em]" style={{ color: '#555' }}>
-                If an account exists for <span style={{ color: '#333' }}>{email}</span>, you will
-                receive a password reset link shortly.
+            <div style={{ marginBottom: '2.5rem' }}>
+              <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.6em', textTransform: 'uppercase', color: GOLD, marginBottom: '1rem' }}>
+                Buyer Portal
               </p>
-              <div className="h-px" style={{ background: '#c9a84c', opacity: 0.4 }} />
-              <a href="/login"
-                 className="block w-full py-3 text-center text-[8px] uppercase tracking-[0.5em]
-                            text-white transition-opacity hover:opacity-70"
-                 style={{ background: '#111' }}>
-                Back to Sign In
-              </a>
+              <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(2rem,5vw,2.8rem)', fontWeight: 400, lineHeight: 1, color: '#0a0a0a' }}>
+                {sent ? 'Check Your Email' : 'Reset Password'}
+              </h1>
             </div>
-          ) : (
-            <>
-              <p className="mb-8 text-[11px] leading-relaxed tracking-[0.05em]" style={{ color: '#aaa' }}>
-                Enter your email and we&apos;ll send you a link to reset your password.
-              </p>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-[7.5px] uppercase tracking-[0.4em] mb-2"
-                         style={{ color: '#aaa' }}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full border border-zinc-200 px-4 py-3 text-[12px] outline-none
-                               focus:border-zinc-400 transition-colors"
-                    style={{ color: '#333' }}
-                  />
-                </div>
-
-                {error && (
-                  <p className="text-[10px] uppercase tracking-[0.3em]" style={{ color: '#c0392b' }}>
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 text-[8px] uppercase tracking-[0.5em] text-white
-                             transition-opacity disabled:opacity-40 mt-2"
-                  style={{ background: '#111' }}
-                >
-                  {loading ? 'Sending…' : 'Send Reset Link'}
-                </button>
-              </form>
-
-              <p className="mt-8 text-[10px] text-center" style={{ color: '#bbb' }}>
-                <a href="/login"
-                   className="hover:opacity-60 transition-opacity"
-                   style={{ color: '#888', borderBottom: '1px solid #ddd' }}>
-                  Back to sign in
+            {sent ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <p style={{ fontFamily: MONO, fontSize: '12px', lineHeight: 2, color: '#666' }}>
+                  If an account exists for <strong style={{ color: '#333' }}>{email}</strong>, a reset
+                  link has been sent. Check your spam folder if it doesn&apos;t arrive within a few minutes.
+                </p>
+                <div style={{ height: 1, background: GOLD, opacity: 0.3 }} />
+                <a href="/login" style={{
+                  display: 'block', textAlign: 'center', padding: '0.95rem',
+                  fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.5em', textTransform: 'uppercase',
+                  background: '#111', color: '#fff', textDecoration: 'none',
+                }}>
+                  Back to Sign In
                 </a>
-              </p>
-            </>
-          )}
+              </div>
+            ) : (
+              <>
+                <p style={{ fontFamily: MONO, fontSize: '12px', lineHeight: 2, color: '#aaa', marginBottom: '2rem' }}>
+                  Enter your registered email and we&apos;ll send you a reset link.
+                </p>
 
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: '#aaa', marginBottom: '0.6rem' }}>
+                      Email Address
+                    </label>
+                    <input
+                      type="email" autoComplete="email" required
+                      value={email} onChange={e => setEmail(e.target.value)}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                        borderBottom: '1px solid #e0e0e0',
+                        padding: '0.5rem 0', fontSize: '13px', fontFamily: MONO,
+                        background: 'transparent', outline: 'none', color: '#222',
+                      }}
+                    />
+                  </div>
+
+                  {error && (
+                    <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#b91c1c' }}>
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit" disabled={loading}
+                    style={{
+                      width: '100%', padding: '0.95rem',
+                      fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.5em', textTransform: 'uppercase',
+                      background: '#111', color: '#fff', border: 'none',
+                      cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
+                      transition: 'opacity 0.2s',
+                    }}
+                  >
+                    {loading ? 'Sending…' : 'Send Reset Link'}
+                  </button>
+                </form>
+
+                <p style={{ marginTop: '2rem', textAlign: 'center', fontFamily: MONO, fontSize: '10px', color: '#bbb' }}>
+                  <a href="/login" style={{ color: '#888', borderBottom: '1px solid #ddd', textDecoration: 'none' }}>
+                    Back to sign in
+                  </a>
+                </p>
+              </>
+            )}
+
+          </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-8 flex items-center justify-between">
-          <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc' }}>
-            Private Showroom · Authorised Retailers Only
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#000' }}>
+        <div style={{
+          maxWidth: 1400, margin: '0 auto', padding: '1.5rem 2.5rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+        }}>
+          <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)' }}>
+            © {new Date().getFullYear()} MXLLA Agency Ltd.
           </p>
-          <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#d8d8d8' }}>
-            © {new Date().getFullYear()} Linezheets ·{' '}
-            <span style={{ color: '#c9a84c' }}>Linezheets</span>
-          </p>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            {[{ label: 'Terms', href: '/terms' }, { label: 'Contact', href: '/contact' }].map(({ label, href }) => (
+              <a key={href} href={href} style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', textDecoration: 'none' }}>
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
       </footer>
 
