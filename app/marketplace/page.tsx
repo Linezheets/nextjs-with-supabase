@@ -6,6 +6,16 @@ import type { CatalogItem } from '@/lib/types';
 
 export const revalidate = 60;
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+
+const GOLD        = '#c9a84c';
+const GOLD_BRIGHT = '#e8c56b';
+const TEXT_MUTED  = 'rgba(255,255,255,0.45)';
+const BORDER      = 'rgba(255,255,255,0.07)';
+const GOLD_BORDER = 'rgba(201,168,76,0.18)';
+const MONO        = 'var(--font-mono), "DM Mono", monospace';
+const SERIF       = 'var(--font-serif), Georgia, serif';
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function safeStr(raw: unknown, fallback = ''): string {
@@ -21,9 +31,8 @@ function safePrice(raw: unknown): number {
   return isFinite(n) ? n : 0;
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
 
-// For the locked public view we only need brand/category metadata, not pricing.
 async function getPublicCatalogMeta(): Promise<CatalogItem[]> {
   try {
     const supabase = await createClient();
@@ -38,102 +47,125 @@ async function getPublicCatalogMeta(): Promise<CatalogItem[]> {
 
 function LockedMarketplace({ brands, categories }: { brands: string[]; categories: string[] }) {
   return (
-    <div className="min-h-screen bg-white text-black"
-         style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO, paddingTop: 64 }}>
 
-      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>LINEZHEETS</Link>
-          <p className="text-[8px] uppercase tracking-[0.5em]" style={{ color: '#bbb' }}>Marketplace</p>
-          <div className="flex items-center gap-5">
-            <Link href="/login" className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888' }}>Sign In</Link>
-            <Link href="/join" className="text-[8px] uppercase tracking-[0.4em] px-5 py-2 bg-black text-white hover:bg-zinc-900 transition-colors" style={{ fontFamily: 'system-ui, sans-serif' }}>Apply</Link>
+      {/* Hero banner */}
+      <div style={{ borderBottom: `1px solid ${BORDER}`, background: 'rgba(201,168,76,0.03)' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '5rem 2.5rem 4rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.65em', textTransform: 'uppercase', color: GOLD, marginBottom: '1.5rem' }}>
+              Private Wholesale Marketplace
+            </p>
+            <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(2.5rem, 6vw, 5rem)', fontWeight: 400, lineHeight: 1.02, color: '#fff' }}>
+              {brands.length > 0 ? `${brands.length} Brands` : 'Curated Brands'}<br />
+              <em style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+                {categories.length > 0 ? `${categories.length} Categories` : 'All Categories'}
+              </em>
+            </h1>
           </div>
-        </div>
-      </header>
-
-      <main className="pt-[60px]">
-
-        {/* Banner */}
-        <div className="border-b border-zinc-100 bg-zinc-50">
-          <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-16 flex items-end justify-between gap-8 flex-wrap">
-            <div>
-              <p className="text-[8px] uppercase tracking-[0.6em] mb-4" style={{ color: '#c9a84c' }}>Private Wholesale Marketplace</p>
-              <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 400, lineHeight: 1.05, color: '#111' }}>
-                {brands.length > 0 ? `${brands.length} Brands` : 'Curated Brands'}<br />
-                <em style={{ color: '#bbb', fontStyle: 'italic' }}>{categories.length > 0 ? `${categories.length} Categories` : 'All Categories'}</em>
-              </h1>
-            </div>
-            <div className="flex flex-col gap-3 items-end">
-              <Link href="/join" className="inline-block px-10 py-3 text-[8.5px] uppercase tracking-[0.5em] bg-black text-white hover:bg-zinc-900 transition-colors" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                Apply for Access
-              </Link>
-              <Link href="/login" className="text-[8px] uppercase tracking-[0.3em] hover:opacity-50 transition-opacity" style={{ color: '#999' }}>
-                Already a member? Sign in →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Categories strip */}
-        {categories.length > 0 && (
-          <div className="border-b border-zinc-100 overflow-x-auto">
-            <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-5 flex items-center gap-3 min-w-max">
-              <span className="text-[7.5px] uppercase tracking-[0.45em] shrink-0" style={{ color: '#ccc' }}>Categories:</span>
-              {categories.map(c => (
-                <Link key={c} href="/login" className="text-[8px] uppercase tracking-[0.3em] px-4 py-1.5 border border-zinc-200 hover:border-zinc-500 transition-colors whitespace-nowrap" style={{ color: '#999' }}>{c}</Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Brands */}
-        {brands.length > 0 && (
-          <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-10 border-b border-zinc-100">
-            <p className="text-[7.5px] uppercase tracking-[0.5em] mb-6" style={{ color: '#ccc' }}>Brands</p>
-            <div className="flex flex-wrap gap-3">
-              {brands.map(b => (
-                <Link key={b} href="/login" className="group flex items-center gap-3 border border-zinc-100 px-5 py-3 hover:border-zinc-300 transition-colors">
-                  <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center text-[8px] font-medium" style={{ color: '#bbb' }}>{b[0]}</div>
-                  <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: '#888' }}>{b}</span>
-                  <span className="text-[9px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#c9a84c' }}>→</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Locked grid */}
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-20">
-          <div className="flex items-end justify-between mb-12 pb-6 border-b border-zinc-100">
-            <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#111' }}>The Collection</h2>
-            <p className="text-[8px] uppercase tracking-[0.35em]" style={{ color: '#ccc' }}>Sign in to view wholesale pricing</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 relative">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Link key={i} href="/login" className="group block">
-                <div className="relative aspect-[2/3] bg-zinc-50 mb-4 flex flex-col items-center justify-center gap-2 overflow-hidden">
-                  <div className="w-8 h-px bg-zinc-200" />
-                  <span className="text-[7px] uppercase tracking-[0.3em]" style={{ color: '#ccc' }}>Members only</span>
-                  <div className="w-8 h-px bg-zinc-200" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="text-[8px] uppercase tracking-[0.4em] bg-black text-white px-6 py-2" style={{ fontFamily: 'system-ui, sans-serif' }}>Sign In</span>
-                  </div>
-                </div>
-                <div className="h-2 w-20 bg-zinc-100 rounded mb-2" />
-                <div className="h-2 w-12 bg-zinc-50 rounded" />
-              </Link>
-            ))}
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />
-          </div>
-          <div className="mt-16 text-center">
-            <p className="text-[8px] uppercase tracking-[0.5em] mb-6" style={{ color: '#ccc' }}>Wholesale pricing · Full collections · Direct brand access</p>
-            <Link href="/join" className="inline-block px-16 py-4 text-[8.5px] uppercase tracking-[0.5em] bg-black text-white hover:bg-zinc-900 transition-colors" style={{ fontFamily: 'system-ui, sans-serif' }}>
-              Apply for Free
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+            <Link href="/join" style={{
+              fontFamily: MONO, fontSize: '9px', letterSpacing: '0.5em', textTransform: 'uppercase',
+              color: '#000', background: `linear-gradient(135deg,${GOLD_BRIGHT},${GOLD})`,
+              padding: '1rem 2.5rem', textDecoration: 'none', fontWeight: 700,
+              boxShadow: `0 0 30px rgba(201,168,76,0.25)`,
+            }}>
+              Apply for Access
+            </Link>
+            <Link href="/login" style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED, textDecoration: 'none' }}>
+              Already a member? Sign in →
             </Link>
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* Categories strip */}
+      {categories.length > 0 && (
+        <div style={{ borderBottom: `1px solid ${BORDER}`, overflowX: 'auto' }}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '1.25rem 2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 'max-content' }}>
+            <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.45em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>Categories:</span>
+            {categories.map(c => (
+              <Link key={c} href="/login" style={{
+                fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase',
+                padding: '0.4rem 1rem', border: `1px solid ${BORDER}`,
+                color: TEXT_MUTED, textDecoration: 'none', whiteSpace: 'nowrap',
+                transition: 'border-color 0.2s, color 0.2s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GOLD_BORDER; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; (e.currentTarget as HTMLElement).style.color = TEXT_MUTED; }}>
+                {c}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Brands grid */}
+      {brands.length > 0 && (
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '3rem 2.5rem', borderBottom: `1px solid ${BORDER}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: '1.5rem' }}>Brands</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            {brands.map(b => (
+              <Link key={b} href="/login" style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                border: `1px solid ${BORDER}`, padding: '0.75rem 1.25rem',
+                textDecoration: 'none', transition: 'border-color 0.2s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GOLD_BORDER; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: 'rgba(201,168,76,0.1)', border: `1px solid ${GOLD_BORDER}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: MONO, fontSize: '8px', color: GOLD, fontWeight: 600,
+                }}>{b[0]}</div>
+                <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)' }}>{b}</span>
+                <span style={{ fontFamily: MONO, fontSize: '9px', color: GOLD, opacity: 0 }}>→</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Locked grid */}
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '4rem 2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '3rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${BORDER}` }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#fff' }}>The Collection</h2>
+          <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>Sign in to view wholesale pricing</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.5rem', position: 'relative' }}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Link key={i} href="/login" style={{ textDecoration: 'none' }}>
+              <div style={{
+                aspectRatio: '2/3', background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${BORDER}`, marginBottom: '1rem',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              }}>
+                <div style={{ width: 32, height: 1, background: GOLD_BORDER }} />
+                <span style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.15)' }}>Members only</span>
+                <div style={{ width: 32, height: 1, background: GOLD_BORDER }} />
+              </div>
+              <div style={{ height: 6, width: 80, background: 'rgba(255,255,255,0.05)', marginBottom: '0.5rem' }} />
+              <div style={{ height: 6, width: 50, background: 'rgba(255,255,255,0.03)' }} />
+            </Link>
+          ))}
+          <div style={{ position: 'absolute', inset: '60% 0 0 0', background: 'linear-gradient(to top, #000, transparent)', pointerEvents: 'none' }} />
+        </div>
+
+        {/* CTA */}
+        <div style={{ marginTop: '4rem', textAlign: 'center' }}>
+          <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.5em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '1.5rem' }}>
+            Wholesale pricing · Full collections · Direct brand access
+          </p>
+          <Link href="/join" style={{
+            display: 'inline-block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.5em', textTransform: 'uppercase',
+            color: '#000', background: `linear-gradient(135deg,${GOLD_BRIGHT},${GOLD})`,
+            padding: '1.1rem 3.5rem', textDecoration: 'none', fontWeight: 700,
+          }}>
+            Apply for Free
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
@@ -162,25 +194,25 @@ function Sidebar({
       ...(search         ? { q      : search          } : {}),
       ...overrides,
     });
-    // Remove empty values
     [...p.keys()].forEach(k => { if (!p.get(k)) p.delete(k); });
     const qs = p.toString();
     return `/marketplace${qs ? `?${qs}` : ''}`;
   }
 
   return (
-    <aside className="w-56 shrink-0 pr-8 border-r border-zinc-100 self-start sticky top-[110px]">
-
-      {/* Clear all */}
+    <aside style={{
+      width: 200, flexShrink: 0, paddingRight: '2rem',
+      borderRight: `1px solid ${BORDER}`,
+      position: 'sticky', top: 114, alignSelf: 'flex-start',
+    }}>
       {(activeBrand || activeCategory || activeSeason || activeStatus || search) && (
-        <div className="mb-8">
-          <Link href="/marketplace" className="text-[7.5px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#c9a84c' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>
             ✕ Clear filters
           </Link>
         </div>
       )}
 
-      {/* Brand */}
       <FilterGroup label="Brand">
         <FilterLink label="All" active={!activeBrand} href={href({ brand: '' })} />
         {brands.map(b => (
@@ -188,7 +220,6 @@ function Sidebar({
         ))}
       </FilterGroup>
 
-      {/* Category */}
       <FilterGroup label="Category">
         <FilterLink label="All" active={!activeCategory} href={href({ cat: '' })} />
         {categories.map(c => (
@@ -196,7 +227,6 @@ function Sidebar({
         ))}
       </FilterGroup>
 
-      {/* Season */}
       {seasons.length > 0 && (
         <FilterGroup label="Season">
           <FilterLink label="All" active={!activeSeason} href={href({ season: '' })} />
@@ -206,23 +236,21 @@ function Sidebar({
         </FilterGroup>
       )}
 
-      {/* Availability */}
       <FilterGroup label="Availability">
         <FilterLink label="All"           active={!activeStatus}                    href={href({ status: '' })} />
         <FilterLink label="Ready to Ship" active={activeStatus === 'Ready to Ship'} href={href({ status: 'Ready to Ship' })} />
         <FilterLink label="Low Stock"     active={activeStatus === 'Low Stock'}     href={href({ status: 'Low Stock' })} />
         <FilterLink label="Pre-Order"     active={activeStatus === 'Pre-Order'}     href={href({ status: 'Pre-Order' })} />
       </FilterGroup>
-
     </aside>
   );
 }
 
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="mb-8">
-      <p className="text-[7px] uppercase tracking-[0.5em] mb-4" style={{ color: '#bbb', fontFamily: 'system-ui, sans-serif' }}>{label}</p>
-      <div className="space-y-2">{children}</div>
+    <div style={{ marginBottom: '2rem' }}>
+      <p style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: '0.75rem' }}>{label}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>{children}</div>
     </div>
   );
 }
@@ -231,12 +259,12 @@ function FilterLink({ label, active, href }: { label: string; active: boolean; h
   return (
     <Link
       href={href}
-      className="block text-[11px] py-1 hover:opacity-60 transition-opacity truncate"
       style={{
-        color     : active ? '#111' : '#aaa',
+        display: 'block', fontFamily: MONO, fontSize: '10px', padding: '0.3rem 0',
+        textDecoration: 'none', transition: 'color 0.15s', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        color: active ? '#fff' : TEXT_MUTED,
         fontWeight: active ? 500 : 400,
-        fontFamily: 'system-ui, sans-serif',
-        ...(active ? { borderLeft: '2px solid #c9a84c', paddingLeft: '8px' } : { paddingLeft: '10px' }),
+        ...(active ? { borderLeft: `2px solid ${GOLD}`, paddingLeft: '8px' } : { paddingLeft: '10px' }),
       }}
     >
       {label}
@@ -269,51 +297,31 @@ function FullMarketplace({
   } : null;
 
   return (
-    <div className="min-h-screen bg-white text-black"
-         style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO, paddingTop: 64 }}>
 
-      {/* Nav */}
-      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', fontWeight: 400 }}>LINEZHEETS</Link>
-
-          <nav className="flex items-center gap-8">
-            <Link href="/marketplace" className="text-[8px] uppercase tracking-[0.4em]" style={{ color: '#111', borderBottom: '1px solid #111', paddingBottom: '1px' }}>Marketplace</Link>
-            <Link href="/inquiries"   className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888' }}>Inquiries</Link>
-            <Link href="/dashboard"   className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity" style={{ color: '#888' }}>Dashboard</Link>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            {priceRange && (
-              <span className="hidden lg:block text-[7.5px] uppercase tracking-[0.3em]" style={{ color: '#ccc' }}>
-                WS ${priceRange.min.toFixed(0)}–${priceRange.max.toFixed(0)}
-              </span>
-            )}
-            <div className="w-px h-4 bg-zinc-200 hidden lg:block" />
-            <span className="text-[8px] uppercase tracking-[0.3em]" style={{ color: '#c9a84c' }}>
-              {email.split('@')[0]}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Search bar */}
-      <div className="fixed top-[60px] inset-x-0 z-40 bg-white border-b border-zinc-100">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-3 flex items-center gap-6">
-          <form method="GET" action="/marketplace" className="flex-1 max-w-sm flex items-center gap-3">
-            {/* preserve active filters in search */}
+      {/* Secondary search bar — pinned below SiteNavbar */}
+      <div style={{
+        position: 'fixed', top: 64, left: 0, right: 0, zIndex: 900,
+        background: 'rgba(0,0,0,0.96)', borderBottom: `1px solid ${BORDER}`,
+        backdropFilter: 'blur(20px)',
+      }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem', height: 48, display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <form method="GET" action="/marketplace" style={{ flex: 1, maxWidth: 400, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {activeBrand    && <input type="hidden" name="brand"  value={activeBrand} />}
             {activeCategory && <input type="hidden" name="cat"    value={activeCategory} />}
             {activeSeason   && <input type="hidden" name="season" value={activeSeason} />}
             {activeStatus   && <input type="hidden" name="status" value={activeStatus} />}
-            <span className="text-[10px]" style={{ color: '#ccc' }}>⌕</span>
+            <span style={{ color: TEXT_MUTED, fontSize: 12 }}>⌕</span>
             <input
               name="q"
               type="search"
               defaultValue={search}
-              placeholder="Search pieces, brands, styles…"
-              className="flex-1 text-[11px] outline-none bg-transparent placeholder:text-zinc-300"
-              style={{ color: '#333' }}
+              placeholder="Search brands, styles, pieces…"
+              style={{
+                flex: 1, fontFamily: MONO, fontSize: '11px', outline: 'none',
+                background: 'transparent', color: '#fff',
+                border: 'none',
+              }}
             />
             {search && (
               <Link href={`/marketplace?${new URLSearchParams({
@@ -322,19 +330,30 @@ function FullMarketplace({
                 ...(activeSeason   ? { season : activeSeason    } : {}),
                 ...(activeStatus   ? { status : activeStatus    } : {}),
               }).toString()}`}
-                    className="text-[9px]" style={{ color: '#ccc' }}>✕</Link>
+                    style={{ fontFamily: MONO, fontSize: '9px', color: TEXT_MUTED, textDecoration: 'none' }}>✕</Link>
             )}
           </form>
-          <div className="hidden md:flex items-center gap-4 text-[7.5px] uppercase tracking-[0.35em]" style={{ color: '#ccc' }}>
-            <span>{all.length} total</span>
-            <span>·</span>
-            <span>{items.length} shown</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {priceRange && (
+              <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>
+                WS ${priceRange.min.toFixed(0)}–${priceRange.max.toFixed(0)}
+              </span>
+            )}
+            <div style={{ width: 1, height: 16, background: BORDER }} />
+            <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>
+              {all.length} total · {items.length} shown
+            </span>
+            <div style={{ width: 1, height: 16, background: BORDER }} />
+            <span style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase', color: GOLD }}>
+              {email.split('@')[0]}
+            </span>
           </div>
         </div>
       </div>
 
-      <main className="pt-[108px] max-w-screen-xl mx-auto px-8 md:px-16 py-12">
-        <div className="flex gap-12">
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '3rem 2.5rem', paddingTop: 'calc(48px + 2.5rem)' }}>
+        <div style={{ display: 'flex', gap: '3rem' }}>
 
           {/* Sidebar */}
           <Sidebar
@@ -343,44 +362,39 @@ function FullMarketplace({
             activeSeason={activeSeason} activeStatus={activeStatus} search={search}
           />
 
-          {/* Main content */}
-          <div className="flex-1 min-w-0">
-
-            {/* Section header */}
-            <div className="flex items-end justify-between mb-10 pb-6 border-b border-zinc-100">
+          {/* Main */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${BORDER}` }}>
               <div>
-                <p className="text-[7.5px] uppercase tracking-[0.55em] mb-2" style={{ color: '#ccc' }}>
+                <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '0.5rem' }}>
                   {isFiltered
                     ? [activeBrand, activeCategory, activeSeason, activeStatus, search ? `"${search}"` : ''].filter(Boolean).join(' · ')
                     : 'Full Collection · Wholesale Access'}
                 </p>
-                <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#111' }}>
+                <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#fff' }}>
                   {isFiltered ? 'Filtered Results' : 'Browse by Brand'}
                 </h1>
               </div>
-              <div className="flex items-center gap-4 text-[8px] uppercase tracking-[0.3em]" style={{ color: '#ccc' }}>
-                <span>{items.length} piece{items.length !== 1 ? 's' : ''}</span>
-              </div>
+              <span style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase', color: TEXT_MUTED }}>
+                {items.length} piece{items.length !== 1 ? 's' : ''}
+              </span>
             </div>
 
-            {/* Grid */}
             {items.length === 0 ? (
-              <div className="py-24 text-center">
-                <p className="text-[8px] uppercase tracking-[0.5em] mb-4" style={{ color: '#ccc' }}>No pieces match this filter</p>
-                <Link href="/marketplace" className="text-[8px] uppercase tracking-[0.4em] border-b pb-px hover:opacity-50 transition-opacity" style={{ color: '#888', borderColor: '#ddd' }}>
+              <div style={{ padding: '6rem 0', textAlign: 'center' }}>
+                <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.5em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '1rem' }}>No pieces match this filter</p>
+                <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none', borderBottom: `1px solid ${GOLD_BORDER}`, paddingBottom: '2px' }}>
                   Clear filters
                 </Link>
               </div>
             ) : isFiltered ? (
-              /* Filtered: flat grid */
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '2rem 2.5rem' }}>
                 {items.map(item => (
                   <ProductCard key={safeStr(item.id)} item={item} verified={true} />
                 ))}
               </div>
             ) : (
-              /* Default: grouped by brand */
-              <div className="space-y-20">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
                 {Object.entries(
                   items.reduce<Record<string, CatalogItem[]>>((acc, item) => {
                     const b = safeStr(item.brand_name, 'Other');
@@ -389,25 +403,20 @@ function FullMarketplace({
                   }, {})
                 ).map(([brandName, brandItems]) => (
                   <div key={brandName}>
-                    <div className="flex items-end justify-between mb-8 pb-4 border-b border-zinc-100">
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: `1px solid ${BORDER}` }}>
                       <div>
-                        <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 'clamp(1.2rem, 2vw, 1.6rem)', fontWeight: 400, color: '#111' }}>
-                          {brandName}
-                        </h2>
-                        <p className="text-[7.5px] uppercase tracking-[0.4em] mt-1" style={{ color: '#ccc' }}>
+                        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.2rem, 2vw, 1.6rem)', fontWeight: 400, color: '#fff' }}>{brandName}</h2>
+                        <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: TEXT_MUTED, marginTop: '0.25rem' }}>
                           {brandItems.length} piece{brandItems.length !== 1 ? 's' : ''}
                           {brandItems[0]?.season ? ` · ${safeStr(brandItems[0].season)}` : ''}
                         </p>
                       </div>
-                      <Link
-                        href={`/marketplace?brand=${encodeURIComponent(brandName)}`}
-                        className="text-[7.5px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity"
-                        style={{ color: '#c9a84c' }}
-                      >
+                      <Link href={`/marketplace?brand=${encodeURIComponent(brandName)}`}
+                            style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>
                         View all →
                       </Link>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '2rem 2.5rem' }}>
                       {brandItems.map(item => (
                         <ProductCard key={safeStr(item.id)} item={item} verified={true} />
                       ))}
@@ -416,7 +425,6 @@ function FullMarketplace({
                 ))}
               </div>
             )}
-
           </div>
         </div>
       </main>
@@ -453,12 +461,11 @@ export default async function MarketplacePage({
   const categories = [...new Set(all.map(i => safeStr(i.category)).filter(Boolean))].sort();
   const seasons    = [...new Set(all.map(i => safeStr(i.season)).filter(Boolean))].sort();
 
-  // Apply all filters
   const filtered = all.filter(item => {
-    if (activeBrand    && safeStr(item.brand_name)      !== activeBrand)    return false;
-    if (activeCategory && safeStr(item.category)        !== activeCategory)  return false;
-    if (activeSeason   && safeStr(item.season)          !== activeSeason)    return false;
-    if (activeStatus   && safeStr(item.inventory_status) !== activeStatus)   return false;
+    if (activeBrand    && safeStr(item.brand_name)       !== activeBrand)    return false;
+    if (activeCategory && safeStr(item.category)         !== activeCategory)  return false;
+    if (activeSeason   && safeStr(item.season)           !== activeSeason)    return false;
+    if (activeStatus   && safeStr(item.inventory_status) !== activeStatus)    return false;
     if (search) {
       const q   = search.toLowerCase();
       const hay = [item.title, item.brand_name, item.category, item.description, item.style_number]
