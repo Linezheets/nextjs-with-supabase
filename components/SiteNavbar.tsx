@@ -83,7 +83,7 @@ function NavDropdown({ label, items, navLinkStyle }: {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             style={{
               position: 'absolute', top: 'calc(100% + 14px)', left: '-1rem',
-              width: 280, background: 'rgba(6,6,6,0.97)',
+              width: 280, background: '#0a0a0a',
               border: `1px solid ${GOLD_BORDER}`,
               backdropFilter: 'blur(28px)',
               boxShadow: `0 20px 50px rgba(0,0,0,0.75), 0 0 0 1px rgba(201,168,76,0.06)`,
@@ -141,10 +141,9 @@ export function SiteNavbar() {
       transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        background: scrolled ? 'rgba(0,0,0,0.95)' : 'rgba(0,0,0,0.82)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: `1px solid ${scrolled ? GOLD_BORDER : 'rgba(255,255,255,0.05)'}`,
-        transition: 'background 0.4s ease, border-color 0.4s ease',
+        background: '#000',
+        borderBottom: `1px solid ${scrolled ? GOLD_BORDER : 'rgba(255,255,255,0.06)'}`,
+        transition: 'border-color 0.4s ease',
       }}
     >
       <div style={{
@@ -155,12 +154,14 @@ export function SiteNavbar() {
         {/* Logo */}
         <Link
           href="/"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}
-          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = GOLD); }}
-          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = '#fff'); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', textDecoration: 'none', flexShrink: 0 }}
+          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = GOLD); (el.querySelector('.logo-badge') as HTMLElement | null)?.style && ((el.querySelector('.logo-badge') as HTMLElement).style.borderColor = 'rgba(201,168,76,0.4)'); }}
+          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = '#fff'); (el.querySelector('.logo-badge') as HTMLElement | null)?.style && ((el.querySelector('.logo-badge') as HTMLElement).style.borderColor = GOLD_BORDER); }}
         >
-          <LogoMark size={38} />
-          <span className="logo-wordmark" style={{ fontSize: 14, letterSpacing: '0.5em', fontFamily: 'var(--font-serif), Georgia, serif', color: '#fff', fontWeight: 400, textTransform: 'uppercase', transition: 'color 0.2s' }}>
+          <div className="logo-badge" style={{ border: `1px solid ${GOLD_BORDER}`, background: '#000', transition: 'border-color 0.2s', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px' }}>
+            <LogoMark size={36} />
+          </div>
+          <span className="logo-wordmark" style={{ fontSize: 13, letterSpacing: '0.5em', fontFamily: 'var(--font-serif), Georgia, serif', color: '#fff', fontWeight: 400, textTransform: 'uppercase', transition: 'color 0.2s' }}>
             Linezheets
           </span>
         </Link>
@@ -192,7 +193,7 @@ export function SiteNavbar() {
                   transition={{ duration: 0.2, ease: 'easeOut' }}
                   style={{
                     position: 'absolute', top: 'calc(100% + 16px)', left: '-1rem',
-                    width: 620, background: 'rgba(6,6,6,0.98)',
+                    width: 620, background: '#0a0a0a',
                     border: `1px solid ${GOLD_BORDER}`,
                     backdropFilter: 'blur(30px)',
                     boxShadow: `0 24px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(201,168,76,0.08)`,
@@ -211,9 +212,9 @@ export function SiteNavbar() {
                       <Link
                         key={title} href={href}
                         onClick={() => setSolutionsOpen(false)}
-                        style={{ display: 'block', padding: '0.9rem 1.1rem', background: 'rgba(6,6,6,0.98)', textDecoration: 'none', transition: 'background 0.2s' }}
+                        style={{ display: 'block', padding: '0.9rem 1.1rem', background: '#0a0a0a', textDecoration: 'none', transition: 'background 0.2s' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(201,168,76,0.05)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(6,6,6,0.98)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#0a0a0a'; }}
                       >
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
                           <span style={{ fontSize: 16, color: GOLD, lineHeight: 1, marginTop: 2, flexShrink: 0 }}>{icon}</span>
