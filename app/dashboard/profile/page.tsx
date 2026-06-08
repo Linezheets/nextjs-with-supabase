@@ -111,7 +111,7 @@ export default async function ProfilePage() {
             <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc', fontFamily: 'system-ui, sans-serif' }}>Private Showroom · Authorised Retailers Only</p>
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em] text-right" style={{ color: '#d8d8d8', fontFamily: 'system-ui, sans-serif' }}>
-            © {new Date().getFullYear()} Linezheets · <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            © {new Date().getFullYear()} Linezheets · All rights reserved
           </p>
         </div>
       </footer>

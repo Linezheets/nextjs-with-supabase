@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { PublicNav } from '@/components/PublicNav';
 import { PublicFooter } from '@/components/PublicFooter';
 
 export const metadata = {
@@ -14,10 +13,8 @@ const SERIF = 'var(--font-serif), Georgia, serif';
 export default function ContactPage() {
   return (
     <>
-      <PublicNav label="Private Wholesale" />
-
       {/* Hero */}
-      <section className="border-b border-zinc-100 bg-black text-white">
+      <section className="border-b border-zinc-100 bg-black text-white" style={{ paddingTop: 64 }}>
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-20 md:py-28">
           <p
             className="text-[7.5px] uppercase tracking-[0.7em] mb-8"

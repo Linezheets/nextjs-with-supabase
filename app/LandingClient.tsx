@@ -465,7 +465,7 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
 
   return (
-    <section ref={heroRef} style={{ position: 'relative', minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', background: '#000', paddingTop: 68 }}>
+    <section ref={heroRef} style={{ position: 'relative', minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', background: '#000', paddingTop: 64 }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 80% 60% at 65% 40%, rgba(201,168,76,0.08) 0%, transparent 70%)`, pointerEvents: 'none' }} />
       <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(rgba(201,168,76,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.035) 1px,transparent 1px)`, backgroundSize: '88px 88px', pointerEvents: 'none' }} />
       <Particles />
@@ -1392,7 +1392,6 @@ export default function LandingClient({ items, brands, categories, showcase }: P
   return (
     <div style={{ background: '#000', color: 'white', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
       <Grain />
-      <FuturisticNav />
       <HeroSection />
       <StatsSection brands={brands} categories={categories} />
       <HowItWorksSection />

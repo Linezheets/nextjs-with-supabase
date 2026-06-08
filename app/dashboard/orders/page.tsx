@@ -74,7 +74,7 @@ export default async function OrdersPage() {
             <p className="text-[7.5px] uppercase tracking-[0.28em]" style={{ color: '#ccc', fontFamily: 'system-ui' }}>Private Showroom · Authorised Retailers Only</p>
           </div>
           <p className="text-[7.5px] uppercase tracking-[0.2em]" style={{ color: '#d8d8d8', fontFamily: 'system-ui' }}>
-            © {new Date().getFullYear()} Linezheets · <span style={{ color: '#c9a84c' }}>Linezheets</span>
+            © {new Date().getFullYear()} Linezheets · All rights reserved
           </p>
         </div>
       </footer>

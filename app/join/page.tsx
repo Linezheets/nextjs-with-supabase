@@ -88,27 +88,7 @@ export default function JoinPage() {
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col"
-         style={{ fontFamily: 'var(--font-mono), monospace' }}>
-
-      {/* Nav */}
-      <header className="border-b border-zinc-100 bg-white">
-        <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
-          <Link href="/" style={{
-            fontFamily: 'var(--font-serif), Georgia, serif',
-            fontSize: '14px', letterSpacing: '0.45em', fontWeight: 400, color: '#111', textDecoration: 'none',
-          }}>
-            LINEZHEETS
-          </Link>
-          <p className="text-[8px] uppercase tracking-[0.5em] hidden sm:block" style={{ color: '#bbb', fontFamily: 'var(--font-mono), monospace' }}>
-            Buyer Registration
-          </p>
-          <Link href="/login"
-                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity"
-                style={{ color: '#888', fontFamily: 'var(--font-mono), monospace', textDecoration: 'none' }}>
-            Sign In
-          </Link>
-        </div>
-      </header>
+         style={{ fontFamily: 'var(--font-mono), monospace', paddingTop: 64 }}>
 
       <div className="flex-1 flex">
 

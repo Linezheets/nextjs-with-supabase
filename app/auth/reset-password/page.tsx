@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { LogoMark } from '@/components/LogoMark';
 
 const GOLD  = '#c9a84c';
 const MONO  = 'var(--font-mono), "DM Mono", monospace';
@@ -60,32 +59,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: '#000' }}>
-
-      {/* Nav */}
-      <header style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#000' }}>
-        <div style={{
-          maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem',
-          height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
-            <LogoMark size={28} />
-            <span style={{ fontFamily: SERIF, fontSize: '13px', letterSpacing: '0.45em', color: '#fff', fontWeight: 400 }}>
-              LINEZHEETS
-            </span>
-          </Link>
-          <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
-            Private Access
-          </span>
-          <Link href="/join" style={{
-            fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase',
-            color: '#000', background: `linear-gradient(135deg,#e8c56b,${GOLD})`,
-            padding: '0.55rem 1.25rem', textDecoration: 'none', fontWeight: 600,
-          }}>
-            Apply for Access
-          </Link>
-        </div>
-      </header>
+    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: '#000', paddingTop: 64 }}>
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', background: '#fff' }}>

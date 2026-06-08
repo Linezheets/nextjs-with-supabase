@@ -1,9 +1,11 @@
 'use client';
 
-import { useState }     from 'react';
+import { useState, useRef } from 'react';
 import { useRouter }    from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link             from 'next/link';
+import { Turnstile } from '@marsidev/react-turnstile';
+import type { TurnstileInstance } from '@marsidev/react-turnstile';
 
 type Role = 'brand' | 'buyer';
 
@@ -38,6 +40,8 @@ export default function RegisterPage() {
   const [showPw,    setShowPw]    = useState(false);
   const [tab,       setTab]       = useState<'login' | 'register'>('register');
   const [confirmed, setConfirmed] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -61,6 +65,24 @@ export default function RegisterPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (!turnstileToken) {
+      setError('Please complete the human verification.');
+      return;
+    }
+
+    const verifyRes = await fetch('/api/auth/verify-turnstile', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ token: turnstileToken }),
+    });
+    if (!verifyRes.ok) {
+      setError('Verification failed. Please try again.');
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
+      return;
+    }
+
     setLoading(true);
     // Route through /api/auth/login so the notify email fires and rate limiting applies
     const res = await fetch('/api/auth/login', {
@@ -88,6 +110,23 @@ export default function RegisterPage() {
     setError('');
     if (!form.agree) { setError('Please accept the Terms of Service.'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+
+    if (!turnstileToken) {
+      setError('Please complete the human verification.');
+      return;
+    }
+
+    const verifyRes = await fetch('/api/auth/verify-turnstile', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ token: turnstileToken }),
+    });
+    if (!verifyRes.ok) {
+      setError('Verification failed. Please try again.');
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
+      return;
+    }
 
     setLoading(true);
     const { data, error: err } = await supabase.auth.signUp({
@@ -177,6 +216,13 @@ export default function RegisterPage() {
             <form onSubmit={handleLogin} className="space-y-5">
               <Field dark label="Email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@brand.com" />
               <Field dark label="Password" type="password" required value={loginPw} onChange={e => setLoginPw(e.target.value)} placeholder="••••••••" />
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+                options={{ theme: 'dark', size: 'flexible' }}
+              />
               {error && <p className="text-[10px] tracking-wide" style={{ color: '#e74c3c' }}>{error}</p>}
               <button type="submit" disabled={loading}
                 className="w-full py-3.5 text-[8px] uppercase tracking-[0.5em] font-medium transition-opacity disabled:opacity-40"
@@ -302,6 +348,14 @@ export default function RegisterPage() {
                   <Link href="/privacy" style={{ color: gold }} className="hover:opacity-70">Privacy Policy</Link>
                 </span>
               </label>
+
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+                options={{ theme: 'dark', size: 'flexible' }}
+              />
 
               {error && <p className="text-[10px] tracking-wide" style={{ color: '#e74c3c' }}>{error}</p>}
 

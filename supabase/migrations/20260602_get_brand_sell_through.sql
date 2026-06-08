@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION get_brand_sell_through(
   p_since      timestamptz DEFAULT NULL
 )
 RETURNS TABLE (
-  inventory_id  int,
+  inventory_id  uuid,
   title         text,
   sku           text,
   category      text,
@@ -81,7 +81,7 @@ AS $$
   )
 
   SELECT
-    inv.id::int                             AS inventory_id,
+    inv.id                                  AS inventory_id,
     inv.title::text                         AS title,
     inv.sku::text                           AS sku,
     inv.category::text                      AS category,
