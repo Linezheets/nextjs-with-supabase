@@ -155,12 +155,10 @@ export function SiteNavbar() {
         <Link
           href="/"
           style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', textDecoration: 'none', flexShrink: 0 }}
-          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = GOLD); (el.querySelector('.logo-badge') as HTMLElement | null)?.style && ((el.querySelector('.logo-badge') as HTMLElement).style.borderColor = 'rgba(201,168,76,0.4)'); }}
-          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = '#fff'); (el.querySelector('.logo-badge') as HTMLElement | null)?.style && ((el.querySelector('.logo-badge') as HTMLElement).style.borderColor = GOLD_BORDER); }}
+          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = GOLD); }}
+          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = '#fff'); }}
         >
-          <div className="logo-badge" style={{ border: `1px solid ${GOLD_BORDER}`, background: '#000', transition: 'border-color 0.2s', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px' }}>
-            <LogoMark size={36} />
-          </div>
+          <LogoMark size={40} />
           <span className="logo-wordmark" style={{ fontSize: 13, letterSpacing: '0.5em', fontFamily: 'var(--font-serif), Georgia, serif', color: '#fff', fontWeight: 400, textTransform: 'uppercase', transition: 'color 0.2s' }}>
             Linezheets
           </span>
