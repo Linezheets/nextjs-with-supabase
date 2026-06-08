@@ -4,6 +4,7 @@ import { Playfair_Display, DM_Mono } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { CartProvider } from '@/components/CartDrawer';
 import ChatWidget from '@/components/ChatWidget';
+import { SiteNavbar } from '@/components/SiteNavbar';
 
 const playfair = Playfair_Display({
   subsets : ['latin'],
@@ -81,7 +82,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-black text-white antialiased"><CartProvider>{children}</CartProvider><ChatWidget /></body>
+      <body className="bg-black text-white antialiased">
+        <SiteNavbar />
+        <CartProvider>{children}</CartProvider>
+        <ChatWidget />
+      </body>
     </html>
   );
 }

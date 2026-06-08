@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { LogoMark } from '@/components/LogoMark';
 
 export const metadata = {
   title      : 'Pricing — Linezheets',
@@ -46,38 +45,7 @@ const PLANS = [
 
 export default function PricingPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO }}>
-
-      {/* ── Navbar ───────────────────────────────────────────────────────── */}
-      <header style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', position: 'sticky', top: 0, background: '#000', zIndex: 50 }}>
-        <div style={{
-          maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem',
-          height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
-            <LogoMark size={28} />
-            <span style={{ fontFamily: SERIF, fontSize: '13px', letterSpacing: '0.45em', color: '#fff', fontWeight: 400 }}>
-              LINEZHEETS
-            </span>
-          </Link>
-
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-            {[{ label: 'Marketplace', href: '/marketplace' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }].map(({ label, href }) => (
-              <Link key={href} href={href} style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-                {label}
-              </Link>
-            ))}
-          </nav>
-
-          <Link href="/join" style={{
-            fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase',
-            color: '#000', background: `linear-gradient(135deg,${GOLD_B},${GOLD})`,
-            padding: '0.55rem 1.25rem', textDecoration: 'none', fontWeight: 600,
-          }}>
-            Apply for Access
-          </Link>
-        </div>
-      </header>
+    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO, paddingTop: 64 }}>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '6rem 2.5rem 5rem' }}>

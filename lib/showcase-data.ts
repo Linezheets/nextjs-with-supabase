@@ -126,11 +126,11 @@ export async function getShowcaseData(): Promise<ShowcaseData> {
   const orders: ShowcaseOrder[] = brandNames.slice(0, 5).map((brand, i) => {
     const items = rawInventory.filter(x => x.brand_name === brand);
     const totalUnits = items.slice(0, 3).reduce((s, x) => s + (x.stock_total ?? 10), 0);
-    const avgWsp = items[0]?.wsp_usd ?? 280;
+    const avgWsp = items[0]?.wsp_usd || 280;
     const value = fmtEurExact(Math.min(totalUnits, 20) * avgWsp * 0.6);
     const statuses: ShowcaseOrder['status'][] = ['confirmed', 'pending', 'shipped', 'confirmed', 'shipped'];
     return {
-      id: `LZ-${(2024000 + (i + 1) * 3).toString().slice(0, 8).replace(/^202/, 'LZ-2024-0')}`,
+      id: `${(2024000 + (i + 1) * 3).toString().slice(0, 8).replace(/^202/, 'LZ-2024-0')}`,
       brand,
       buyer: buyerCities[i % buyerCities.length],
       items: Math.max(Math.min(totalUnits, 22), 4),

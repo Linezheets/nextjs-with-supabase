@@ -15,6 +15,7 @@
     "@anthropic-ai/sdk": "^0.96.0",
     "@aws-sdk/client-s3": "^3.490.0",
     "@base-ui/react": "^1.4.1",
+    "@marsidev/react-turnstile": "^1.5.2",
     "@sendgrid/mail": "^8.1.6",
     "@stripe/react-stripe-js": "^6.5.0",
     "@stripe/stripe-js": "^9.7.0",

@@ -39,7 +39,7 @@ async function getUser() {
 
 export async function GET() {
   const user = await getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ cart: [], total: 0 });
 
   const cart = (await getBlob<CartItem[]>(user.id, 'cart')) ?? [];
   return NextResponse.json({ cart, total: cart.reduce((s, i) => s + i.quantity, 0) });

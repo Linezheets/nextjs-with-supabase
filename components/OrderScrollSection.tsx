@@ -25,7 +25,7 @@ const orders = [
   {
     id: "LZ-2024-0887",
     brand: "Jacquemus",
-    buyer: "Ssense — Montreal",
+    buyer: "Ssense — Montréal",
     items: 22,
     value: "€ 91,200",
     status: "shipped",
