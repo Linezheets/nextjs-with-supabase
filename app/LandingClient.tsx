@@ -225,6 +225,91 @@ const SOLUTIONS = [
 
 // ─── NAVBAR ───────────────────────────────────────────────────────────────────
 
+// ─── Dropdown data ────────────────────────────────────────────────────────────
+
+const PRICING_ITEMS = [
+  { label: 'Compare Plans',   desc: 'See all tiers side by side',            href: '/pricing' },
+  { label: 'Starter',         desc: 'Free — up to 50 products',              href: '/pricing/starter' },
+  { label: 'Brand Plan',      desc: '$149 / mo — scale wholesale globally',  href: '/pricing/brand' },
+  { label: 'Enterprise',      desc: 'Custom — multi-brand & agency',         href: '/pricing/enterprise' },
+  { label: 'Pricing FAQ',     desc: 'Common questions answered',             href: '/pricing/faq' },
+];
+
+const INTEGRATIONS_ITEMS = [
+  { label: 'All Integrations', desc: 'Full list of connected platforms',      href: '/integrations' },
+  { label: 'Ecommerce',        desc: 'Shopify & WooCommerce sync',            href: '/integrations/ecommerce' },
+  { label: 'Payments',         desc: 'Stripe, NET terms & installments',      href: '/integrations/payments' },
+  { label: 'Accounting',       desc: 'QuickBooks, Xero & invoicing',          href: '/integrations/accounting' },
+  { label: 'API & Webhooks',   desc: 'Build custom connections via our API',  href: '/integrations/api' },
+];
+
+const MARKETPLACE_ITEMS = [
+  { label: 'Browse Brands',       desc: 'Discover vetted luxury brands',        href: '/marketplace' },
+  { label: 'For Buyers',          desc: 'How the marketplace works for buyers', href: '/marketplace/buyers' },
+  { label: 'Featured Collections',desc: 'Curated picks this season',            href: '/marketplace/featured' },
+  { label: 'Fashion Events',      desc: 'Showrooms, fashion weeks & previews',  href: '/fashionevents' },
+];
+
+// ─── Reusable simple dropdown ─────────────────────────────────────────────────
+
+function NavDropdown({
+  label,
+  items,
+  navLinkStyle,
+}: {
+  label: string;
+  items: { label: string; desc: string; href: string }[];
+  navLinkStyle: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const open_  = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const close_ = () => { timer.current = setTimeout(() => setOpen(false), 120); };
+
+  return (
+    <div style={{ position: 'relative' }} onMouseEnter={open_} onMouseLeave={close_}>
+      <button
+        style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+        onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
+        onMouseLeave={e => (e.currentTarget.style.color = TEXT_MUTED)}>
+        {label}
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}
+          style={{ display: 'inline-block', fontSize: 13, opacity: 0.55, lineHeight: 1 }}>▾</motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            style={{
+              position: 'absolute', top: 'calc(100% + 14px)', left: '-1rem',
+              width: 280, background: 'rgba(6,6,6,0.97)',
+              border: `1px solid ${GOLD_BORDER}`,
+              backdropFilter: 'blur(28px)',
+              boxShadow: `0 20px 50px rgba(0,0,0,0.75), 0 0 0 1px rgba(201,168,76,0.06)`,
+              padding: '0.5rem 0',
+            }}
+            onMouseEnter={open_}
+            onMouseLeave={close_}>
+            {items.map(({ label: itemLabel, desc, href }) => (
+              <Link key={href} href={href}
+                style={{ display: 'block', padding: '0.85rem 1.25rem', textDecoration: 'none', transition: 'background 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(201,168,76,0.07)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                <p style={{ fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', fontFamily: 'var(--font-mono),monospace', marginBottom: 3, fontWeight: 500 }}>{itemLabel}</p>
+                <p style={{ fontSize: 12, color: TEXT_MUTED, lineHeight: 1.5 }}>{desc}</p>
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function FuturisticNav() {
   const [scrolled, setScrolled]           = useState(false);
   const [solutionsOpen, setSolutionsOpen] = useState(false);
@@ -261,9 +346,12 @@ function FuturisticNav() {
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem', height: 68, display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
 
         {/* Logo — left */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}
+          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.85'; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = GOLD); }}
+          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; (el.querySelector('.logo-wordmark') as HTMLElement | null)?.style && ((el.querySelector('.logo-wordmark') as HTMLElement).style.color = 'white'); }}>
           <LogoMark size={42} />
-          <div style={{ fontSize: 16, letterSpacing: '0.55em', fontFamily: 'var(--font-serif), Georgia, serif', color: 'white', fontWeight: 400, lineHeight: 1, textTransform: 'uppercase' }}>
+          <div className="logo-wordmark" style={{ fontSize: 16, letterSpacing: '0.55em', fontFamily: 'var(--font-serif), Georgia, serif', color: 'white', fontWeight: 400, lineHeight: 1, textTransform: 'uppercase', transition: 'color 0.2s' }}>
             Linezheets
           </div>
         </Link>
@@ -276,7 +364,7 @@ function FuturisticNav() {
             onMouseEnter={openSolutions}
             onMouseLeave={closeSolutions}>
             <button style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+              onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
               onMouseLeave={e => (e.currentTarget.style.color = TEXT_MUTED)}>
               Solutions
               <motion.span animate={{ rotate: solutionsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}
@@ -353,35 +441,15 @@ function FuturisticNav() {
             </AnimatePresence>
           </div>
 
-          {/* Other nav items */}
-          {[
-            { label: 'Pricing',      href: '/pricing' },
-            { label: 'Integrations', href: '/integrations' },
-            { label: 'Marketplace',  href: '/marketplace' },
-          ].map(({ label, href }) => (
-            <Link key={label} href={href} style={navLinkStyle}
-              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-              onMouseLeave={e => (e.currentTarget.style.color = TEXT_MUTED)}>
-              {label}
-            </Link>
-          ))}
+          {/* Pricing, Integrations, Marketplace dropdowns */}
+          <NavDropdown label="Pricing"      items={PRICING_ITEMS}      navLinkStyle={navLinkStyle} />
+          <NavDropdown label="Integrations" items={INTEGRATIONS_ITEMS} navLinkStyle={navLinkStyle} />
+          <NavDropdown label="Marketplace"  items={MARKETPLACE_ITEMS}  navLinkStyle={navLinkStyle} />
         </nav>
 
         {/* Right CTAs */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <NavBarAuth />
-          <Link href="/join" style={{
-            fontSize: 11, letterSpacing: '0.35em', textTransform: 'uppercase',
-            color: '#000', background: `linear-gradient(135deg,${GOLD_BRIGHT},${GOLD})`,
-            padding: '0.65rem 1.5rem', textDecoration: 'none',
-            fontFamily: 'var(--font-mono), monospace', fontWeight: 600,
-            boxShadow: `0 0 20px rgba(201,168,76,0.2)`,
-            transition: 'box-shadow 0.3s', whiteSpace: 'nowrap',
-          }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 35px rgba(201,168,76,0.45)`)}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px rgba(201,168,76,0.2)`)}>
-            Apply Now
-          </Link>
         </div>
       </div>
     </motion.header>
@@ -524,20 +592,117 @@ function HowItWorksSection() {
             How It Works
           </p>
         </FadeUp>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: BORDER }}>
+
+        {/* Arrow-shaped step layout — cards overlap so arrow notches interlock */}
+        <div style={{ display: 'flex', alignItems: 'stretch', position: 'relative' }}>
           {steps.map(({ n, title, body }, i) => (
-            <FadeUp key={n} delay={i * 0.15}>
-              <TiltCard style={{ background: '#070707', padding: '4rem 3rem', cursor: 'default', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 30% 30%,rgba(201,168,76,0.05) 0%,transparent 60%)`, pointerEvents: 'none' }} />
-                <p style={{ fontFamily: 'var(--font-mono),monospace', fontSize: 16, color: GOLD_DIM, marginBottom: '2.5rem', letterSpacing: '0.1em' }}>{n}</p>
-                <h3 style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontSize: '2.2rem', fontWeight: 400, color: 'white', marginBottom: '1.5rem', lineHeight: 1.1 }}>{title}</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.85, color: TEXT_BODY }}>{body}</p>
-              </TiltCard>
-            </FadeUp>
+            <HowItWorksArrowCard key={n} n={n} title={title} body={body} index={i} isLast={i === steps.length - 1} delay={i * 0.15} />
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function HowItWorksArrowCard({ n, title, body, index, isLast, delay }: { n: string; title: string; body: string; index: number; isLast: boolean; delay: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(cardRef, { once: true, margin: '-80px' });
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [12, -12]), { stiffness: 350, damping: 25 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-12, 12]), { stiffness: 350, damping: 25 });
+  const glowX   = useTransform(x, [-0.5, 0.5], [15, 85]);
+  const glowY   = useTransform(y, [-0.5, 0.5], [15, 85]);
+  const shadowZ = useSpring(0, { stiffness: 300, damping: 25 });
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
+    shadowZ.set(1);
+  }, [x, y, shadowZ]);
+
+  const handleMouseLeave = useCallback(() => {
+    x.set(0); y.set(0); shadowZ.set(0);
+  }, [x, y, shadowZ]);
+
+  const NOTCH = 40; // px — arrow notch depth
+  // Each card (except last) points right; each card (except first) has a left indent matching previous notch
+  const clipPath = [
+    index === 0 ? '0 0' : `${NOTCH}px 0`,
+    isLast     ? '100% 0' : `calc(100% - ${NOTCH}px) 0`,
+    isLast     ? '100% 50%' : '100% 50%',
+    isLast     ? '100% 100%' : `calc(100% - ${NOTCH}px) 100%`,
+    index === 0 ? '0 100%' : `${NOTCH}px 100%`,
+    index === 0 ? '0 50%'  : `0 50%`,
+  ].join(', ');
+
+  const boxShadow = useTransform(shadowZ, [0, 1], [
+    '0 4px 24px rgba(0,0,0,0.4)',
+    '0 24px 60px rgba(0,0,0,0.7), 0 4px 12px rgba(201,168,76,0.15)',
+  ]);
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.9, delay, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        flex: 1,
+        position: 'relative',
+        zIndex: index,
+        marginLeft: index > 0 ? `-${NOTCH}px` : 0,
+      }}
+    >
+      <motion.div
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          rotateX, rotateY, boxShadow,
+          transformStyle: 'preserve-3d',
+          clipPath: `polygon(${clipPath})`,
+          background: '#080808',
+          padding: `4rem calc(3rem + ${isLast ? 0 : NOTCH}px) 4rem calc(3rem + ${index > 0 ? NOTCH : 0}px)`,
+          cursor: 'default',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100%',
+        }}
+      >
+        {/* Mouse-tracking glow */}
+        <motion.div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: `radial-gradient(ellipse 60% 55% at ${glowX}% ${glowY}%, rgba(201,168,76,0.13) 0%, transparent 70%)`,
+        }} />
+
+        {/* Top-left highlight simulating 3D light */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 45%)',
+        }} />
+
+        {/* Bottom-right shadow for 3D depth */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(315deg, rgba(0,0,0,0.3) 0%, transparent 50%)',
+        }} />
+
+        {/* Gold border line on arrow edge */}
+        {!isLast && (
+          <div style={{
+            position: 'absolute', right: NOTCH, top: 0, bottom: 0, width: 1,
+            background: `linear-gradient(to bottom, transparent, ${GOLD_BORDER}, transparent)`,
+            pointerEvents: 'none',
+          }} />
+        )}
+
+        <p style={{ fontFamily: 'var(--font-mono),monospace', fontSize: 16, color: GOLD_DIM, marginBottom: '2.5rem', letterSpacing: '0.1em', position: 'relative' }}>{n}</p>
+        <h3 style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontSize: '2.2rem', fontWeight: 400, color: 'white', marginBottom: '1.5rem', lineHeight: 1.1, position: 'relative' }}>{title}</h3>
+        <p style={{ fontSize: 15, lineHeight: 1.85, color: TEXT_BODY, position: 'relative' }}>{body}</p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -590,9 +755,10 @@ function NetworkVisual() {
           />
         ))}
         {nodes.map((n, i) => (
-          <motion.circle key={i} cx={n.x} cy={n.y} r={n.main ? 5 : 2.5}
+          <motion.circle key={i} cx={n.x} cy={n.y}
             fill={n.main ? GOLD : 'rgba(201,168,76,0.3)'}
             stroke={GOLD} strokeWidth={n.main ? '0.8' : '0.4'} strokeOpacity="0.5"
+            initial={{ r: n.main ? 5 : 2.5, opacity: 0.7 }}
             animate={{ r: n.main ? [5, 6.5, 5] : [2.5, 3.2, 2.5], opacity: [0.7, 1, 0.7] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.25 }}
           />
@@ -633,8 +799,9 @@ function GlobalVisual() {
     <div style={{ position: 'relative', width: '100%', height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg width="340" height="280" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
         {dots.map((d, i) => (
-          <motion.circle key={i} cx={d.x} cy={d.y} r={d.gold ? 1.8 : 1}
+          <motion.circle key={i} cx={d.x} cy={d.y}
             fill={d.gold ? GOLD : 'rgba(255,255,255,0.15)'}
+            initial={{ r: d.gold ? 1.8 : 1, opacity: d.gold ? 0.5 : 0.12 }}
             animate={d.gold ? { opacity: [0.5, 1, 0.5], r: [1.8, 2.8, 1.8] } : { opacity: [0.12, 0.25, 0.12] }}
             transition={{ duration: d.gold ? 2 : 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.06 }}
           />
@@ -1158,8 +1325,8 @@ function CTASection() {
 function FuturisticFooter() {
   const cols = [
     { heading: 'Platform', links: [{ label: 'Marketplace', href: '/marketplace' }, { label: 'Fashion Events', href: '/fashionevents' }, { label: 'Dashboard', href: '/dashboard' }] },
-    { heading: 'Company',  links: [{ label: 'About', href: '/about' }, { label: 'Partners', href: '/join' }, { label: 'Contact', href: '/contact' }] },
-    { heading: 'Access',   links: [{ label: 'Apply Now', href: '/join' }, { label: 'Sign In', href: '/login' }, { label: 'For Brands', href: '/join' }, { label: 'For Buyers', href: '/join' }] },
+    { heading: 'Company',  links: [{ label: 'About', href: '/about' }, { label: 'Pricing', href: '/pricing' }, { label: 'Contact', href: '/contact' }] },
+    { heading: 'Access',   links: [{ label: 'Apply for Access', href: '/join' }, { label: 'Sign In', href: '/login' }, { label: 'Terms & Privacy', href: '/terms' }, { label: 'Legal', href: '/legal' }] },
   ];
   return (
     <footer style={{ background: '#000', borderTop: `1px solid ${BORDER}` }}>
