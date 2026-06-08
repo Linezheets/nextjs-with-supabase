@@ -1,10 +1,9 @@
-import { createClient }     from '@/lib/supabase/server';
-import { getBuyerCatalog }  from '@/lib/buyer-catalog';
-import Link                 from 'next/link';
-import ProductCard          from '@/components/ProductCard';
-import type { CatalogItem } from '@/lib/types';
+'use client';
 
-export const revalidate = 60;
+import { useEffect, useState } from 'react';
+import Link                    from 'next/link';
+import ProductCard             from '@/components/ProductCard';
+import type { CatalogItem }    from '@/lib/types';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -31,34 +30,29 @@ function safePrice(raw: unknown): number {
   return isFinite(n) ? n : 0;
 }
 
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-async function getPublicCatalogMeta(): Promise<CatalogItem[]> {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from('buyer_vip_catalog')
-      .select('brand_name, category');
-    return Array.isArray(data) ? (data as CatalogItem[]) : [];
-  } catch { return []; }
-}
-
 // ── Locked public view ────────────────────────────────────────────────────────
 
 function LockedMarketplace({ brands, categories }: { brands: string[]; categories: string[] }) {
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO, paddingTop: 64 }}>
 
+      {/* Inject CSS for hover effects */}
+      <style>{`
+        .mkt-cat-pill:hover  { border-color: ${GOLD_BORDER} !important; color: #fff !important; }
+        .mkt-brand-row:hover { border-color: ${GOLD_BORDER} !important; }
+        .mkt-locked-card:hover .mkt-locked-overlay { opacity: 1 !important; }
+      `}</style>
+
       {/* Hero banner */}
-      <div style={{ borderBottom: `1px solid ${BORDER}`, background: 'rgba(201,168,76,0.03)' }}>
+      <div style={{ borderBottom: `1px solid ${BORDER}`, background: 'rgba(201,168,76,0.025)' }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '5rem 2.5rem 4rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.65em', textTransform: 'uppercase', color: GOLD, marginBottom: '1.5rem' }}>
               Private Wholesale Marketplace
             </p>
-            <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(2.5rem, 6vw, 5rem)', fontWeight: 400, lineHeight: 1.02, color: '#fff' }}>
+            <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(2.5rem, 6vw, 5rem)', fontWeight: 400, lineHeight: 1.02, color: '#fff', margin: 0 }}>
               {brands.length > 0 ? `${brands.length} Brands` : 'Curated Brands'}<br />
-              <em style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+              <em style={{ color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>
                 {categories.length > 0 ? `${categories.length} Categories` : 'All Categories'}
               </em>
             </h1>
@@ -68,7 +62,7 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
               fontFamily: MONO, fontSize: '9px', letterSpacing: '0.5em', textTransform: 'uppercase',
               color: '#000', background: `linear-gradient(135deg,${GOLD_BRIGHT},${GOLD})`,
               padding: '1rem 2.5rem', textDecoration: 'none', fontWeight: 700,
-              boxShadow: `0 0 30px rgba(201,168,76,0.25)`,
+              boxShadow: '0 0 30px rgba(201,168,76,0.25)',
             }}>
               Apply for Access
             </Link>
@@ -85,14 +79,12 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '1.25rem 2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 'max-content' }}>
             <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.45em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>Categories:</span>
             {categories.map(c => (
-              <Link key={c} href="/login" style={{
+              <Link key={c} href="/login" className="mkt-cat-pill" style={{
                 fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase',
                 padding: '0.4rem 1rem', border: `1px solid ${BORDER}`,
                 color: TEXT_MUTED, textDecoration: 'none', whiteSpace: 'nowrap',
                 transition: 'border-color 0.2s, color 0.2s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GOLD_BORDER; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; (e.currentTarget as HTMLElement).style.color = TEXT_MUTED; }}>
+              }}>
                 {c}
               </Link>
             ))}
@@ -100,27 +92,24 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
         </div>
       )}
 
-      {/* Brands grid */}
+      {/* Brands */}
       {brands.length > 0 && (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '3rem 2.5rem', borderBottom: `1px solid ${BORDER}` }}>
           <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: '1.5rem' }}>Brands</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             {brands.map(b => (
-              <Link key={b} href="/login" style={{
+              <Link key={b} href="/login" className="mkt-brand-row" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 border: `1px solid ${BORDER}`, padding: '0.75rem 1.25rem',
                 textDecoration: 'none', transition: 'border-color 0.2s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GOLD_BORDER; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}>
+              }}>
                 <div style={{
                   width: 26, height: 26, borderRadius: '50%',
-                  background: 'rgba(201,168,76,0.1)', border: `1px solid ${GOLD_BORDER}`,
+                  background: 'rgba(201,168,76,0.08)', border: `1px solid ${GOLD_BORDER}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: MONO, fontSize: '8px', color: GOLD, fontWeight: 600,
+                  fontFamily: MONO, fontSize: '8px', color: GOLD, fontWeight: 600, flexShrink: 0,
                 }}>{b[0]}</div>
-                <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)' }}>{b}</span>
-                <span style={{ fontFamily: MONO, fontSize: '9px', color: GOLD, opacity: 0 }}>→</span>
+                <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>{b}</span>
               </Link>
             ))}
           </div>
@@ -130,29 +119,36 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
       {/* Locked grid */}
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '4rem 2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '3rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${BORDER}` }}>
-          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#fff' }}>The Collection</h2>
-          <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>Sign in to view wholesale pricing</p>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#fff', margin: 0 }}>The Collection</h2>
+          <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED, margin: 0 }}>Sign in to view wholesale pricing</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.5rem', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: '1.5rem', position: 'relative' }}>
           {Array.from({ length: 12 }).map((_, i) => (
-            <Link key={i} href="/login" style={{ textDecoration: 'none' }}>
+            <Link key={i} href="/login" className="mkt-locked-card" style={{ textDecoration: 'none', position: 'relative' }}>
               <div style={{
                 aspectRatio: '2/3', background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${BORDER}`, marginBottom: '1rem',
+                border: `1px solid ${BORDER}`, marginBottom: '0.75rem',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                overflow: 'hidden',
               }}>
                 <div style={{ width: 32, height: 1, background: GOLD_BORDER }} />
-                <span style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.15)' }}>Members only</span>
+                <span style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.12)' }}>Members only</span>
                 <div style={{ width: 32, height: 1, background: GOLD_BORDER }} />
+                <div className="mkt-locked-overlay" style={{
+                  position: 'absolute', inset: 0, opacity: 0, transition: 'opacity 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(201,168,76,0.04)',
+                }}>
+                  <span style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, border: `1px solid ${GOLD_BORDER}`, padding: '0.5rem 1rem' }}>Sign In</span>
+                </div>
               </div>
-              <div style={{ height: 6, width: 80, background: 'rgba(255,255,255,0.05)', marginBottom: '0.5rem' }} />
-              <div style={{ height: 6, width: 50, background: 'rgba(255,255,255,0.03)' }} />
+              <div style={{ height: 5, width: 80, background: 'rgba(255,255,255,0.05)', marginBottom: '0.4rem' }} />
+              <div style={{ height: 5, width: 50, background: 'rgba(255,255,255,0.03)' }} />
             </Link>
           ))}
-          <div style={{ position: 'absolute', inset: '60% 0 0 0', background: 'linear-gradient(to top, #000, transparent)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: '55% 0 0 0', background: 'linear-gradient(to top,#000,transparent)', pointerEvents: 'none' }} />
         </div>
 
-        {/* CTA */}
         <div style={{ marginTop: '4rem', textAlign: 'center' }}>
           <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.5em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '1.5rem' }}>
             Wholesale pricing · Full collections · Direct brand access
@@ -170,20 +166,15 @@ function LockedMarketplace({ brands, categories }: { brands: string[]; categorie
   );
 }
 
-// ── Filter sidebar (authenticated) ────────────────────────────────────────────
+// ── Filter sidebar ─────────────────────────────────────────────────────────────
 
 function Sidebar({
   brands, categories, seasons,
   activeBrand, activeCategory, activeSeason, activeStatus, search,
 }: {
-  brands         : string[];
-  categories     : string[];
-  seasons        : string[];
-  activeBrand    : string;
-  activeCategory : string;
-  activeSeason   : string;
-  activeStatus   : string;
-  search         : string;
+  brands: string[]; categories: string[]; seasons: string[];
+  activeBrand: string; activeCategory: string; activeSeason: string;
+  activeStatus: string; search: string;
 }) {
   function href(overrides: Record<string, string>) {
     const p = new URLSearchParams({
@@ -200,42 +191,26 @@ function Sidebar({
   }
 
   return (
-    <aside style={{
-      width: 200, flexShrink: 0, paddingRight: '2rem',
-      borderRight: `1px solid ${BORDER}`,
-      position: 'sticky', top: 114, alignSelf: 'flex-start',
-    }}>
+    <aside style={{ width: 200, flexShrink: 0, paddingRight: '2rem', borderRight: `1px solid ${BORDER}`, position: 'sticky', top: 114, alignSelf: 'flex-start' }}>
       {(activeBrand || activeCategory || activeSeason || activeStatus || search) && (
         <div style={{ marginBottom: '2rem' }}>
-          <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>
-            ✕ Clear filters
-          </Link>
+          <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>✕ Clear filters</Link>
         </div>
       )}
-
       <FilterGroup label="Brand">
         <FilterLink label="All" active={!activeBrand} href={href({ brand: '' })} />
-        {brands.map(b => (
-          <FilterLink key={b} label={b} active={activeBrand === b} href={href({ brand: b })} />
-        ))}
+        {brands.map(b => <FilterLink key={b} label={b} active={activeBrand === b} href={href({ brand: b })} />)}
       </FilterGroup>
-
       <FilterGroup label="Category">
         <FilterLink label="All" active={!activeCategory} href={href({ cat: '' })} />
-        {categories.map(c => (
-          <FilterLink key={c} label={c} active={activeCategory === c} href={href({ cat: c })} />
-        ))}
+        {categories.map(c => <FilterLink key={c} label={c} active={activeCategory === c} href={href({ cat: c })} />)}
       </FilterGroup>
-
       {seasons.length > 0 && (
         <FilterGroup label="Season">
           <FilterLink label="All" active={!activeSeason} href={href({ season: '' })} />
-          {seasons.map(s => (
-            <FilterLink key={s} label={s} active={activeSeason === s} href={href({ season: s })} />
-          ))}
+          {seasons.map(s => <FilterLink key={s} label={s} active={activeSeason === s} href={href({ season: s })} />)}
         </FilterGroup>
       )}
-
       <FilterGroup label="Availability">
         <FilterLink label="All"           active={!activeStatus}                    href={href({ status: '' })} />
         <FilterLink label="Ready to Ship" active={activeStatus === 'Ready to Ship'} href={href({ status: 'Ready to Ship' })} />
@@ -257,38 +232,24 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 
 function FilterLink({ label, active, href }: { label: string; active: boolean; href: string }) {
   return (
-    <Link
-      href={href}
-      style={{
-        display: 'block', fontFamily: MONO, fontSize: '10px', padding: '0.3rem 0',
-        textDecoration: 'none', transition: 'color 0.15s', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        color: active ? '#fff' : TEXT_MUTED,
-        fontWeight: active ? 500 : 400,
-        ...(active ? { borderLeft: `2px solid ${GOLD}`, paddingLeft: '8px' } : { paddingLeft: '10px' }),
-      }}
-    >
-      {label}
-    </Link>
+    <Link href={href} style={{
+      display: 'block', fontFamily: MONO, fontSize: '10px', padding: '0.3rem 0',
+      textDecoration: 'none', transition: 'color 0.15s', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      color: active ? '#fff' : TEXT_MUTED, fontWeight: active ? 500 : 400,
+      ...(active ? { borderLeft: `2px solid ${GOLD}`, paddingLeft: '8px' } : { paddingLeft: '10px' }),
+    }}>{label}</Link>
   );
 }
 
-// ── Authenticated full marketplace ────────────────────────────────────────────
+// ── Authenticated view ─────────────────────────────────────────────────────────
 
 function FullMarketplace({
   items, all, brands, categories, seasons, email,
   activeBrand, activeCategory, activeSeason, activeStatus, search,
 }: {
-  items          : CatalogItem[];
-  all            : CatalogItem[];
-  brands         : string[];
-  categories     : string[];
-  seasons        : string[];
-  email          : string;
-  activeBrand    : string;
-  activeCategory : string;
-  activeSeason   : string;
-  activeStatus   : string;
-  search         : string;
+  items: CatalogItem[]; all: CatalogItem[]; brands: string[]; categories: string[];
+  seasons: string[]; email: string; activeBrand: string; activeCategory: string;
+  activeSeason: string; activeStatus: string; search: string;
 }) {
   const isFiltered = !!(activeBrand || activeCategory || activeSeason || activeStatus || search);
   const priceRange = all.length > 0 ? {
@@ -299,79 +260,46 @@ function FullMarketplace({
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: MONO, paddingTop: 64 }}>
 
-      {/* Secondary search bar — pinned below SiteNavbar */}
-      <div style={{
-        position: 'fixed', top: 64, left: 0, right: 0, zIndex: 900,
-        background: 'rgba(0,0,0,0.96)', borderBottom: `1px solid ${BORDER}`,
-        backdropFilter: 'blur(20px)',
-      }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem', height: 48, display: 'flex', alignItems: 'center', gap: '2rem' }}>
+      {/* Search bar pinned below the global nav */}
+      <div style={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 900, background: 'rgba(0,0,0,0.96)', borderBottom: `1px solid ${BORDER}`, backdropFilter: 'blur(20px)' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 2.5rem', height: 50, display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <form method="GET" action="/marketplace" style={{ flex: 1, maxWidth: 400, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {activeBrand    && <input type="hidden" name="brand"  value={activeBrand} />}
             {activeCategory && <input type="hidden" name="cat"    value={activeCategory} />}
             {activeSeason   && <input type="hidden" name="season" value={activeSeason} />}
             {activeStatus   && <input type="hidden" name="status" value={activeStatus} />}
-            <span style={{ color: TEXT_MUTED, fontSize: 12 }}>⌕</span>
-            <input
-              name="q"
-              type="search"
-              defaultValue={search}
+            <span style={{ color: TEXT_MUTED, fontSize: 13 }}>⌕</span>
+            <input name="q" type="search" defaultValue={search}
               placeholder="Search brands, styles, pieces…"
-              style={{
-                flex: 1, fontFamily: MONO, fontSize: '11px', outline: 'none',
-                background: 'transparent', color: '#fff',
-                border: 'none',
-              }}
-            />
+              style={{ flex: 1, fontFamily: MONO, fontSize: '11px', outline: 'none', background: 'transparent', color: '#fff', border: 'none' }} />
             {search && (
-              <Link href={`/marketplace?${new URLSearchParams({
-                ...(activeBrand    ? { brand  : activeBrand    } : {}),
-                ...(activeCategory ? { cat    : activeCategory  } : {}),
-                ...(activeSeason   ? { season : activeSeason    } : {}),
-                ...(activeStatus   ? { status : activeStatus    } : {}),
-              }).toString()}`}
-                    style={{ fontFamily: MONO, fontSize: '9px', color: TEXT_MUTED, textDecoration: 'none' }}>✕</Link>
+              <Link href={`/marketplace?${new URLSearchParams({ ...(activeBrand ? { brand: activeBrand } : {}), ...(activeCategory ? { cat: activeCategory } : {}), ...(activeSeason ? { season: activeSeason } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString()}`}
+                style={{ fontFamily: MONO, fontSize: '9px', color: TEXT_MUTED, textDecoration: 'none' }}>✕</Link>
             )}
           </form>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {priceRange && (
-              <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>
-                WS ${priceRange.min.toFixed(0)}–${priceRange.max.toFixed(0)}
-              </span>
-            )}
+            {priceRange && <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>WS ${priceRange.min.toFixed(0)}–${priceRange.max.toFixed(0)}</span>}
             <div style={{ width: 1, height: 16, background: BORDER }} />
-            <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>
-              {all.length} total · {items.length} shown
-            </span>
+            <span style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: TEXT_MUTED }}>{all.length} total · {items.length} shown</span>
             <div style={{ width: 1, height: 16, background: BORDER }} />
-            <span style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase', color: GOLD }}>
-              {email.split('@')[0]}
-            </span>
+            <span style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.3em', textTransform: 'uppercase', color: GOLD }}>{email.split('@')[0]}</span>
           </div>
         </div>
       </div>
 
-      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '3rem 2.5rem', paddingTop: 'calc(48px + 2.5rem)' }}>
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '2.5rem', paddingTop: 'calc(50px + 2.5rem)' }}>
         <div style={{ display: 'flex', gap: '3rem' }}>
-
-          {/* Sidebar */}
-          <Sidebar
-            brands={brands} categories={categories} seasons={seasons}
+          <Sidebar brands={brands} categories={categories} seasons={seasons}
             activeBrand={activeBrand} activeCategory={activeCategory}
-            activeSeason={activeSeason} activeStatus={activeStatus} search={search}
-          />
+            activeSeason={activeSeason} activeStatus={activeStatus} search={search} />
 
-          {/* Main */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${BORDER}` }}>
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.55em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '0.5rem' }}>
-                  {isFiltered
-                    ? [activeBrand, activeCategory, activeSeason, activeStatus, search ? `"${search}"` : ''].filter(Boolean).join(' · ')
-                    : 'Full Collection · Wholesale Access'}
+                  {isFiltered ? [activeBrand, activeCategory, activeSeason, activeStatus, search ? `"${search}"` : ''].filter(Boolean).join(' · ') : 'Full Collection · Wholesale Access'}
                 </p>
-                <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 400, color: '#fff' }}>
+                <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(1.4rem,2.5vw,2rem)', fontWeight: 400, color: '#fff', margin: 0 }}>
                   {isFiltered ? 'Filtered Results' : 'Browse by Brand'}
                 </h1>
               </div>
@@ -383,15 +311,11 @@ function FullMarketplace({
             {items.length === 0 ? (
               <div style={{ padding: '6rem 0', textAlign: 'center' }}>
                 <p style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.5em', textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: '1rem' }}>No pieces match this filter</p>
-                <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none', borderBottom: `1px solid ${GOLD_BORDER}`, paddingBottom: '2px' }}>
-                  Clear filters
-                </Link>
+                <Link href="/marketplace" style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none', borderBottom: `1px solid ${GOLD_BORDER}`, paddingBottom: '2px' }}>Clear filters</Link>
               </div>
             ) : isFiltered ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '2rem 2.5rem' }}>
-                {items.map(item => (
-                  <ProductCard key={safeStr(item.id)} item={item} verified={true} />
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '2rem 2.5rem' }}>
+                {items.map(item => <ProductCard key={safeStr(item.id)} item={item} verified={true} />)}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
@@ -405,21 +329,16 @@ function FullMarketplace({
                   <div key={brandName}>
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: `1px solid ${BORDER}` }}>
                       <div>
-                        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.2rem, 2vw, 1.6rem)', fontWeight: 400, color: '#fff' }}>{brandName}</h2>
-                        <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: TEXT_MUTED, marginTop: '0.25rem' }}>
-                          {brandItems.length} piece{brandItems.length !== 1 ? 's' : ''}
-                          {brandItems[0]?.season ? ` · ${safeStr(brandItems[0].season)}` : ''}
+                        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(1.2rem,2vw,1.6rem)', fontWeight: 400, color: '#fff', margin: 0 }}>{brandName}</h2>
+                        <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase', color: TEXT_MUTED, marginTop: '0.25rem', marginBottom: 0 }}>
+                          {brandItems.length} piece{brandItems.length !== 1 ? 's' : ''}{brandItems[0]?.season ? ` · ${safeStr(brandItems[0].season)}` : ''}
                         </p>
                       </div>
                       <Link href={`/marketplace?brand=${encodeURIComponent(brandName)}`}
-                            style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>
-                        View all →
-                      </Link>
+                        style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.35em', textTransform: 'uppercase', color: GOLD, textDecoration: 'none' }}>View all →</Link>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '2rem 2.5rem' }}>
-                      {brandItems.map(item => (
-                        <ProductCard key={safeStr(item.id)} item={item} verified={true} />
-                      ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '2rem 2.5rem' }}>
+                      {brandItems.map(item => <ProductCard key={safeStr(item.id)} item={item} verified={true} />)}
                     </div>
                   </div>
                 ))}
@@ -432,62 +351,52 @@ function FullMarketplace({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Root client component — fetches data client-side ──────────────────────────
 
-export default async function MarketplacePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ brand?: string; cat?: string; season?: string; status?: string; q?: string }>;
-}) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export default function MarketplacePage() {
+  const [data, setData] = useState<{
+    user: string | null;
+    brands: string[];
+    categories: string[];
+    seasons: string[];
+    items: CatalogItem[];
+    all: CatalogItem[];
+    activeBrand: string;
+    activeCategory: string;
+    activeSeason: string;
+    activeStatus: string;
+    search: string;
+  } | null>(null);
 
-  const params         = await searchParams;
-  const activeBrand    = params.brand  ?? '';
-  const activeCategory = params.cat    ?? '';
-  const activeSeason   = params.season ?? '';
-  const activeStatus   = params.status ?? '';
-  const search         = params.q      ?? '';
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    fetch(`/api/marketplace/data?${params.toString()}`)
+      .then(r => r.json())
+      .then(setData)
+      .catch(() => setData({
+        user: null, brands: [], categories: [], seasons: [], items: [], all: [],
+        activeBrand: '', activeCategory: '', activeSeason: '', activeStatus: '', search: '',
+      }));
+  }, []);
 
-  if (!user) {
-    const meta       = await getPublicCatalogMeta();
-    const brands     = [...new Set(meta.map(i => safeStr(i.brand_name)).filter(Boolean))].sort();
-    const categories = [...new Set(meta.map(i => safeStr(i.category)).filter(Boolean))].sort();
-    return <LockedMarketplace brands={brands} categories={categories} />;
+  if (!data) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 64 }}>
+        <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.5em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Loading…</p>
+      </div>
+    );
   }
 
-  const all        = await getBuyerCatalog(supabase, user.email ?? '');
-  const brands     = [...new Set(all.map(i => safeStr(i.brand_name)).filter(Boolean))].sort();
-  const categories = [...new Set(all.map(i => safeStr(i.category)).filter(Boolean))].sort();
-  const seasons    = [...new Set(all.map(i => safeStr(i.season)).filter(Boolean))].sort();
-
-  const filtered = all.filter(item => {
-    if (activeBrand    && safeStr(item.brand_name)       !== activeBrand)    return false;
-    if (activeCategory && safeStr(item.category)         !== activeCategory)  return false;
-    if (activeSeason   && safeStr(item.season)           !== activeSeason)    return false;
-    if (activeStatus   && safeStr(item.inventory_status) !== activeStatus)    return false;
-    if (search) {
-      const q   = search.toLowerCase();
-      const hay = [item.title, item.brand_name, item.category, item.description, item.style_number]
-        .map(v => safeStr(v).toLowerCase()).join(' ');
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
+  if (!data.user) {
+    return <LockedMarketplace brands={data.brands} categories={data.categories} />;
+  }
 
   return (
     <FullMarketplace
-      items={filtered}
-      all={all}
-      brands={brands}
-      categories={categories}
-      seasons={seasons}
-      email={user.email ?? ''}
-      activeBrand={activeBrand}
-      activeCategory={activeCategory}
-      activeSeason={activeSeason}
-      activeStatus={activeStatus}
-      search={search}
+      items={data.items} all={data.all} brands={data.brands}
+      categories={data.categories} seasons={data.seasons} email={data.user}
+      activeBrand={data.activeBrand} activeCategory={data.activeCategory}
+      activeSeason={data.activeSeason} activeStatus={data.activeStatus} search={data.search}
     />
   );
 }
