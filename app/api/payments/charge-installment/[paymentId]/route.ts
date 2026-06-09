@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
 import { stripeCode, toCents } from '@/lib/currency';
+import { reconcileOrderPaymentStatus } from '@/lib/payments-status';
 
 export async function POST(
   req: NextRequest,
@@ -25,12 +26,13 @@ export async function POST(
     .maybeSingle();
 
   if (!payment) return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
-  if (payment.status === 'succeeded') return NextResponse.json({ error: 'Already paid' }, { status: 400 });
+  if (payment.status === 'succeeded')  return NextResponse.json({ error: 'Already paid' }, { status: 400 });
+  if (payment.status === 'processing') return NextResponse.json({ error: 'Charge already in progress' }, { status: 409 });
 
   // Confirm order belongs to this user
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, items')
+    .select('id, brand_name, items')
     .eq('id', payment.order_id)
     .eq('buyer_id', user.id)
     .maybeSingle();
@@ -40,7 +42,18 @@ export async function POST(
   const paymentMethodId = body.payment_method_id ?? payment.stripe_payment_method_id;
   if (!paymentMethodId) return NextResponse.json({ error: 'No payment method on file' }, { status: 400 });
 
-  const brandName      = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  // ── Atomically claim the row so a double-click can't charge it twice ──────
+  const { data: claimed } = await admin
+    .from('buyer_payments')
+    .update({ status: 'processing', updated_at: new Date().toISOString() })
+    .eq('id', paymentId)
+    .eq('status', 'pending')
+    .select('id');
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ error: 'Charge already in progress' }, { status: 409 });
+  }
+
+  const brandName      = order.brand_name ?? (Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null);
   const chargeAmount   = payment.amount ?? payment.amount_usd;
   const chargeCurrency = payment.currency ?? 'USD';
   const amountCents    = toCents(parseFloat(chargeAmount));
@@ -60,7 +73,7 @@ export async function POST(
         installment_seq: String(payment.installment_seq),
         brand_name     : brandName ?? '',
       },
-    });
+    }, { idempotencyKey: `installment-${paymentId}` });
 
     const now = new Date().toISOString();
     await admin.from('buyer_payments').update({
@@ -70,10 +83,8 @@ export async function POST(
     }).eq('id', paymentId);
 
     if (pi.status === 'succeeded') {
-      await admin.from('buyer_orders').update({
-        payment_status: 'paid',
-        updated_at    : now,
-      }).eq('id', payment.order_id);
+      // Only marks the order 'paid' once every installment is collected.
+      await reconcileOrderPaymentStatus(admin, payment.order_id);
     }
 
     return NextResponse.json({

@@ -117,24 +117,21 @@ function LoginForm() {
       return;
     }
 
-    const verifyRes = await fetch('/api/auth/verify-turnstile', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ token: turnstileToken }),
-    });
-    if (!verifyRes.ok) {
-      setError('Verification failed. Please try again.');
-      turnstileRef.current?.reset();
-      setTurnstileToken('');
-      setLoading(false);
-      return;
-    }
-
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    // Hand the Turnstile token straight to Supabase so the CAPTCHA is enforced
+    // server-side (enable under Auth → Bot & Abuse Protection → Turnstile).
+    // The token is single-use, so Supabase is the sole validator — we must NOT
+    // pre-verify it on /api/auth/verify-turnstile or Supabase's check fails.
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: turnstileToken },
+    });
 
     if (authError) {
       setError(authError.message);
+      turnstileRef.current?.reset();   // token is spent — mint a fresh one
+      setTurnstileToken('');
       setLoading(false);
       return;
     }

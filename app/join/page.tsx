@@ -1,10 +1,12 @@
 'use client';
 
-import { useState }     from 'react';
+import { useState, useRef } from 'react';
 import { useRouter }    from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link             from 'next/link';
 import { PublicFooter } from '@/components/PublicFooter';
+import { Turnstile } from '@marsidev/react-turnstile';
+import type { TurnstileInstance } from '@marsidev/react-turnstile';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,8 @@ export default function JoinPage() {
   const [step, setStep]       = useState<1 | 2 | 'done'>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const [form, setForm] = useState({
     businessName: '',
@@ -58,12 +62,19 @@ export default function JoinPage() {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (!turnstileToken) {
+      setError('Please complete the human verification.');
+      return;
+    }
 
     setLoading(true);
+    // Pass the single-use Turnstile token straight to Supabase so the CAPTCHA is
+    // enforced server-side (enable under Auth → Bot & Abuse Protection → Turnstile).
     const { error: signUpError } = await supabase.auth.signUp({
       email   : form.email,
       password: form.password,
       options : {
+        captchaToken: turnstileToken,
         data: {
           business_name: form.businessName,
           business_type: form.businessType,
@@ -78,6 +89,8 @@ export default function JoinPage() {
 
     if (signUpError) {
       setError(signUpError.message);
+      turnstileRef.current?.reset();   // token is spent — mint a fresh one
+      setTurnstileToken('');
       return;
     }
 
@@ -306,6 +319,16 @@ export default function JoinPage() {
                     placeholder="Repeat password"
                     value={form.confirm}
                     onChange={set('confirm')}
+                  />
+                </div>
+
+                <div className="mt-8">
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={setTurnstileToken}
+                    onExpire={() => setTurnstileToken('')}
+                    options={{ theme: 'light', size: 'flexible' }}
                   />
                 </div>
 

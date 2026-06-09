@@ -8,6 +8,7 @@
  */
 
 import stripe from '@/lib/stripe';
+import type Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/server';
 import { resolveCommissionRateByName } from '@/lib/commission';
 import { stripeCode, toCents } from '@/lib/currency';
@@ -31,7 +32,7 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
   // 1. Load order
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, currency, escrow_status, stripe_transfer_id, items')
+    .select('id, total_usd, currency, escrow_status, stripe_transfer_id, brand_name, items')
     .eq('id', orderId)
     .single() as {
       data: {
@@ -40,6 +41,7 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
         currency        : string | null;
         escrow_status   : string | null;
         stripe_transfer_id: string | null;
+        brand_name      : string | null;
         items           : { brand_name?: string | null }[];
       } | null;
     };
@@ -58,9 +60,11 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
   }
 
   const orderCurrency = order.currency ?? 'USD';
-  const brandName     = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  // Authoritative single brand for the order (legacy orders fall back to items[0]).
+  const brandName     = order.brand_name
+    ?? (Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null);
 
-  if (!brandName) throw new Error(`Order ${orderId} has no brand_name in items`);
+  if (!brandName) throw new Error(`Order ${orderId} has no brand_name`);
 
   // 2. Load brand's Stripe Connect account
   const { data: sf } = await admin
@@ -92,28 +96,74 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
 
   if (!payments?.length) throw new Error(`No succeeded payments found for order ${orderId}`);
 
-  // Use order total as the authoritative amount (avoids floating-point accumulation across installments)
-  const grossCents = toCents(order.total_usd);
+  // Release is based on funds ACTUALLY CAPTURED, never on the order total — so
+  // the platform can never transfer more than it holds. Refuse to release until
+  // the order is fully collected (1-cent tolerance for rounding).
+  const collectedUsd   = payments.reduce((s, p) => s + Number(p.amount_usd ?? p.amount ?? 0), 0);
+  const collectedCents = toCents(collectedUsd);
+  const totalCents     = toCents(order.total_usd);
+  if (collectedCents + 1 < totalCents) {
+    throw new Error(
+      `Cannot release escrow for ${orderId}: only ${collectedUsd.toFixed(2)} of ${Number(order.total_usd).toFixed(2)} collected`,
+    );
+  }
+  const grossCents = collectedCents;
 
   // 4. Calculate commission and payout
   const commissionRate = await resolveCommissionRateByName(brandName);
   const feeCents       = Math.round(grossCents * commissionRate);
   const payoutCents    = grossCents - feeCents;
 
-  // 5. Create Stripe transfer (separate charges + transfers model)
-  const transfer = await stripe.transfers.create({
-    amount         : payoutCents,
-    currency       : stripeCode(orderCurrency),
-    destination    : sf.stripe_account_id,
-    transfer_group : orderId,
-    metadata       : {
-      order_id       : orderId,
-      brand_name     : brandName,
-      gross_cents    : String(grossCents),
-      fee_cents      : String(feeCents),
-      commission_rate: String(commissionRate),
-    },
-  });
+  // 4b. Atomically claim the release. The conditional UPDATE only succeeds when
+  // the order is 'held'/'releasing', serialising the two release paths (the
+  // status-PATCH auto-release and the manual POST /payments/release). If it has
+  // already been released, return idempotently instead of transferring again.
+  const { data: claimed } = await admin
+    .from('buyer_orders')
+    .update({ escrow_status: 'releasing', updated_at: new Date().toISOString() })
+    .eq('id', orderId)
+    .in('escrow_status', ['held', 'releasing'])
+    .select('id') as { data: { id: string }[] | null };
+
+  if (!claimed || claimed.length === 0) {
+    const { data: fresh } = await admin
+      .from('buyer_orders')
+      .select('escrow_status, stripe_transfer_id, currency')
+      .eq('id', orderId)
+      .single() as { data: { escrow_status: string | null; stripe_transfer_id: string | null; currency: string | null } | null };
+    if (fresh?.escrow_status === 'released' && fresh.stripe_transfer_id) {
+      return { orderId, transferred: 0, currency: fresh.currency ?? 'USD', transferId: fresh.stripe_transfer_id, fee: 0 };
+    }
+    throw new Error(`Order ${orderId} escrow is not in a releasable state (${fresh?.escrow_status ?? 'unknown'})`);
+  }
+
+  // 5. Create Stripe transfer (separate charges + transfers model).
+  // idempotencyKey is the hard guard against a double payout: even if two
+  // callers reach here, Stripe returns the SAME transfer for both. On failure
+  // we roll the claim back to 'held' so the release can be retried.
+  let transfer: Stripe.Transfer;
+  try {
+    transfer = await stripe.transfers.create({
+      amount         : payoutCents,
+      currency       : stripeCode(orderCurrency),
+      destination    : sf.stripe_account_id,
+      transfer_group : orderId,
+      metadata       : {
+        order_id       : orderId,
+        brand_name     : brandName,
+        gross_cents    : String(grossCents),
+        fee_cents      : String(feeCents),
+        commission_rate: String(commissionRate),
+      },
+    }, { idempotencyKey: `release-${orderId}` });
+  } catch (err) {
+    await admin
+      .from('buyer_orders')
+      .update({ escrow_status: 'held', updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .eq('escrow_status', 'releasing');
+    throw err;
+  }
 
   const now = new Date().toISOString();
 

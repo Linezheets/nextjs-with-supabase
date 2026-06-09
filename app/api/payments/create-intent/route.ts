@@ -36,15 +36,55 @@ export async function POST(req: NextRequest) {
   // Verify order belongs to this buyer
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, currency, stripe_customer_id, items')
+    .select('id, total_usd, currency, stripe_customer_id, brand_name, items')
     .eq('id', order_id)
     .eq('buyer_id', user.id)
-    .single() as { data: { id: string; total_usd: number; currency: string | null; stripe_customer_id: string | null; items: { brand_name?: string | null }[] } | null };
+    .single() as { data: { id: string; total_usd: number; currency: string | null; stripe_customer_id: string | null; brand_name: string | null; items: { brand_name?: string | null }[] } | null };
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-  // We still record the brand name for metadata / escrow release lookup
-  const brandName: string | null = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  // Authoritative single brand for metadata / escrow release lookup.
+  const brandName: string | null = order.brand_name
+    ?? (Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null);
+
+  // ── Idempotency: never start a second charge for the first installment ────
+  // A double-submitted checkout (wire auto-confirms!) would otherwise create a
+  // duplicate PaymentIntent and a duplicate buyer_payments row.
+  const { data: existingRows } = await admin
+    .from('buyer_payments')
+    .select('id, method, status, stripe_payment_intent_id, bank_transfer_instructions')
+    .eq('order_id', order_id)
+    .eq('installment_seq', 1)
+    .in('status', ['pending', 'processing', 'succeeded'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const existing = existingRows?.[0] as
+    | { id: string; method: string; status: string; stripe_payment_intent_id: string | null; bank_transfer_instructions: unknown }
+    | undefined;
+
+  if (existing) {
+    const settled = existing.status === 'succeeded' || existing.status === 'processing';
+    // Reuse the existing attempt when it's the same method, or when a charge is
+    // already settled/in-flight (never double-charge regardless of method).
+    if (settled || existing.method === method) {
+      if (existing.status === 'succeeded') {
+        return NextResponse.json({ error: 'Order already paid' }, { status: 409 });
+      }
+      if (existing.method === 'wire') {
+        return NextResponse.json({ type: 'wire', instructions: existing.bank_transfer_instructions ?? null, payment_intent_id: existing.stripe_payment_intent_id, reused: true });
+      }
+      if (existing.stripe_payment_intent_id) {
+        try {
+          const reused = await stripe.paymentIntents.retrieve(existing.stripe_payment_intent_id);
+          return NextResponse.json({ type: existing.method, client_secret: reused.client_secret, reused: true });
+        } catch { /* PI gone — fall through and create a fresh one below */ }
+      }
+    } else {
+      // Buyer switched method while the old attempt is still pending — cancel it.
+      try { if (existing.stripe_payment_intent_id) await stripe.paymentIntents.cancel(existing.stripe_payment_intent_id); } catch { /* already gone */ }
+      await admin.from('buyer_payments').update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('id', existing.id);
+    }
+  }
 
   // Get or create Stripe Customer for this buyer
   let stripeCustomerId: string = order.stripe_customer_id ?? '';
@@ -92,7 +132,7 @@ export async function POST(req: NextRequest) {
       transfer_group: order_id,
       confirm : true,
       metadata: { order_id, flow, method, brand_name: brandName ?? '', currency: orderCurrency },
-    });
+    }, { idempotencyKey: `pi-${order_id}-seq1-wire` });
 
     const instructions =
       (pi as unknown as { next_action?: { display_bank_transfer_instructions?: unknown } })
@@ -134,7 +174,7 @@ export async function POST(req: NextRequest) {
       transfer_group: order_id,
       ...(setupFutureUsage ? { setup_future_usage: setupFutureUsage } : {}),
       metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1', currency: orderCurrency },
-    });
+    }, { idempotencyKey: `pi-${order_id}-seq1-ach` });
 
     await admin.from('buyer_payments').insert({
       order_id,
@@ -163,7 +203,7 @@ export async function POST(req: NextRequest) {
     transfer_group: order_id,
     ...(setupFutureUsage ? { setup_future_usage: setupFutureUsage } : {}),
     metadata: { order_id, flow, method, brand_name: brandName ?? '', installment_seq: '1', currency: orderCurrency },
-  });
+  }, { idempotencyKey: `pi-${order_id}-seq1-card` });
 
   await admin.from('buyer_payments').insert({
     order_id,

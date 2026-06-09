@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import stripe from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
+import { reconcileOrderPaymentStatus } from '@/lib/payments-status';
 import type Stripe from 'stripe';
 
 // Grant or revoke brand role in Supabase auth metadata
@@ -40,6 +41,23 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
+  // ── Idempotency: process each Stripe event at most once ───────────────────
+  // Stripe retries deliveries; without this guard a replayed event would
+  // re-schedule installments, double-charge, re-grant roles, etc.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: dedupeErr } = await (admin as any)
+    .from('stripe_webhook_events')
+    .insert({ event_id: event.id, type: event.type });
+  if (dedupeErr) {
+    // Unique violation (23505) = already processed → ack and stop.
+    if (dedupeErr.code === '23505') {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // Any other failure: log and continue (don't drop a real event over a
+    // bookkeeping error), but most handlers below are themselves idempotent.
+    console.error('[webhook] dedupe insert failed:', dedupeErr);
+  }
+
   switch (event.type) {
     case 'payment_intent.processing': {
       const pi = event.data.object as Stripe.PaymentIntent;
@@ -57,13 +75,15 @@ export async function POST(req: NextRequest) {
         : pi.payment_method?.id;
 
       await syncPaymentStatus(admin, pi.id, 'succeeded', pmId);
-      // payment_status = 'paid' means funds captured and held in escrow.
-      // Funds will be released to the brand when the order is marked delivered.
-      await syncOrderStatus(admin, pi.metadata.order_id, 'paid');
-
-      // If this was a card/ach with future use and installments remain, schedule them
-      if (pi.setup_future_usage === 'off_session' && pmId) {
-        await scheduleRemainingInstallments(admin, pi, pmId);
+      // Recompute payment_status from the ledger: only mark the ORDER 'paid'
+      // when the sum of succeeded payments covers the total and nothing is still
+      // pending/processing. A single installment must NOT flip the order to paid
+      // (that previously over-released escrow). Multi-installment scheduling is
+      // owned by /api/payments/installment-plan — the webhook no longer schedules
+      // installments (the old path charged the full total on seq 1 AND scheduled
+      // more, double-collecting from the buyer).
+      if (pi.metadata.order_id) {
+        await reconcileOrderPaymentStatus(admin, pi.metadata.order_id);
       }
 
       await notifySeller(admin, pi.metadata.order_id, 'paid');
@@ -216,53 +236,6 @@ async function syncOrderStatus(admin: any, orderId: string, paymentStatus: strin
     .from('buyer_orders')
     .update({ payment_status: paymentStatus, updated_at: new Date().toISOString() })
     .eq('id', orderId);
-}
-
-async function scheduleRemainingInstallments(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin      : any,
-  pi         : Stripe.PaymentIntent,
-  pmId       : string,
-) {
-  const orderId  = pi.metadata.order_id;
-  const brandName = pi.metadata.brand_name; // set in create-intent
-  if (!orderId) return;
-
-  const { data: order } = await admin
-    .from('buyer_orders')
-    .select('total_usd')
-    .eq('id', orderId)
-    .single();
-
-  // Look up brand payment terms by brand_name (stored in PI metadata)
-  const { data: terms } = brandName
-    ? await admin
-        .from('brand_payment_terms')
-        .select('installment_count, installment_days')
-        .eq('brand_name', brandName)
-        .maybeSingle()
-    : { data: null };
-
-  const count    = terms?.installment_count ?? 2;
-  const interval = terms?.installment_days  ?? 30;
-  const perInstallment = (order?.total_usd ?? 0) / count;
-
-  // First installment already paid; schedule the rest
-  for (let seq = 2; seq <= count; seq++) {
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + interval * (seq - 1));
-
-    await admin.from('buyer_payments').insert({
-      order_id                : orderId,
-      stripe_customer_id      : pi.customer,
-      stripe_payment_method_id: pmId,
-      method                  : pi.metadata.method ?? 'card',
-      status                  : 'pending',
-      amount_usd              : perInstallment,
-      installment_seq         : seq,
-      due_date                : dueDate.toISOString().split('T')[0],
-    });
-  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

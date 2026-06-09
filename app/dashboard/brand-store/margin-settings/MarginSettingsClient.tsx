@@ -16,8 +16,8 @@ type Settings = {
   [key: string]: unknown;
 };
 
-export default function MarginSettingsClient() {
-  const [form, setForm]   = useState<Settings>({ default_margin_pct: 50, min_margin_pct: 30, target_markup: 2.5, currency: 'USD', payment_terms_days: 30, discount_tiers: [] });
+export default function MarginSettingsClient({ initial }: { initial?: Settings | null }) {
+  const [form, setForm]   = useState<Settings>({ default_margin_pct: 50, min_margin_pct: 30, target_markup: 2.5, currency: 'USD', payment_terms_days: 30, discount_tiers: [], ...(initial ?? {}) });
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 

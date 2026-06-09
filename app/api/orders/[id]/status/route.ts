@@ -41,7 +41,7 @@ export async function PATCH(
     .from('buyer_orders')
     .update(patch)
     .eq('id', id)
-    .filter('items', 'cs', JSON.stringify([{ brand_name: sf.brand_name }]))
+    .eq('brand_name', sf.brand_name)
     .select('id, payment_status, escrow_status')
     .maybeSingle();
 
