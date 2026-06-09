@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { CartProvider } from '@/components/CartDrawer';
 import ChatWidget from '@/components/ChatWidget';
 import { SiteNavbar } from '@/components/SiteNavbar';
-import { IntroScreen } from '@/components/IntroScreen';
+import { PageTransition } from '@/components/PageTransition';
 
 const playfair = Playfair_Display({
   subsets : ['latin'],
@@ -93,7 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             document.body.appendChild(c);
           })();
         `}} />
-        <IntroScreen />
+        <PageTransition />
         <SiteNavbar />
         <CartProvider>{children}</CartProvider>
         <ChatWidget />
