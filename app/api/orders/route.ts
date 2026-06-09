@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const serverTotal = pricing.totalUsd;
   const orderBrand  = pricing.brands[0] ?? brand_name ?? null;
 
-  const id = `LZ-${Date.now()}`;
+  const id = `LZ-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const { data, error } = await supabase
     .from('buyer_orders')
