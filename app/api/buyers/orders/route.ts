@@ -3,6 +3,7 @@ import { getUserFromRequest } from '@/lib/supabase/bearer';
 import { createAdminClient } from '@/lib/supabase/server';
 import { logActivity }       from '@/lib/audit';
 import { setAuditUser }  from '@/lib/supabase/set-audit-user';
+import { priceOrderForBuyer } from '@/lib/order-pricing';
 
 export async function GET(req: NextRequest) {
   const { user, supabase } = await getUserFromRequest(req);
@@ -139,10 +140,44 @@ export async function POST(req: NextRequest) {
     (result.allocated ?? []).map(a => [a.sku, a.fulfillment_type]),
   );
 
-  const taggedItems = normalised.map(i => ({
-    ...i.snapshot,
-    fulfillment_type: fulfillmentBySku.get(i.sku) ?? 'IMMEDIATE',
-  }));
+  // ── 2b. Recompute the authoritative total server-side ─────────────────────
+  // SECURITY: the client-supplied `total_usd` is NEVER trusted. Re-price every
+  // line from the buyer's own catalog (pricing + visibility rules applied) and
+  // reject any SKU the buyer cannot see or that has no price.
+  const pricing = await priceOrderForBuyer(
+    admin,
+    user.email,
+    normalised.map(i => ({ sku: i.sku, total_qty: i.total_qty })),
+  );
+  if (!pricing.ok) {
+    return NextResponse.json(
+      { error: pricing.error, missing_skus: pricing.missingSkus },
+      { status: 422 },
+    );
+  }
+  // One brand per order: escrow payout and authorization key off a single brand.
+  // A mixed-brand cart must be split into separate orders.
+  if (pricing.brands.length > 1) {
+    return NextResponse.json(
+      { error: 'An order may only contain items from one brand. Please place a separate order per brand.', brands: pricing.brands },
+      { status: 400 },
+    );
+  }
+  const orderBrand   = pricing.brands[0] ?? brand_name ?? null;
+  const serverTotal  = pricing.totalUsd;
+  const unitWspBySku = new Map(pricing.lines.map(l => [l.sku, l.unitWsp]));
+
+  const taggedItems = normalised.map(i => {
+    const unitWsp = unitWspBySku.get(i.sku) ?? 0;
+    return {
+      ...i.snapshot,
+      sku             : i.sku,
+      sizes           : i.sizes,
+      wsp_usd         : unitWsp,                 // authoritative unit price (USD)
+      line_total_usd  : Math.round(unitWsp * i.total_qty * 100) / 100,
+      fulfillment_type: fulfillmentBySku.get(i.sku) ?? 'IMMEDIATE',
+    };
+  });
 
   const orderFulfillmentType = result.order_fulfillment_type ?? 'IMMEDIATE';
 
@@ -157,7 +192,9 @@ export async function POST(req: NextRequest) {
       buyer_name       : user.email ?? user.id,
       status           : 'confirmed',
       fulfillment_type : orderFulfillmentType,
-      total_usd        : total_usd ?? 0,
+      total_usd        : serverTotal,            // server-computed, not client input
+      currency         : 'USD',                  // server-controlled (money basis is USD)
+      brand_name       : orderBrand,             // single authoritative brand for the order
       terms            : terms ?? null,
       notes            : notes ?? null,
       items            : taggedItems,
@@ -197,7 +234,7 @@ export async function POST(req: NextRequest) {
       const html = orderConfirmationHtml({
         id              : orderId,
         buyer_name      : user.email ?? user.id,
-        total_usd       : total_usd ?? 0,
+        total_usd       : serverTotal,
         items           : taggedItems as Parameters<typeof orderConfirmationHtml>[0]['items'],
         fulfillment_type: orderFulfillmentType,
         terms,
@@ -206,7 +243,7 @@ export async function POST(req: NextRequest) {
         to     : buyerEmail,
         subject: `Order Confirmed — ${orderId}`,
         html,
-        text   : `Your Linezheets order ${orderId} has been confirmed. Total: $${total_usd ?? 0}`,
+        text   : `Your Linezheets order ${orderId} has been confirmed. Total: $${serverTotal.toFixed(2)}`,
       });
     }
   } catch { /* email is non-critical */ }
@@ -219,10 +256,11 @@ export async function POST(req: NextRequest) {
     action  : 'buyer_place_order',
     resource: `order:${orderId}`,
     status  : 'success',
-    detail  : `Order ${orderId} placed — ${normalised.length} SKU(s), $${total_usd ?? 0}`,
+    detail  : `Order ${orderId} placed — ${normalised.length} SKU(s), $${serverTotal.toFixed(2)}`,
     metadata: {
       order_id       : orderId,
-      total_usd      : total_usd ?? 0,
+      total_usd      : serverTotal,
+      client_total_usd: total_usd ?? null,   // recorded for tamper telemetry
       item_count     : normalised.length,
       fulfillment_type: orderFulfillmentType,
       brand_name,
