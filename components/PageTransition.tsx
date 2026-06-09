@@ -5,8 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 const FRAMES   = [1,2,3,4,5,6,7,8,9,10,11,12,13];
-const FRAME_MS = 115;   // 13 × 115ms ≈ 1.5s per cycle
-const MIN_MS   = 1500;  // minimum before zoom triggers
+const FRAME_MS = 38;   // 13 × 38ms ≈ 0.5s per cycle
+const MIN_MS   = 500;  // minimum before zoom triggers
 const ZOOM_MS  = 700;   // zoom animation duration
 
 export function PageTransition() {
