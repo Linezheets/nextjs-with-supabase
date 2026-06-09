@@ -14,6 +14,9 @@ export function IntroScreen({ onDone }: { onDone?: () => void }) {
   const [zooming, setZooming]   = useState(false);
 
   useEffect(() => {
+    // Remove the static pre-cover — IntroScreen is now in charge
+    document.getElementById('lz-pre-cover')?.remove();
+
     let idx       = 0;
     let cancelled = false;
     const start   = Date.now();

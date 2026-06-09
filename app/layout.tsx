@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { CartProvider } from '@/components/CartDrawer';
 import ChatWidget from '@/components/ChatWidget';
 import { SiteNavbar } from '@/components/SiteNavbar';
+import { IntroScreen } from '@/components/IntroScreen';
 
 const playfair = Playfair_Display({
   subsets : ['latin'],
@@ -83,6 +84,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-black text-white antialiased">
+        {/* Inline script — runs before React hydrates, paints black immediately */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var c=document.createElement('div');
+            c.id='lz-pre-cover';
+            c.style.cssText='position:fixed;inset:0;z-index:99998;background:#0a0a0a;';
+            document.body.appendChild(c);
+          })();
+        `}} />
+        <IntroScreen />
         <SiteNavbar />
         <CartProvider>{children}</CartProvider>
         <ChatWidget />
