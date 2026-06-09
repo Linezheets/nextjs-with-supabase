@@ -234,6 +234,7 @@ export type Database = {
           buyer_id  : string | null;
           buyer_name: string | null;
           brand_id  : string | null;
+          brand_name: string | null;
           status    : string;
           total_usd : number;
           currency  : string | null;
@@ -248,9 +249,11 @@ export type Database = {
           buyer_id?        : string | null;
           buyer_name?      : string | null;
           brand_id?        : string | null;
+          brand_name?      : string | null;
           status?          : string;
           fulfillment_type?: string | null;
           total_usd        : number;
+          currency?        : string | null;
           terms?           : string | null;
           notes?           : string | null;
           items            : Record<string, unknown>[];
@@ -258,6 +261,7 @@ export type Database = {
         Update: {
           status?   : string;
           total_usd?: number;
+          currency? : string | null;
           terms?    : string | null;
           notes?    : string | null;
           updated_at?: string;
@@ -544,6 +548,7 @@ export type Database = {
           theme                : Record<string, unknown>;
           stripe_account_id    : string | null;
           stripe_account_status: string | null;
+          pricing_settings     : Record<string, unknown> | null;
           created_at           : string;
           updated_at           : string;
         };
@@ -562,6 +567,7 @@ export type Database = {
           theme?                : Record<string, unknown>;
           stripe_account_id?    : string | null;
           stripe_account_status?: string | null;
+          pricing_settings?     : Record<string, unknown> | null;
         };
         Update: Partial<Database['public']['Tables']['brand_storefronts']['Insert']>;
         Relationships: [];
