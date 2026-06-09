@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import * as XLSX from 'xlsx';
 import { setAuditUser }  from '@/lib/supabase/set-audit-user';
+import { parseQty } from '@/lib/parse-money';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -53,7 +54,7 @@ function parseFile(buffer: Buffer): { headers: unknown[]; rows: unknown[][] } {
   };
 }
 
-function parseRow(row: unknown[], colMap: Record<string, number>, brandUserId: string, brandName: string) {
+function parseRow(row: unknown[], colMap: Record<string, number>, brandName: string) {
   const get = (field: string) => {
     const idx = colMap[field];
     if (idx === undefined) return null;
@@ -69,11 +70,22 @@ function parseRow(row: unknown[], colMap: Record<string, number>, brandUserId: s
 
   const sizesRaw = get('sizes');
   const sizeKeys = sizesRaw ? sizesRaw.split(/[,|/;]+/).map(s => s.trim()).filter(Boolean) : [];
+  const stockTotal = parseQty(get('stock_total'));
+
+  // Distribute stock across the listed sizes so SUM(sizes) === stock_total.
+  // Otherwise the product shows stock but is unsellable (every size shows 0).
   const sizes: Record<string, number> = {};
-  sizeKeys.forEach(s => { sizes[s] = 0; });
+  if (sizeKeys.length && stockTotal > 0) {
+    const per = Math.floor(stockTotal / sizeKeys.length);
+    const remainder = stockTotal - per * sizeKeys.length;
+    sizeKeys.forEach((s, i) => { sizes[s] = per + (i < remainder ? 1 : 0); });
+  } else {
+    sizeKeys.forEach(s => { sizes[s] = 0; });   // sizes listed but no stock figure
+  }
 
   return {
-    brand_id   : brandUserId,
+    // brand_id is an INTEGER column with a DB default — never write the auth UUID
+    // into it. Brand scoping is by brand_name (forced to the owner here).
     brand_name : brandName,
     title      : get('title') ?? `Style ${get('sku') ?? 'Unknown'}`,
     sku        : get('sku'),
@@ -83,7 +95,7 @@ function parseRow(row: unknown[], colMap: Record<string, number>, brandUserId: s
     srp        : num('srp') ?? 0,
     color      : get('color'),
     sizes,
-    stock_total: parseInt(get('stock_total') ?? '0') || 0,
+    stock_total: stockTotal,
     description: get('description'),
     delivery_window: get('delivery_window'),
     tags       : get('tags') ? get('tags')!.split(/[,|]+/).map(t => t.trim()).filter(Boolean) : [],
@@ -133,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     // Run async import — return job ID immediately
     const buffer = Buffer.from(await file.arrayBuffer());
-    runImport(job.id, user.id, brandName, buffer, admin).catch(err => {
+    runImport(job.id, brandName, buffer, admin).catch(err => {
       admin.from('linesheet_imports').update({
         status      : 'failed',
         errors      : JSON.stringify([{ message: err.message }]),
@@ -156,7 +168,6 @@ export async function POST(req: NextRequest) {
 
 async function runImport(
   jobId    : string,
-  userId   : string,
   brandName: string,
   buffer   : Buffer,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -171,13 +182,33 @@ async function runImport(
 
   await admin.from('linesheet_imports').update({ rows_parsed: rows.length }).eq('id', jobId);
 
+  // Tenant isolation: any SKU already owned by a DIFFERENT brand must not be
+  // overwritten (sku is globally unique). Build the foreign-SKU set up front.
+  const allParsed = (rows as unknown[][]).map(r => parseRow(r as unknown[], colMap, brandName));
+  const incomingSkus = allParsed.map(d => d.sku).filter(Boolean) as string[];
+  const foreignSkus = new Set<string>();
+  if (incomingSkus.length) {
+    const { data: existing } = await admin
+      .from('inventory')
+      .select('sku, brand_name')
+      .in('sku', incomingSkus);
+    for (const e of (existing ?? []) as { sku: string; brand_name: string | null }[]) {
+      if (e.brand_name && e.brand_name !== brandName) foreignSkus.add(e.sku);
+    }
+  }
+
   for (let i = 0; i < rows.length; i++) {
-    const data = parseRow(rows[i] as unknown[], colMap, userId, brandName);
+    const data = allParsed[i];
     const rowNum = i + 2;
 
     if (!data.title && !data.sku) { rowsSkipped++; continue; }
     if (!data.wsp_usd && !data.title) {
       errors.push({ row: rowNum, message: 'Missing product name and price — row skipped' });
+      rowsSkipped++;
+      continue;
+    }
+    if (data.sku && foreignSkus.has(data.sku)) {
+      errors.push({ row: rowNum, sku: data.sku, message: 'SKU belongs to another brand — skipped' });
       rowsSkipped++;
       continue;
     }

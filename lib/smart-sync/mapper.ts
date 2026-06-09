@@ -2,6 +2,7 @@ import {
   COLUMN_MAPS, ANTIDOTE_SIZE_FIELDS, EXACT_ONLY_COLS,
   KEYWORD_FINGERPRINTS, ABBREV_EXPANSIONS,
 } from './column-maps';
+import { parseMoney, parseQty } from '@/lib/parse-money';
 
 export type MappingInfo = {
   field: string;
@@ -307,7 +308,7 @@ export function extractProducts(
     // Sizes
     const sizes: Record<string, number> = {};
     activeSizeCols.forEach(({ header, label }) => {
-      const v = Math.round(Number(row[header] ?? 0) || 0);
+      const v = parseQty(row[header]);   // handles "1,200" etc.
       if (v > 0) sizes[label] = v;
     });
 
@@ -320,15 +321,16 @@ export function extractProducts(
     }
     usedSkus.add(sku);
 
-    const wsp = parseFloat(getField(row, 'wsp_usd') ?? '') || 0;
-    const srp = parseFloat(getField(row, 'srp') ?? '') || 0;
+    const wsp = Math.max(0, parseMoney(getField(row, 'wsp_usd')) ?? 0);
+    const srp = Math.max(0, parseMoney(getField(row, 'srp')) ?? 0);
     const stockFromSizes = Object.values(sizes).reduce((a, b) => a + b, 0);
-    const stockRaw = parseFloat(getField(row, 'stock_total') ?? '') || stockFromSizes;
+    const stockParsed = parseMoney(getField(row, 'stock_total'));
+    const stockRaw = stockParsed != null && stockParsed > 0 ? stockParsed : stockFromSizes;
 
     // Tier pricing
     const tier_pricing: unknown[] = [];
-    const tierHigh = parseFloat(getField(row, 'wsp_tier_high') ?? '') || 0;
-    const tierLow  = parseFloat(getField(row, 'wsp_tier_low')  ?? '') || 0;
+    const tierHigh = Math.max(0, parseMoney(getField(row, 'wsp_tier_high')) ?? 0);
+    const tierLow  = Math.max(0, parseMoney(getField(row, 'wsp_tier_low'))  ?? 0);
     if (tierHigh && tierLow) {
       tier_pricing.push({ moq: 1, wsp: tierHigh }, { moq: 6, wsp: tierLow });
     }
@@ -352,8 +354,8 @@ export function extractProducts(
       product_notes   : (getField(row, 'product_notes') ?? '').trim(),
       wsp_usd         : wsp || (srp > 0 ? +(srp * 0.5).toFixed(2) : 0),
       srp,
-      cost            : parseFloat(getField(row, 'cost') ?? '') || null,
-      moq             : Math.max(1, Math.floor(parseFloat(getField(row, 'moq') ?? '') || 1)),
+      cost            : parseMoney(getField(row, 'cost')),
+      moq             : Math.max(1, parseQty(getField(row, 'moq')) || 1),
       stock_total     : Math.floor(stockRaw),
       sizes,
       tier_pricing,

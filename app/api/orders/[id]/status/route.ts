@@ -4,6 +4,19 @@ import { releaseEscrow, shouldAutoRelease } from '@/lib/escrow';
 
 const VALID_STATUSES = ['confirmed', 'processing', 'allocation_confirmed', 'shipped', 'delivered', 'cancelled'];
 
+// Legal status transitions. 'delivered' (which triggers escrow release) can ONLY
+// be reached from 'shipped' — an order can't jump straight to delivered, and
+// terminal states can't change. Prevents releasing funds on never-shipped orders.
+const TRANSITIONS: Record<string, string[]> = {
+  new                 : ['confirmed', 'processing', 'allocation_confirmed', 'cancelled'],
+  confirmed           : ['processing', 'allocation_confirmed', 'shipped', 'cancelled'],
+  processing          : ['allocation_confirmed', 'shipped', 'cancelled'],
+  allocation_confirmed: ['shipped', 'cancelled'],
+  shipped             : ['delivered', 'cancelled'],
+  delivered           : [],
+  cancelled           : [],
+};
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -33,6 +46,24 @@ export async function PATCH(
     .maybeSingle();
 
   if (!sf) return NextResponse.json({ error: 'Brand storefront not found' }, { status: 404 });
+
+  // Load the current order (brand-scoped) to validate the transition.
+  const { data: current } = await admin
+    .from('buyer_orders')
+    .select('id, status')
+    .eq('id', id)
+    .eq('brand_name', sf.brand_name)
+    .maybeSingle() as { data: { id: string; status: string } | null };
+
+  if (!current) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+
+  const fromStatus = current.status ?? 'new';
+  if (fromStatus !== status && !(TRANSITIONS[fromStatus] ?? []).includes(status)) {
+    return NextResponse.json(
+      { error: `Illegal status transition: ${fromStatus} → ${status}` },
+      { status: 409 },
+    );
+  }
 
   const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (notes) patch.notes = notes;

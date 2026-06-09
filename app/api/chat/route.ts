@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -50,12 +50,24 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Persist via the service-role client and enforce ownership in code. RLS no
+    // longer exposes guest (user_id null) sessions to everyone (see migration).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient() as any;
+
     let resolvedSessionId = sessionId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any; // chat tables added via migration; types regenerated post-deploy
-
-    if (!resolvedSessionId) {
+    if (resolvedSessionId) {
+      // Verify the caller owns this session before reading/writing into it.
+      const { data: sess } = await db
+        .from('chat_sessions')
+        .select('user_id, session_token')
+        .eq('id', resolvedSessionId)
+        .maybeSingle();
+      if (!sess) return new Response(JSON.stringify({ error: 'Session not found' }), { status: 404 });
+      const owns = user ? sess.user_id === user.id : (!!sessionToken && sess.session_token === sessionToken);
+      if (!owns) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
+    } else {
       const { data: session } = await db
         .from('chat_sessions')
         .insert({

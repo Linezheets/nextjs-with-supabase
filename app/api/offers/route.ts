@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { listOffers, appendOffer } from '@/lib/session-store';
+import { parseMoney } from '@/lib/parse-money';
 
 async function getUser() {
   const supabase = await createClient();
@@ -24,8 +25,13 @@ export async function POST(req: NextRequest) {
   const { company, contact, email, terms, message, currency, items } = body;
   if (!items?.length) return NextResponse.json({ error: 'items required' }, { status: 400 });
 
-  const total = (items as { wholesale_price?: number; price?: number; quantity?: number }[])
-    .reduce((s, i) => s + (Number(i.wholesale_price ?? i.price ?? 0) * (i.quantity ?? 1)), 0);
+  const totalRaw = (items as { wholesale_price?: unknown; price?: unknown; quantity?: unknown }[])
+    .reduce((s, i) => {
+      const unit = Math.max(0, parseMoney(i.wholesale_price ?? i.price) ?? 0);
+      const qty  = Math.max(0, Math.floor(Number(i.quantity) || 1));
+      return s + unit * qty;
+    }, 0);
+  const total = Number.isFinite(totalRaw) ? Math.round(totalRaw * 100) / 100 : 0;
 
   const offer = {
     company : company  ?? 'Anonymous',

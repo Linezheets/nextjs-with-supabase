@@ -64,11 +64,17 @@ export async function POST(req: NextRequest) {
     const results: { itemId: number; shopifyId: number | null; ok: boolean }[] = [];
 
     for (const item of (items as InventoryRow[]) ?? []) {
+      // Public Shopify storefront must sell at RETAIL (srp), never the wholesale
+      // cost. If srp is missing, fall back to a 2x markup of wholesale so we can
+      // never dump product at cost. compare_at_price left null (no fake strike-through).
+      const retailPrice = String(
+        ((item.srp && item.srp > 0) ? item.srp : (item.wsp_usd ?? 0) * 2).toFixed(2),
+      );
       const sizes = item.sizes ?? {};
       const variants = Object.entries(sizes).map(([size, qty]) => ({
         sku                 : item.sku ? `${item.sku}-${size}` : undefined,
-        price               : String((item.wsp_usd ?? 0).toFixed(2)),
-        compare_at_price    : item.srp ? String(item.srp.toFixed(2)) : null,
+        price               : retailPrice,
+        compare_at_price    : null as string | null,
         option1             : size,
         inventory_management: 'shopify',
         inventory_quantity  : Math.max(0, qty),
@@ -78,8 +84,8 @@ export async function POST(req: NextRequest) {
       if (variants.length === 0) {
         variants.push({
           sku                 : item.sku ?? undefined,
-          price               : String((item.wsp_usd ?? 0).toFixed(2)),
-          compare_at_price    : item.srp ? String(item.srp.toFixed(2)) : null,
+          price               : retailPrice,
+          compare_at_price    : null as string | null,
           option1             : 'One Size',
           inventory_management: 'shopify',
           inventory_quantity  : Math.max(0, item.stock_total ?? 0),

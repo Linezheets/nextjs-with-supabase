@@ -57,10 +57,13 @@ export async function listOffers(sessionId?: string) {
 }
 
 /** Patch an offer row. */
-export async function patchOffer(id: string, patch: Record<string, unknown>) {
+export async function patchOffer(id: string, patch: Record<string, unknown>, ownerSessionId?: string) {
   const sb = await client();
-  const { data: existing } = await sb.from('session_store').select('data').eq('id', id).single();
+  const { data: existing } = await sb.from('session_store').select('session_id, data').eq('id', id).single();
   if (!existing) return null;
+  // Ownership: callers may only patch their own offer (prevents tampering with
+  // another user's offer via a guessed id).
+  if (ownerSessionId && existing.session_id !== ownerSessionId) return null;
   const base = (existing.data && typeof existing.data === 'object' && !Array.isArray(existing.data))
     ? existing.data as object : {};
   const merged = { ...base, ...patch, updated_at: new Date().toISOString() };
