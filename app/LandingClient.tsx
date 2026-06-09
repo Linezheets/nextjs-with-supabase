@@ -1392,7 +1392,6 @@ function FuturisticFooter() {
 export default function LandingClient({ items, brands, categories, showcase }: Props) {
   return (
     <div style={{ background: '#000', color: 'white', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
-      <IntroScreen />
       <Grain />
       <HeroSection />
       <StatsSection brands={brands} categories={categories} />
