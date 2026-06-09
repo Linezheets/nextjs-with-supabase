@@ -71,8 +71,8 @@ export function formatCurrency(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {
     style                : 'currency',
     currency             : code,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,   // money must show cents — was 0, which silently dropped them
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

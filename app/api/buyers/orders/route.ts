@@ -182,7 +182,9 @@ export async function POST(req: NextRequest) {
   const orderFulfillmentType = result.order_fulfillment_type ?? 'IMMEDIATE';
 
   // ── 3. Persist the order record ───────────────────────────────────────────
-  const orderId = `LZ-${Date.now()}`;
+  // Random suffix prevents same-millisecond PK collisions (the id is also the
+  // invoice reference, which must be unique).
+  const orderId = `LZ-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const { data: order, error: insertError } = await admin
     .from('buyer_orders')

@@ -50,10 +50,10 @@ export async function PATCH(
   // Load the current order (brand-scoped) to validate the transition.
   const { data: current } = await admin
     .from('buyer_orders')
-    .select('id, status')
+    .select('id, status, buyer_id, buyer_name')
     .eq('id', id)
     .eq('brand_name', sf.brand_name)
-    .maybeSingle() as { data: { id: string; status: string } | null };
+    .maybeSingle() as { data: { id: string; status: string; buyer_id: string | null; buyer_name: string | null } | null };
 
   if (!current) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
@@ -89,6 +89,50 @@ export async function PATCH(
       // Log but don't fail the status update — admin can manually release
       console.error('[order-status] escrow auto-release failed for', id, err);
     }
+  }
+
+  // Notify the buyer on delivery (non-blocking).
+  if (status === 'delivered') {
+    try {
+      let buyerEmail: string | null = (current.buyer_name && String(current.buyer_name).includes('@')) ? current.buyer_name : null;
+      if (!buyerEmail && current.buyer_id) {
+        const { data: u } = await admin.auth.admin.getUserById(current.buyer_id);
+        buyerEmail = u?.user?.email ?? null;
+      }
+      if (buyerEmail) {
+        const { sendEmail, orderStatusUpdateHtml } = await import('@/lib/email');
+        await sendEmail({
+          to     : buyerEmail,
+          subject: `Your order was delivered — ${id}`,
+          html   : orderStatusUpdateHtml({
+            buyer_name  : current.buyer_name ?? 'there',
+            order_id    : id,
+            status      : 'delivered',
+            platform_url: process.env.NEXT_PUBLIC_SITE_URL,
+          }),
+        });
+      }
+    } catch (e) { console.error('[order-status] delivered email failed', id, e); }
+  }
+
+  // Notify the brand when escrow funds are released to them (non-blocking).
+  if (escrowRelease) {
+    try {
+      const { data: brand } = await admin
+        .from('brand_storefronts')
+        .select('contact_email')
+        .eq('brand_name', sf.brand_name)
+        .maybeSingle();
+      if (brand?.contact_email) {
+        const { sendEmail } = await import('@/lib/email');
+        await sendEmail({
+          to     : brand.contact_email,
+          subject: `Funds released — order ${id}`,
+          html   : `<p>Escrowed funds for order <strong>${id}</strong> have been released to your Stripe account.</p>
+                    <p>Net payout: <strong>$${escrowRelease.transferred.toFixed(2)}</strong> (after platform commission).</p>`,
+        });
+      }
+    } catch (e) { console.error('[order-status] release email failed', id, e); }
   }
 
   return NextResponse.json({ order: data, escrow_release: escrowRelease });

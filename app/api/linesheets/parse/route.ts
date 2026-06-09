@@ -130,6 +130,11 @@ export async function POST(req: NextRequest) {
     if (!allowed.includes(ext)) {
       return NextResponse.json({ error: 'Only Excel (.xlsx, .xls), CSV, and ODS files are supported' }, { status: 400 });
     }
+    // Cap file size — a buffered XLSX parse on a huge file risks OOM / timeout.
+    const MAX_BYTES = 25 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: 'File too large (maximum 25 MB).' }, { status: 413 });
+    }
 
     // Create import job record
     const { data: job, error: jobError } = await admin

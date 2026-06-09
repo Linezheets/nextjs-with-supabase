@@ -37,6 +37,17 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient() as any;
   const today = new Date().toISOString().split('T')[0];
 
+  // Housekeeping: fail linesheet import jobs stuck 'processing' (serverless freeze
+  // / timeout leaves them hanging forever). Folded in here to avoid a 3rd cron slot;
+  // /api/cron/sweep-linesheet-imports can run more frequently on plans that allow it.
+  try {
+    await admin
+      .from('linesheet_imports')
+      .update({ status: 'failed', errors: JSON.stringify([{ message: 'Import timed out.' }]), completed_at: new Date().toISOString() })
+      .eq('status', 'processing')
+      .lt('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString());
+  } catch (e) { console.error('[cron] linesheet sweep failed', e); }
+
   const { data: due } = await admin
     .from('buyer_payments')
     .select('id, order_id, stripe_customer_id, stripe_payment_method_id, amount_usd, amount, currency, installment_seq')

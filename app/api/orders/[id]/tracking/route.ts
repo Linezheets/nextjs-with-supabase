@@ -33,9 +33,9 @@ export async function PATCH(
 
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, notes')
+    .select('id, notes, buyer_id, buyer_name')
     .eq('id', id)
-    .filter('items', 'cs', JSON.stringify([{ brand_name: sf.brand_name }]))
+    .eq('brand_name', sf.brand_name)
     .maybeSingle();
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -52,6 +52,29 @@ export async function PATCH(
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the buyer their order shipped (non-blocking — never fail the update on email).
+  try {
+    let buyerEmail: string | null = (order.buyer_name && String(order.buyer_name).includes('@')) ? order.buyer_name : null;
+    if (!buyerEmail && order.buyer_id) {
+      const { data: u } = await admin.auth.admin.getUserById(order.buyer_id);
+      buyerEmail = u?.user?.email ?? null;
+    }
+    if (buyerEmail) {
+      const { sendEmail, orderStatusUpdateHtml } = await import('@/lib/email');
+      await sendEmail({
+        to     : buyerEmail,
+        subject: `Your order has shipped — ${id}`,
+        html   : orderStatusUpdateHtml({
+          buyer_name  : order.buyer_name ?? 'there',
+          order_id    : id,
+          status      : 'shipped',
+          tracking_url,
+          platform_url: process.env.NEXT_PUBLIC_SITE_URL,
+        }),
+      });
+    }
+  } catch (e) { console.error('[tracking] dispatch email failed', id, e); }
 
   return NextResponse.json({ order: data, tracking: { tracking_number, carrier, tracking_url } });
 }

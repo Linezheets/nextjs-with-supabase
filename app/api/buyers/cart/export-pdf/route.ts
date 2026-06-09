@@ -237,23 +237,26 @@ export async function GET(req: NextRequest) {
   y += 14;
 
   // ── Grand total summary (top) ──────────────────────────────────────────────
-  let grandTotal = 0;
-  let grandQty   = 0;
+  // Sum per currency — never collapse mixed currencies into one mislabeled total.
+  const totalsByCcy = new Map<string, number>();
+  let grandQty = 0;
   for (const lines of byBrand.values()) {
     for (const l of lines) {
-      grandTotal += l.wholesale_price * l.qty;
-      grandQty   += l.qty;
+      const ccy = (l.currency || 'USD').toUpperCase();
+      totalsByCcy.set(ccy, (totalsByCcy.get(ccy) ?? 0) + l.wholesale_price * l.qty);
+      grandQty += l.qty;
     }
   }
+  const totalStr = [...totalsByCcy.entries()].map(([ccy, amt]) => fmtMoney(amt, ccy)).join('  +  ') || fmtMoney(0);
 
   // Summary bar
   doc.rect(M, y, W, 22).fill('#f9f9f9');
   doc.fontSize(7).fillColor(GRAY).font('Helvetica')
      .text(`${grandQty} units across ${byBrand.size} brand${byBrand.size !== 1 ? 's' : ''}`, M + 8, y + 7);
   doc.fontSize(11).fillColor(BLACK).font('Helvetica-Bold')
-     .text(`Est. Wholesale Total`, RIGHT - 260, y + 5, { width: 180, align: 'right' });
+     .text(`Est. Wholesale Total`, RIGHT - 330, y + 5, { width: 150, align: 'right' });
   doc.fontSize(13).fillColor(GOLD).font('Helvetica-Bold')
-     .text(fmtMoney(grandTotal), RIGHT - 80, y + 4, { width: 80, align: 'right' });
+     .text(totalStr, RIGHT - 175, y + 4, { width: 175, align: 'right' });
   doc.font('Helvetica');
 
   y += 32;
@@ -335,7 +338,7 @@ export async function GET(req: NextRequest) {
 
   doc.fontSize(10).fillColor(BLACK).font('Helvetica-Bold').text('ESTIMATED TOTAL', M, y);
   doc.fontSize(14).fillColor(BLACK).font('Helvetica-Bold')
-     .text(fmtMoney(grandTotal), M, y, { width: W, align: 'right' });
+     .text(totalStr, M, y, { width: W, align: 'right' });
   doc.fontSize(7.5).fillColor(GRAY).font('Helvetica')
      .text(`${grandQty} units total`, M, y + 16);
 
