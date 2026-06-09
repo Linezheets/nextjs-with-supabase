@@ -15,6 +15,7 @@ import { NavBarAuth } from '@/components/NavBarAuth';
 import { DeviceShowcaseScroll } from '@/components/DeviceShowcaseScroll';
 import { emptyShowcaseData } from '@/lib/showcase-types';
 import type { ShowcaseData } from '@/lib/showcase-types';
+import { IntroScreen } from '@/components/IntroScreen';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1391,6 +1392,7 @@ function FuturisticFooter() {
 export default function LandingClient({ items, brands, categories, showcase }: Props) {
   return (
     <div style={{ background: '#000', color: 'white', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+      <IntroScreen />
       <Grain />
       <HeroSection />
       <StatsSection brands={brands} categories={categories} />

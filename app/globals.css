@@ -8,6 +8,10 @@
 /* Mono font for prices */
 .font-mono { font-family: 'DM Mono', 'Courier New', monospace; }
 
+/* Global base font size — body, buttons, inputs, links */
+html { font-size: 11px; }
+body, button, input, textarea, select, a { font-size: 11px; }
+
 /* Smooth scroll */
 html { scroll-behavior: smooth; }
 
