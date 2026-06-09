@@ -12,6 +12,9 @@
 html { font-size: 11px; }
 body, button, input, textarea, select, a { font-size: 11px; }
 
+/* Black background from first paint — eliminates white flash before JS hydrates */
+html, body { background: #000 !important; }
+
 /* Smooth scroll */
 html { scroll-behavior: smooth; }
 
