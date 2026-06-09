@@ -3,6 +3,7 @@ import stripe from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
 import { stripeCode, toCents } from '@/lib/currency';
+import { reconcileOrderPaymentStatus } from '@/lib/payments-status';
 
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? 'info@mxlla.com';
 
@@ -19,6 +20,7 @@ type DuePayment = {
 
 type OrderRow = {
   id        : string;
+  brand_name: string | null;
   items     : { brand_name?: string | null }[];
 };
 
@@ -47,22 +49,44 @@ export async function GET(req: NextRequest) {
   const results: { id: string; status: string; error?: string }[] = [];
 
   for (const payment of due) {
+    // ── Atomically claim this row (pending → processing) before charging ────
+    // Closes the read-then-charge window: a retried or overlapping cron run
+    // finds the row no longer 'pending' and skips it, so it can never charge
+    // the same installment twice.
+    const { data: claimed, error: claimErr } = await admin
+      .from('buyer_payments')
+      .update({ status: 'processing', updated_at: new Date().toISOString() })
+      .eq('id', payment.id)
+      .eq('status', 'pending')
+      .select('id') as { data: { id: string }[] | null; error: { message: string } | null };
+
+    if (claimErr) {
+      console.error('[cron] claim failed:', payment.id, claimErr.message);
+      continue;
+    }
+    if (!claimed || claimed.length === 0) {
+      // Already claimed/charged by another run — skip without charging.
+      continue;
+    }
+
     try {
       // Resolve brand's Stripe Connect account for this order
       const { data: order } = await admin
         .from('buyer_orders')
-        .select('id, items')
+        .select('id, brand_name, items')
         .eq('id', payment.order_id)
         .single() as { data: OrderRow | null };
 
       const brandName: string | null =
-        Array.isArray(order?.items) ? (order!.items[0]?.brand_name ?? null) : null;
+        order?.brand_name ?? (Array.isArray(order?.items) ? (order!.items[0]?.brand_name ?? null) : null);
 
       const chargeAmount   = payment.amount ?? payment.amount_usd;
       const chargeCurrency = payment.currency ?? 'USD';
       const amountCents    = toCents(chargeAmount);
 
-      // Escrow: no transfer_data / application_fee — funds held in platform account
+      // Escrow: no transfer_data / application_fee — funds held in platform account.
+      // idempotencyKey makes the charge safe to retry: Stripe returns the same
+      // PaymentIntent instead of creating a second charge for this installment row.
       const pi = await stripe.paymentIntents.create({
         amount        : amountCents,
         currency      : stripeCode(chargeCurrency),
@@ -77,7 +101,7 @@ export async function GET(req: NextRequest) {
           brand_name     : brandName ?? '',
           source         : 'cron',
         },
-      });
+      }, { idempotencyKey: `installment-${payment.id}` });
 
       await admin
         .from('buyer_payments')
@@ -89,10 +113,8 @@ export async function GET(req: NextRequest) {
         .eq('id', payment.id);
 
       if (pi.status === 'succeeded') {
-        await admin
-          .from('buyer_orders')
-          .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
-          .eq('id', payment.order_id);
+        // Only marks the order 'paid' when ALL installments are collected.
+        await reconcileOrderPaymentStatus(admin, payment.order_id);
       }
 
       results.push({ id: payment.id, status: pi.status });

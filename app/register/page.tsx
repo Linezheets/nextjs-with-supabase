@@ -71,28 +71,23 @@ export default function RegisterPage() {
       return;
     }
 
-    const verifyRes = await fetch('/api/auth/verify-turnstile', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ token: turnstileToken }),
-    });
-    if (!verifyRes.ok) {
-      setError('Verification failed. Please try again.');
-      turnstileRef.current?.reset();
-      setTurnstileToken('');
-      return;
-    }
-
     setLoading(true);
-    // Route through /api/auth/login so the notify email fires and rate limiting applies
+    // Route through /api/auth/login so the notify email fires and rate limiting
+    // applies. The Turnstile token is single-use — forward it so Supabase is the
+    // sole validator (enable under Auth → Bot & Abuse Protection → Turnstile).
     const res = await fetch('/api/auth/login', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ email: loginEmail, password: loginPw }),
+      body   : JSON.stringify({ email: loginEmail, password: loginPw, captchaToken: turnstileToken }),
     });
     const data = await res.json();
     setLoading(false);
-    if (!res.ok) { setError(data.error ?? 'Login failed'); return; }
+    if (!res.ok) {
+      setError(data.error ?? 'Login failed');
+      turnstileRef.current?.reset();   // token is spent — mint a fresh one
+      setTurnstileToken('');
+      return;
+    }
     // Check for MFA requirement
     const supabaseClient = createClient();
     const { data: aal } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -116,23 +111,14 @@ export default function RegisterPage() {
       return;
     }
 
-    const verifyRes = await fetch('/api/auth/verify-turnstile', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ token: turnstileToken }),
-    });
-    if (!verifyRes.ok) {
-      setError('Verification failed. Please try again.');
-      turnstileRef.current?.reset();
-      setTurnstileToken('');
-      return;
-    }
-
     setLoading(true);
+    // Pass the single-use Turnstile token straight to Supabase so the CAPTCHA is
+    // enforced server-side (enable under Auth → Bot & Abuse Protection → Turnstile).
     const { data, error: err } = await supabase.auth.signUp({
       email   : form.email,
       password: form.password,
       options : {
+        captchaToken: turnstileToken,
         data: {
           role        : role,
           first_name  : form.firstName,
@@ -144,7 +130,12 @@ export default function RegisterPage() {
       },
     });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) {
+      setError(err.message);
+      turnstileRef.current?.reset();   // token is spent — mint a fresh one
+      setTurnstileToken('');
+      return;
+    }
     // Email confirmation enabled — session is null until the user clicks the link
     if (!data.session) { setConfirmed(true); return; }
     router.push(role === 'brand' ? '/dashboard/brand-store' : '/dashboard');

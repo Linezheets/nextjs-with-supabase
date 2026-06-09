@@ -5,10 +5,14 @@ import { sendEmail, loginNotificationHtml } from '@/lib/email';
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL ?? 'info@mxlla.com';
 
 export async function POST(req: NextRequest) {
-  const { email, password, redirect: redirectTo } = await req.json();
+  const { email, password, redirect: redirectTo, captchaToken } = await req.json();
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 401 });
 
   const ip  = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? undefined;

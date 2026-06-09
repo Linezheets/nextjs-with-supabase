@@ -26,8 +26,8 @@ export async function GET(
     .eq('id', id);
 
   if (sf) {
-    // Brand can see any order for their brand
-    query = query.eq('items->0->>brand_name', sf.brand_name);
+    // Brand can see any order for their brand (authoritative brand_name column)
+    query = query.eq('brand_name', sf.brand_name);
   } else {
     // Buyer can only see their own orders
     query = query.eq('buyer_id', user.id);
@@ -75,7 +75,7 @@ export async function PATCH(
   let query = admin.from('buyer_orders').update(patch).eq('id', id);
 
   if (sf) {
-    query = query.eq('items->0->>brand_name', sf.brand_name);
+    query = query.eq('brand_name', sf.brand_name);
   } else {
     // Buyers can only update notes, not status
     delete patch['status'];

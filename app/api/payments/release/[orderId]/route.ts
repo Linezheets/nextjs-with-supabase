@@ -44,11 +44,12 @@ export async function POST(
     // Verify the order belongs to this brand
     const { data: order } = await admin
       .from('buyer_orders')
-      .select('id, items')
+      .select('id, brand_name, items')
       .eq('id', orderId)
-      .maybeSingle() as { data: { id: string; items: { brand_name?: string | null }[] } | null };
+      .maybeSingle() as { data: { id: string; brand_name: string | null; items: { brand_name?: string | null }[] } | null };
 
-    const orderBrand = Array.isArray(order?.items) ? (order!.items[0]?.brand_name ?? '') : '';
+    const orderBrand = order?.brand_name
+      ?? (Array.isArray(order?.items) ? (order!.items[0]?.brand_name ?? '') : '');
     if (orderBrand !== sf.brand_name) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

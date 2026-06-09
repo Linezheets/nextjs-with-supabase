@@ -124,7 +124,9 @@ function AIMassUploadModal({ onClose, onDone }: { onClose: () => void; onDone: (
     setFile(f); setStep('processing');
     const fd = new FormData(); fd.append('file', f);
     try {
-      const res = await fetch('/api/products/ai-import', { method: 'POST', body: fd });
+      // The working AI parser is the smart-sync endpoint (the old
+      // /api/products/ai-import route never existed).
+      const res = await fetch('/api/upload/smart-sync', { method: 'POST', body: fd });
       const j   = await res.json();
       if (!res.ok) throw new Error(j.error ?? 'AI import failed');
       setPreview(j.products ?? []); setStep('review');
@@ -134,10 +136,15 @@ function AIMassUploadModal({ onClose, onDone }: { onClose: () => void; onDone: (
   async function confirmImport() {
     setSaving(true);
     try {
-      const res = await fetch('/api/products/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: preview }) });
+      // Commit via the real endpoint (the old /api/products/bulk never existed).
+      // It returns { success, saved, errors } — not { products }.
+      const res = await fetch('/api/upload/smart-sync/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: preview }) });
       const j   = await res.json();
-      if (!res.ok) throw new Error(j.error ?? 'Bulk import failed');
-      onDone(j.products ?? []); onClose();
+      if (!res.ok) throw new Error(j.error ?? 'Import failed');
+      if (Array.isArray(j.errors) && j.errors.length) {
+        alert(`Imported ${j.saved ?? 0} of ${preview.length}. Some rows were skipped:\n` + (j.errors as string[]).slice(0, 8).join('\n'));
+      }
+      onDone(preview); onClose();
     } catch (e) { alert((e as Error).message); }
     finally { setSaving(false); }
   }

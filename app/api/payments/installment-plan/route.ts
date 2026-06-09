@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, currency, stripe_customer_id, items, payment_status')
+    .select('id, total_usd, currency, stripe_customer_id, brand_name, items, payment_status')
     .eq('id', order_id)
     .eq('buyer_id', user.id)
     .maybeSingle();
@@ -66,9 +66,21 @@ export async function POST(req: NextRequest) {
   if (!order)                          return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   if (order.payment_status === 'paid') return NextResponse.json({ error: 'Order already paid' }, { status: 400 });
 
+  // Idempotency: don't create a second schedule if one already exists (a
+  // double-submit would otherwise let the cron charge two parallel plans).
+  const { data: existingPlan } = await admin
+    .from('buyer_payments')
+    .select('id')
+    .eq('order_id', order_id)
+    .in('status', ['pending', 'processing', 'succeeded'])
+    .limit(1);
+  if (existingPlan && existingPlan.length > 0) {
+    return NextResponse.json({ error: 'A payment plan already exists for this order' }, { status: 409 });
+  }
+
   const total         = parseFloat(order.total_usd);
   const orderCurrency = (order.currency ?? 'USD') as string;
-  const brandName     = Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null;
+  const brandName     = order.brand_name ?? (Array.isArray(order.items) ? (order.items[0]?.brand_name ?? null) : null);
 
   // Escrow model: no need to look up brand Stripe account at payment time.
   // Funds are held in the platform account; released via /api/payments/release/[orderId] on delivery.
@@ -144,7 +156,7 @@ export async function POST(req: NextRequest) {
         transfer_group: order_id,
         metadata      : { order_id, installment_seq: '1', plan_type, brand_name: brandName ?? '' },
         description   : `${order_id} — Installment 1/${plan.count} (${plan.labels[0]})`,
-      });
+      }, { idempotencyKey: `installment-${(inserted as { id: string }[])[0].id}` });
 
       await admin.from('buyer_payments').update({
         status                  : pi.status === 'succeeded' ? 'succeeded' : 'processing',
