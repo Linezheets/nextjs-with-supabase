@@ -59,6 +59,17 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
     };
   }
 
+  // Never release funds while a dispute is open — funds must stay in escrow so a
+  // refund can be issued from the platform balance rather than clawed back.
+  const { data: openDisputes } = await admin
+    .from('dispute_requests')
+    .select('id')
+    .eq('order_id', orderId)
+    .not('status', 'in', '("resolved_refund","resolved_credit","resolved_no_action","closed")');
+  if (openDisputes && openDisputes.length) {
+    throw new Error(`Cannot release escrow for ${orderId}: an open dispute exists`);
+  }
+
   const orderCurrency = order.currency ?? 'USD';
   // Authoritative single brand for the order (legacy orders fall back to items[0]).
   const brandName     = order.brand_name

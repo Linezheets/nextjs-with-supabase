@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
 import { releaseEscrow } from '@/lib/escrow';
+import stripe from '@/lib/stripe';
 
 const VALID_RESOLUTIONS = [
   'under_review',
@@ -120,11 +121,32 @@ export async function PATCH(
   // (Wholesale refunds are case-by-case — admin handles via Stripe dashboard.)
   let escrowNote = '';
   if (status === 'resolved_refund') {
+    // If escrow already paid the brand, claw it back so the buyer can be refunded
+    // from the platform balance. If still escrowed, funds are already with the platform.
+    const { data: ord } = await admin
+      .from('buyer_orders')
+      .select('escrow_status, stripe_transfer_id')
+      .eq('id', dispute.order_id)
+      .maybeSingle() as { data: { escrow_status: string | null; stripe_transfer_id: string | null } | null };
+
+    if (ord?.escrow_status === 'released' && ord.stripe_transfer_id) {
+      try {
+        await stripe.transfers.createReversal(
+          ord.stripe_transfer_id, {}, { idempotencyKey: `dispute-reversal-${dispute.id}` },
+        );
+        escrowNote = ' Brand payout reversed (clawed back). Issue the buyer refund from the platform balance.';
+      } catch (e) {
+        escrowNote = ` Auto-reversal of brand payout FAILED: ${(e as Error).message}. Resolve the clawback manually before refunding.`;
+        console.error('[dispute] transfer reversal failed', dispute.order_id, e);
+      }
+    } else {
+      escrowNote = ' Funds still in escrow — process the buyer refund from the platform balance.';
+    }
+
     await admin
       .from('buyer_orders')
       .update({ status: 'refund_approved', updated_at: now })
       .eq('id', dispute.order_id);
-    escrowNote = ' Order marked refund_approved. Process Stripe refund manually in dashboard.';
   }
 
   // Notify the user who raised the dispute
