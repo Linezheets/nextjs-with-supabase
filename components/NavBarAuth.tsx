@@ -17,7 +17,7 @@ export function NavBarAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const linkCls = 'text-[8px] uppercase tracking-[0.35em] transition-colors duration-200';
+  const linkCls = 'text-[11px] uppercase tracking-[0.35em] transition-colors duration-200';
   const linkStyle = { color: '#888', fontFamily: 'var(--font-mono), monospace', fontWeight: 600 };
 
   if (loggedIn === null) return null;
@@ -39,7 +39,7 @@ export function NavBarAuth() {
         onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#c9a84c')}
         onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#888')}>Log in</a>
       <a href="/join"
-        className="text-[8px] uppercase tracking-[0.35em] transition-all duration-300 whitespace-nowrap"
+        className="text-[11px] uppercase tracking-[0.35em] transition-all duration-300 whitespace-nowrap"
         style={{
           color: '#000',
           background: 'linear-gradient(135deg,#e8c56b,#c9a84c)',
@@ -67,7 +67,7 @@ function SignOutButton() {
   return (
     <button
       onClick={handleSignOut}
-      className="text-[8px] uppercase tracking-[0.4em] transition-colors duration-200"
+      className="text-[11px] uppercase tracking-[0.4em] transition-colors duration-200"
       style={{ color: '#888', fontFamily: 'var(--font-mono), monospace', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#c9a84c')}
       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#888')}
