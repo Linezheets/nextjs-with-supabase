@@ -72,11 +72,14 @@ export function PageTransition() {
 
   const tryZoomRef = useRef<(() => void) | null>(null);
 
-  // ── Initial page load ───────────────────────────────────────────────────────
+  // ── Initial page load — only on home page ──────────────────────────────────
   useEffect(() => {
     document.getElementById('lz-pre-cover')?.remove();
+    if (pathname !== '/') {
+      setVisible(false);
+      return;
+    }
     tryZoomRef.current = startAnimation() ?? null;
-    // For initial load: nav is already "done"
     navReadyRef.current = true;
     return () => cleanupRef.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,38 +93,7 @@ export function PageTransition() {
     tryZoomRef.current?.();
   }, [pathname]);
 
-  // ── Intercept all internal link clicks ─────────────────────────────────────
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      const anchor = (e.target as Element).closest('a');
-      if (!anchor) return;
-
-      const href = anchor.getAttribute('href');
-      if (!href) return;
-
-      // Skip: external, anchor-only, mailto/tel, new tab
-      if (anchor.target === '_blank') return;
-      if (href.startsWith('#')) return;
-      if (/^(mailto|tel|javascript):/.test(href)) return;
-      if (/^https?:\/\//.test(href) && !href.includes('linezheets.com') && !href.includes('localhost')) return;
-
-      // Skip if already on the same page
-      const target = href.startsWith('http') ? new URL(href).pathname : href.split('?')[0];
-      if (target === pathname) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      pendingNav.current = href;
-      tryZoomRef.current = startAnimation() ?? null;
-
-      // Navigate immediately so page loads in the background during animation
-      router.push(href);
-    };
-
-    document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
-  }, [pathname, router, startAnimation]);
+  // No per-link interception — animation only plays on home page load
 
   if (!visible) return null;
 
