@@ -82,3 +82,34 @@ export function serializeOrder(r: OrderRow) {
     updated_at : r.updated_at,
   };
 }
+
+/**
+ * Map a public product payload (API field names) to inventory columns.
+ * Only keys present in the body are emitted, so it serves both create and
+ * partial update. brand_name/brand_id are set by the route, never the client.
+ */
+export function productInputToColumns(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const str = (v: unknown) => (v == null ? null : String(v));
+  const map: Array<[string, string, (v: unknown) => unknown]> = [
+    ['name',                'title',       v => String(v)],
+    ['sku',                 'sku',         str],
+    ['category',            'category',    v => String(v).toUpperCase()],
+    ['gender',              'gender',      v => String(v).toUpperCase()],
+    ['season',              'season',      str],
+    ['color',               'color',       str],
+    ['material',            'material',    str],
+    ['sizes',               'sizes',       v => (v && typeof v === 'object') ? v : {}],
+    ['images',              'image_urls',  v => Array.isArray(v) ? v : []],
+    ['wholesale_price_usd', 'wsp_usd',     v => Number(v)],
+    ['retail_price_usd',    'srp',         v => Number(v)],
+    ['min_order_qty',       'moq',         v => Number(v)],
+    ['stock',               'stock_total', v => Number(v)],
+    ['description',         'description', str],
+    ['status',              'status',      v => String(v)],
+  ];
+  for (const [apiKey, col, conv] of map) {
+    if (body[apiKey] !== undefined) out[col] = conv(body[apiKey]);
+  }
+  return out;
+}

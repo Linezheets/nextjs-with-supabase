@@ -30,8 +30,12 @@ export function newRequestId(): string {
   return `req_${randomUUID().replace(/-/g, '')}`;
 }
 
-export function apiOk(data: unknown, requestId: string, headers?: HeadersInit): NextResponse {
-  return NextResponse.json({ data, request_id: requestId }, { headers });
+export function apiOk(
+  data: unknown,
+  requestId: string,
+  init?: { status?: number; headers?: HeadersInit },
+): NextResponse {
+  return NextResponse.json({ data, request_id: requestId }, { status: init?.status, headers: init?.headers });
 }
 
 export function apiList(

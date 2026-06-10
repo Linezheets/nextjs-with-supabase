@@ -1,8 +1,9 @@
 import { type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authenticateApiKey, requireScope } from '@/lib/api/auth';
-import { apiList, apiError, newRequestId, encodeCursor, decodeCursor } from '@/lib/api/respond';
-import { PRODUCT_COLUMNS, serializeProduct, type ProductRow } from '@/lib/api/serializers';
+import { apiOk, apiList, apiError, newRequestId, encodeCursor, decodeCursor } from '@/lib/api/respond';
+import { PRODUCT_COLUMNS, serializeProduct, productInputToColumns, type ProductRow } from '@/lib/api/serializers';
+import type { Database } from '@/lib/supabase/database.types';
 
 /**
  * GET /v1/products — list the authenticated brand's catalog.
@@ -62,4 +63,45 @@ export async function GET(req: NextRequest) {
   const nextCursor = hasMore && last ? encodeCursor(last.created_at, last.id) : null;
 
   return apiList(page.map(serializeProduct), { hasMore, nextCursor, requestId });
+}
+
+/**
+ * POST /v1/products — create a product in the authenticated brand's catalog.
+ * Auth: brand API key with scope `products:write`. brand_name is taken from the
+ * key, never the client. (Not yet idempotent — see V1-API-PLAN.md §6.)
+ */
+export async function POST(req: NextRequest) {
+  const requestId = newRequestId();
+
+  const auth = await authenticateApiKey(req, requestId);
+  if ('error' in auth) return auth.error;
+  const { ctx } = auth;
+
+  const scopeErr = requireScope(ctx, 'products:write', requestId);
+  if (scopeErr) return scopeErr;
+
+  if (ctx.accountType !== 'brand' || !ctx.brandName) {
+    return apiError('forbidden', 'The products endpoint requires a brand API key', requestId);
+  }
+
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return apiError('invalid_request', 'Body must be valid JSON', requestId); }
+  if (!body?.name) return apiError('invalid_request', 'name is required', requestId);
+
+  const cols = productInputToColumns(body);
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('inventory')
+    .insert({
+      ...cols,
+      brand_name: ctx.brandName, // from the key, not the client
+      brand_id  : 1,             // legacy column; brand_name is the real scope
+      status    : (typeof cols.status === 'string' ? cols.status : 'active'),
+    } as unknown as Database['public']['Tables']['inventory']['Insert'])
+    .select(PRODUCT_COLUMNS)
+    .single();
+
+  if (error || !data) return apiError('server', 'Could not create product', requestId);
+
+  return apiOk(serializeProduct(data as ProductRow), requestId, { status: 201 });
 }
