@@ -315,6 +315,68 @@ export async function GET(
 
   y += 34;
 
+  // ── Customs Declaration ────────────────────────────────────────────────────
+  // Customs fields live on inventory (not the order snapshot) — look them up by SKU.
+  const customsSkus = [...new Set(items.map((it: { style_number?: string; sku?: string }) => it.style_number ?? it.sku).filter(Boolean))] as string[];
+  if (customsSkus.length) {
+    const { data: customsRows } = await sb
+      .from('inventory')
+      .select('sku, hs_code, country_of_origin, net_weight_kg, gross_weight_kg')
+      .in('sku', customsSkus);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmap = new Map((customsRows ?? []).map((r: any) => [r.sku, r]));
+
+    if (y > SAFE_BOTTOM - 90) { doc.addPage(); y = M; }
+    doc.fontSize(7).fillColor(GRAY).font('Helvetica').text('CUSTOMS DECLARATION', M, y, { characterSpacing: 1 });
+    y += 14;
+    doc.rect(M, y, W, 16).fill('#f5f5f5');
+    doc.fontSize(6).fillColor(GRAY);
+    const ch = y + 5;
+    doc.text('SKU',        M + 4,   ch, { width: 92 });
+    doc.text('HS CODE',    M + 100, ch, { width: 80 });
+    doc.text('ORIGIN',     M + 185, ch, { width: 90 });
+    doc.text('NET KG',     M + 280, ch, { width: 60 });
+    doc.text('GROSS KG',   M + 345, ch, { width: 70 });
+    doc.text('VALUE',      RIGHT - 70, ch, { width: 70, align: 'right' });
+    y += 16;
+
+    let totalGross = 0;
+    for (const it of items) {
+      if (y > SAFE_BOTTOM) { doc.addPage(); y = M; }
+      const sku = it.style_number ?? it.sku;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c: any = cmap.get(sku) ?? {};
+      const qty = it.qty ?? 0;
+      totalGross += (Number(c.gross_weight_kg) || 0) * qty;
+      doc.fontSize(7).fillColor(BLACK).font('Helvetica');
+      doc.text(sku ?? '—',                                        M + 4,   y, { width: 92, ellipsis: true });
+      doc.text(c.hs_code ?? '—',                                  M + 100, y, { width: 80 });
+      doc.text(c.country_of_origin ?? '—',                        M + 185, y, { width: 90, ellipsis: true });
+      doc.text(c.net_weight_kg != null ? String(c.net_weight_kg) : '—',     M + 280, y, { width: 60 });
+      doc.text(c.gross_weight_kg != null ? String(c.gross_weight_kg) : '—', M + 345, y, { width: 70 });
+      doc.text(fmtUSD((it.wholesale_price ?? 0) * qty),           RIGHT - 70, y, { width: 70, align: 'right' });
+      y += 13;
+    }
+
+    y += 4;
+    doc.fontSize(7).fillColor(GRAY).font('Helvetica').text(
+      `Incoterms: DDP   ·   Total declared value: ${fmtUSD(Number(order.total_usd))} USD   ·   Total gross weight: ${totalGross.toFixed(3)} kg`,
+      M, y, { width: W },
+    );
+    y += 16;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const missing = customsSkus.filter(s => { const c: any = cmap.get(s); return !c || !c.hs_code || !c.country_of_origin; });
+    if (missing.length) {
+      doc.fontSize(6).fillColor('#c0392b').text(
+        `Note: HS code / country of origin missing for ${missing.length} item(s) — required for customs clearance. Add them in product details before shipping internationally.`,
+        M, y, { width: W },
+      );
+      y += 14;
+    }
+    doc.fillColor(BLACK).font('Helvetica');
+  }
+
   // ── Installment Schedule ──────────────────────────────────────────────────
   if (installments.length >= 2) {
     if (y > SAFE_BOTTOM - 60) { doc.addPage(); y = M; }

@@ -20,6 +20,7 @@ const DB_COLUMNS = new Set([
   'sku','description','color','gender','season','brand_name','category','material',
   'delivery_window','product_notes','wsp_usd','srp','cost','moq','stock_total',
   'sizes','tier_pricing','image_urls','tags','margin','status',
+  'hs_code','country_of_origin','net_weight_kg','gross_weight_kg',
 ]);
 
 function sanitise(row: Record<string, unknown>): Record<string, unknown> {

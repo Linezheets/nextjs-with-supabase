@@ -213,6 +213,10 @@ export const COLUMN_MAPS: Record<string, string[]> = {
     'weight','wt','gross weight','net weight','kg','weight (kg)','carton weight',
     'gw','nw','g.w.','n.w.','gross wt','net wt','unit weight','item weight',
   ],
+  hs_code: [
+    'hs code','hs','hs_code','hts','hts code','tariff','tariff code','tariff no',
+    'customs code','commodity code','hsn','hs tariff','harmonized code','harmonised code',
+  ],
   location: [
     'location','warehouse','origin','ship from','origin country','warehouse location',
     'country of origin','coo','made in','manufactured in','production country','source',
