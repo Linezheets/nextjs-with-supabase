@@ -19,6 +19,7 @@ const LINKS = [
   { href: '/dashboard/brand-store/ai-tools',        label: 'AI Studio'    },
   { href: '/dashboard/brand-store/editor',          label: 'Store Editor' },
   { href: '/dashboard/brand-store/subscriptions',   label: 'Subscription' },
+  { href: '/dashboard/brand-store/api-keys',        label: 'API Keys'     },
 ];
 
 const GOLD = '#c9a84c';
