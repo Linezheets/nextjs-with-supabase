@@ -12,12 +12,13 @@ type Settings = {
   target_markup?       : number;
   currency?            : string;
   payment_terms_days?  : number;
+  incoterms?           : string;
   discount_tiers?      : { min_order: number; discount_pct: number }[];
   [key: string]: unknown;
 };
 
 export default function MarginSettingsClient({ initial }: { initial?: Settings | null }) {
-  const [form, setForm]   = useState<Settings>({ default_margin_pct: 50, min_margin_pct: 30, target_markup: 2.5, currency: 'USD', payment_terms_days: 30, discount_tiers: [], ...(initial ?? {}) });
+  const [form, setForm]   = useState<Settings>({ default_margin_pct: 50, min_margin_pct: 30, target_markup: 2.5, currency: 'USD', payment_terms_days: 30, incoterms: 'DDP', discount_tiers: [], ...(initial ?? {}) });
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 
@@ -77,8 +78,9 @@ export default function MarginSettingsClient({ initial }: { initial?: Settings |
         <div style={{ background: '#fff', border: '1px solid #f0f0f0', padding: '32px', marginBottom: 24 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 400, color: '#111', marginBottom: 8 }}>Payment Terms</h2>
           <p style={{ fontFamily: SANS, fontSize: 12, color: '#888', marginBottom: 24 }}>Default NET payment window for wholesale invoices.</p>
-          <div style={{ maxWidth: 280 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxWidth: 580 }}>
             {field('Payment Terms (days NET)', 'payment_terms_days', 'number')}
+            {field('Default Incoterms', 'incoterms', 'select', ['DDP','EXW','FCA','FOB','CIF','DAP','DPU','CPT','CIP','CFR','FAS'])}
           </div>
         </div>
 
