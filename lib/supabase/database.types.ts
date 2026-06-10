@@ -1,6 +1,51 @@
 export type Database = {
   public: {
     Tables: {
+      linesheet_imports: {
+        Row: {
+          id           : string;
+          brand_user_id: string;
+          filename     : string | null;
+          status       : string;
+          rows_parsed  : number | null;
+          rows_created : number | null;
+          rows_skipped : number | null;
+          errors       : unknown;
+          created_at   : string;
+          completed_at : string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['linesheet_imports']['Row']>;
+        Update: Partial<Database['public']['Tables']['linesheet_imports']['Row']>;
+        Relationships: [];
+      };
+      api_keys: {
+        Row: {
+          id           : string;
+          key_prefix   : string;
+          key_hash     : string;
+          name         : string | null;
+          account_type : 'brand' | 'buyer';
+          account_id   : string;
+          scopes       : string[];
+          environment  : 'live' | 'test';
+          last_used_at : string | null;
+          created_at   : string;
+          revoked_at   : string | null;
+        };
+        Insert: {
+          key_prefix    : string;
+          key_hash      : string;
+          name?         : string | null;
+          account_type  : 'brand' | 'buyer';
+          account_id    : string;
+          scopes?       : string[];
+          environment?  : 'live' | 'test';
+          last_used_at? : string | null;
+          revoked_at?   : string | null;
+        };
+        Update: Partial<Database['public']['Tables']['api_keys']['Row']>;
+        Relationships: [];
+      };
       inventory: {
         Row: {
           id              : number;
