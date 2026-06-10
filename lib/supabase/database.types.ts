@@ -30,6 +30,10 @@ export type Database = {
           tags            : string[];
           tier_pricing    : Record<string, unknown>[];
           status          : string;
+          hs_code           : string | null;
+          country_of_origin : string | null;
+          net_weight_kg     : number | null;
+          gross_weight_kg   : number | null;
         };
         Insert: Partial<Database['public']['Tables']['inventory']['Row']>;
         Update: Partial<Database['public']['Tables']['inventory']['Row']>;

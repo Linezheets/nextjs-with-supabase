@@ -21,6 +21,9 @@ const ALIASES: Record<string, string[]> = {
   description     : ['details', 'product details', 'fabric', 'material', 'composition', 'notes', 'product notes'],
   delivery_window : ['delivery', 'delivery window', 'delivery date', 'ship date', 'available', 'in store'],
   tags            : ['tags', 'keywords', 'labels'],
+  hs_code           : ['hs code', 'hs', 'hts', 'hts code', 'tariff', 'tariff code', 'commodity code', 'customs code', 'hsn', 'harmonized code'],
+  country_of_origin : ['country of origin', 'origin', 'coo', 'made in', 'manufactured in', 'production country'],
+  gross_weight_kg   : ['weight', 'gross weight', 'net weight', 'kg', 'weight (kg)', 'wt', 'unit weight'],
 };
 
 function normalizeHeader(h: unknown): string {
@@ -99,6 +102,9 @@ function parseRow(row: unknown[], colMap: Record<string, number>, brandName: str
     description: get('description'),
     delivery_window: get('delivery_window'),
     tags       : get('tags') ? get('tags')!.split(/[,|]+/).map(t => t.trim()).filter(Boolean) : [],
+    hs_code           : get('hs_code'),
+    country_of_origin : get('country_of_origin'),
+    gross_weight_kg   : num('gross_weight_kg'),
     status     : 'active',
   };
 }
