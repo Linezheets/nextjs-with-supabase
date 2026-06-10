@@ -1,6 +1,23 @@
 export type Database = {
   public: {
     Tables: {
+      linesheet_imports: {
+        Row: {
+          id           : string;
+          brand_user_id: string;
+          filename     : string | null;
+          status       : string;
+          rows_parsed  : number | null;
+          rows_created : number | null;
+          rows_skipped : number | null;
+          errors       : unknown;
+          created_at   : string;
+          completed_at : string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['linesheet_imports']['Row']>;
+        Update: Partial<Database['public']['Tables']['linesheet_imports']['Row']>;
+        Relationships: [];
+      };
       api_keys: {
         Row: {
           id           : string;

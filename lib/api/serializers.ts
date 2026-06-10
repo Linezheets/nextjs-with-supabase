@@ -113,3 +113,68 @@ export function productInputToColumns(body: Record<string, unknown>): Record<str
   }
   return out;
 }
+
+// ── Buyers (privacy-safe: identity + segment, no email/phone in v1) ────────────
+
+export const BUYER_COLUMNS =
+  'id, auth_user_id, store_name, first_name, last_name, city, country, market_segment, categories_sold, status, created_at';
+
+export interface BuyerRow {
+  id             : string;
+  auth_user_id   : string | null;
+  store_name     : string;
+  first_name     : string | null;
+  last_name      : string | null;
+  city           : string | null;
+  country        : string;
+  market_segment : string | null;
+  categories_sold: string[];
+  status         : string;
+  created_at     : string;
+}
+
+export function serializeBuyer(r: BuyerRow) {
+  return {
+    id             : r.id,
+    store_name     : r.store_name,
+    first_name     : r.first_name,
+    last_name      : r.last_name,
+    city           : r.city,
+    country        : r.country,
+    market_segment : r.market_segment,
+    categories_sold: r.categories_sold ?? [],
+    status         : r.status,
+    created_at     : r.created_at,
+  };
+}
+
+// ── Linesheet imports (the brand's import jobs) ────────────────────────────────
+
+export const LINESHEET_COLUMNS =
+  'id, filename, status, rows_parsed, rows_created, rows_skipped, errors, created_at, completed_at';
+
+export interface LinesheetRow {
+  id           : string;
+  filename     : string | null;
+  status       : string;
+  rows_parsed  : number | null;
+  rows_created : number | null;
+  rows_skipped : number | null;
+  errors       : unknown;
+  created_at   : string;
+  completed_at : string | null;
+}
+
+export function serializeLinesheet(r: LinesheetRow) {
+  return {
+    id          : r.id,
+    filename    : r.filename,
+    status      : r.status,
+    rows_parsed : r.rows_parsed,
+    rows_created: r.rows_created,
+    rows_skipped: r.rows_skipped,
+    errors      : r.errors ?? null,
+    created_at  : r.created_at,
+    completed_at: r.completed_at,
+  };
+}

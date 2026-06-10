@@ -15,7 +15,8 @@ export interface ApiKeyContext {
   accountId  : string;
   scopes     : string[];
   environment: ApiEnvironment;
-  brandName? : string; // resolved for brand keys — used to scope catalog queries
+  brandName?  : string; // resolved for brand keys — used to scope catalog queries
+  brandUserId?: string; // brand_storefronts.user_id — for owner-scoped tables (linesheets)
 }
 
 const RATE_LIMIT_PER_MIN = 1000;
@@ -62,10 +63,11 @@ export async function authenticateApiKey(
   if (ctx.accountType === 'brand') {
     const { data: sf } = await admin
       .from('brand_storefronts')
-      .select('brand_name')
+      .select('brand_name, user_id')
       .eq('id', ctx.accountId)
       .maybeSingle();
-    ctx.brandName = sf?.brand_name ?? undefined;
+    ctx.brandName   = sf?.brand_name ?? undefined;
+    ctx.brandUserId = sf?.user_id ?? undefined;
   }
 
   // Record usage without blocking the response (API host is a persistent server).
