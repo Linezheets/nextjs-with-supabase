@@ -6,6 +6,8 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 //  nothing was ever saved.)
 
 const ALLOWED_CURRENCIES = ['USD', 'EUR', 'GBP', 'HKD', 'JPY', 'CNY'];
+// Standard Incoterms 2020 — used as the default on customs invoices.
+const ALLOWED_INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
 type Settings = {
   default_margin_pct?: number;
@@ -13,6 +15,7 @@ type Settings = {
   target_markup?     : number;
   currency?          : string;
   payment_terms_days?: number;
+  incoterms?         : string;
   discount_tiers?    : { min_order: number; discount_pct: number }[];
 };
 
@@ -25,6 +28,7 @@ function sanitise(input: Record<string, unknown>): Settings {
   if (input.target_markup      !== undefined) out.target_markup      = Math.max(0, Number(input.target_markup) || 0);
   if (input.payment_terms_days !== undefined) out.payment_terms_days = Math.max(0, Math.floor(Number(input.payment_terms_days) || 0));
   if (typeof input.currency === 'string' && ALLOWED_CURRENCIES.includes(input.currency)) out.currency = input.currency;
+  if (typeof input.incoterms === 'string' && ALLOWED_INCOTERMS.includes(input.incoterms.toUpperCase())) out.incoterms = input.incoterms.toUpperCase();
   if (Array.isArray(input.discount_tiers)) {
     out.discount_tiers = (input.discount_tiers as Record<string, unknown>[])
       .map(t => ({ min_order: Math.max(0, Number(t.min_order) || 0), discount_pct: clampPct(t.discount_pct) }))

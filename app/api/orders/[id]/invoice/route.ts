@@ -319,6 +319,14 @@ export async function GET(
   // Customs fields live on inventory (not the order snapshot) — look them up by SKU.
   const customsSkus = [...new Set(items.map((it: { style_number?: string; sku?: string }) => it.style_number ?? it.sku).filter(Boolean))] as string[];
   if (customsSkus.length) {
+    // Incoterms come from the brand's settings (defaults to DDP).
+    let incoterms = 'DDP';
+    try {
+      const { data: bsf } = await sb.from('brand_storefronts').select('pricing_settings').eq('brand_name', order.brand_name).maybeSingle();
+      const ps = bsf?.pricing_settings;
+      if (ps && typeof ps.incoterms === 'string' && ps.incoterms.trim()) incoterms = ps.incoterms.trim();
+    } catch { /* default stands */ }
+
     const { data: customsRows } = await sb
       .from('inventory')
       .select('sku, hs_code, country_of_origin, net_weight_kg, gross_weight_kg')
@@ -360,7 +368,7 @@ export async function GET(
 
     y += 4;
     doc.fontSize(7).fillColor(GRAY).font('Helvetica').text(
-      `Incoterms: DDP   ·   Total declared value: ${fmtUSD(Number(order.total_usd))} USD   ·   Total gross weight: ${totalGross.toFixed(3)} kg`,
+      `Incoterms: ${incoterms}   ·   Total declared value: ${fmtUSD(Number(order.total_usd))} USD   ·   Total gross weight: ${totalGross.toFixed(3)} kg`,
       M, y, { width: W },
     );
     y += 16;
