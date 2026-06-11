@@ -2,14 +2,10 @@
   "name": "linezheets-platform",
   "version": "1.0.0",
   "description": "Linezheets — AI-Powered Luxury Wholesale Fashion Platform",
-  "main": "backend/server.js",
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start --port 3001",
-    "backend": "nodemon backend/server.js",
-    "db:migrate": "node backend/database/migrate.js",
-    "db:seed": "node backend/database/seed.js"
+    "start": "next start --port 3001"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
