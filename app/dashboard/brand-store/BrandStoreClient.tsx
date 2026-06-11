@@ -89,17 +89,31 @@ function SetupForm({ initial, onSave }: { initial: Partial<BrandStorefront> | nu
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true); setError('');
-    const res = await fetch('/api/brand-store', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify(form),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) { setError(data.error ?? 'Save failed'); return; }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    onSave(data.storefront);
+    try {
+      const res  = await fetch('/api/brand-store', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(form),
+      });
+      // Never assume the body is JSON — a 500/redirect returns HTML and would
+      // otherwise throw here and leave the button stuck on "Saving…".
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? `Save failed (${res.status}). Please try again.`);
+        return;
+      }
+      if (!data.storefront) {
+        setError('Save failed — unexpected response from the server.');
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      onSave(data.storefront);
+    } catch (err) {
+      setError(err instanceof Error ? `Save failed — ${err.message}` : 'Save failed — network error.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
