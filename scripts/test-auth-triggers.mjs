@@ -9,8 +9,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL        = 'https://xvoemjakdsihgzfddtjx.supabase.co';
-const SERVICE_ROLE_KEY    = '***SUPABASE_SERVICE_ROLE_KEY_REMOVED***';
+const SUPABASE_URL        = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SERVICE_ROLE_KEY    = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+  console.error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the environment before running this script.');
+  process.exit(1);
+}
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
