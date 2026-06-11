@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavBarAuth } from '@/components/NavBarAuth';
 import { LogoMark } from '@/components/LogoMark';
@@ -114,6 +115,7 @@ function NavDropdown({ label, items, navLinkStyle }: {
 // ── Main navbar ────────────────────────────────────────────────────────────────
 
 export function SiteNavbar() {
+  const pathname = usePathname();
   const [scrolled,      setScrolled]      = useState(false);
   const [solutionsOpen, setSolutionsOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,6 +125,12 @@ export function SiteNavbar() {
     window.addEventListener('scroll', h, { passive: true });
     return () => window.removeEventListener('scroll', h);
   }, []);
+
+  // The marketing nav must NOT render on app routes — those pages (dashboard,
+  // brand studio, MFA, onboarding) ship their own navigation. Mounted globally in
+  // the root layout at zIndex 1000, this bar otherwise covers them (BrandStoreNav
+  // is zIndex 40, DashboardNav z-50), which made the real dashboard look missing.
+  if (/^\/(dashboard|mfa|onboard)(\/|$)/.test(pathname ?? '')) return null;
 
   const openSolutions  = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setSolutionsOpen(true); };
   const closeSolutions = () => { closeTimer.current = setTimeout(() => setSolutionsOpen(false), 120); };
