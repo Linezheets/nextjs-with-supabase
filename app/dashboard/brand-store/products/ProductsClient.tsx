@@ -18,6 +18,7 @@ type Product = {
   description  : string | null;
   delivery_window: string | null;
   tags         : string[];
+  sizes        : Record<string, number>;
   [key: string]: unknown;
 };
 
@@ -44,8 +45,10 @@ const CATEGORIES = ['TOPS','BOTTOMS','DRESSES','OUTERWEAR','KNITWEAR','ACCESSORI
 const EMPTY: Product = {
   id: 0, title: '', sku: '', category: 'GENERAL', season: '', color: '',
   wsp_usd: 0, srp: 0, stock_total: 0, moq: 1, status: 'active',
-  image_urls: [], description: '', delivery_window: '', tags: [],
+  image_urls: [], description: '', delivery_window: '', tags: [], sizes: {},
 };
+
+const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'OS'];
 
 // ─── Image Upload ─────────────────────────────────────────────────────────────
 
@@ -106,6 +109,99 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
         }
         <input ref={fileInput} type="file" multiple accept="image/*" style={{ display: 'none' }}
           onChange={e => e.target.files && uploadFiles(e.target.files)} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Sizes & Stock grid ───────────────────────────────────────────────────────
+// Edits the `sizes` JSONB ({ "S": 12, "M": 8 }) that the order/stock engine
+// (allocate_order_stock_v2) decrements per size. stock_total is derived from the sum.
+
+function sizeTotal(sizes: Record<string, number>): number {
+  return Object.values(sizes || {}).reduce((sum, q) => sum + (Number(q) || 0), 0);
+}
+
+function SizeStockEditor({ sizes, onChange }: { sizes: Record<string, number>; onChange: (s: Record<string, number>) => void }) {
+  const [custom, setCustom] = useState('');
+  const entries = Object.entries(sizes || {});
+
+  const setQty = (size: string, qty: number) => onChange({ ...sizes, [size]: Math.max(0, Math.floor(qty || 0)) });
+  const addSize = (raw: string) => {
+    const s = raw.trim().toUpperCase();
+    if (!s || (sizes && sizes[s] !== undefined)) return;
+    onChange({ ...(sizes || {}), [s]: 0 });
+    setCustom('');
+  };
+  const removeSize = (size: string) => {
+    const next = { ...(sizes || {}) };
+    delete next[size];
+    onChange(next);
+  };
+
+  const inputStyle: React.CSSProperties = { padding: '7px 10px', border: '1px solid #e5e5e5', fontSize: 13, fontFamily: SANS, outline: 'none' };
+
+  return (
+    <div style={{ gridColumn: '1 / -1' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>
+          Sizes & Stock
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: '#888' }}>
+          {entries.length} {entries.length === 1 ? 'size' : 'sizes'} · {sizeTotal(sizes)} total units
+        </span>
+      </div>
+
+      {/* Quick-add common sizes */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: entries.length ? 14 : 10 }}>
+        {COMMON_SIZES.map(s => {
+          const active = sizes && sizes[s] !== undefined;
+          return (
+            <button key={s} type="button" onClick={() => (active ? removeSize(s) : addSize(s))}
+              style={{
+                fontFamily: SANS, fontSize: 10, letterSpacing: '0.15em', padding: '5px 11px', cursor: 'pointer',
+                border: `1px solid ${active ? GOLD : '#e5e5e5'}`,
+                background: active ? 'rgba(201,168,76,0.08)' : '#fff',
+                color: active ? '#111' : '#888',
+              }}>
+              {s}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Per-size quantity rows */}
+      {entries.length > 0 && (
+        <div style={{ border: '1px solid #f0f0f0', marginBottom: 12 }}>
+          {entries.map(([size, qty], i) => (
+            <div key={size} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 32px', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: i ? '1px solid #f5f5f5' : 'none' }}>
+              <span style={{ fontFamily: MONO, fontSize: 12, color: '#111', letterSpacing: '0.05em' }}>{size}</span>
+              <input
+                type="number" min={0} value={qty}
+                onChange={e => setQty(size, Number(e.target.value))}
+                style={{ ...inputStyle, fontFamily: MONO, textAlign: 'right', padding: '5px 8px' }}
+                placeholder="0"
+              />
+              <button type="button" onClick={() => removeSize(size)}
+                style={{ width: 24, height: 24, border: '1px solid #f0e0e0', background: '#fff', color: '#df1b41', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Custom size add */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={custom}
+          onChange={e => setCustom(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSize(custom); } }}
+          placeholder="Custom size (e.g. 38, ONE SIZE)…"
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button type="button" onClick={() => addSize(custom)}
+          style={{ background: '#fff', border: `1px solid ${GOLD}`, color: GOLD, padding: '0 18px', fontFamily: SANS, fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', cursor: 'pointer' }}>
+          Add Size
+        </button>
       </div>
     </div>
   );
@@ -327,7 +423,11 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
   }
 
   function openEdit(p: Product) {
-    setForm({ ...p });
+    // `sizes` comes back from the DB as JSONB; guarantee it's a plain object for the grid
+    const sizes = (p.sizes && typeof p.sizes === 'object' && !Array.isArray(p.sizes))
+      ? p.sizes as Record<string, number>
+      : {};
+    setForm({ ...p, sizes });
     setErr('');
     setModal('edit');
   }
@@ -343,7 +443,12 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
       const res  = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ ...form, tags: typeof form.tags === 'string' ? (form.tags as string).split(',').map(t => t.trim()).filter(Boolean) : form.tags }),
+        body   : JSON.stringify({
+          ...form,
+          tags: typeof form.tags === 'string' ? (form.tags as string).split(',').map(t => t.trim()).filter(Boolean) : form.tags,
+          // stock_total is derived from the per-size grid so it always matches the sizes map
+          stock_total: sizeTotal(form.sizes || {}),
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Save failed');
@@ -516,7 +621,6 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
                 ['SKU', 'sku', 'text', false],
                 ['Wholesale Price (WSP)', 'wsp_usd', 'number', false],
                 ['Retail Price (SRP)', 'srp', 'number', false],
-                ['Stock Total', 'stock_total', 'number', false],
                 ['MOQ', 'moq', 'number', false],
                 ['Color', 'color', 'text', false],
                 ['Season', 'season', 'text', false],
@@ -548,6 +652,8 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
                   {['active','draft','archived'].map(s => <option key={s}>{s}</option>)}
                 </select>
               </label>
+
+              <SizeStockEditor sizes={form.sizes} onChange={sizes => setForm(f => ({ ...f, sizes }))} />
             </div>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
