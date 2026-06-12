@@ -153,7 +153,7 @@ function newSection(type: Section['type']): Section {
   const id = `${type}-${Date.now()}`;
   switch (type) {
     case 'announcement':      return { id, type, enabled: true, text: 'Free shipping on orders over $500', bg_color: '#111', text_color: '#fff' };
-    case 'hero':              return { id, type, enabled: true, headline: 'New Collection', subheadline: 'Discover curated pieces from the finest houses.', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#0a0a0a', text_color: '#ffffff' };
+    case 'hero':              return { id, type, enabled: true, headline: 'New Collection', subheadline: 'Discover curated pieces from the finest houses.', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#ffffff', text_color: '#111111' };
     case 'featured_products': return { id, type, enabled: true, title: 'Featured', count: 8, layout: 'grid' };
     case 'about':             return { id, type, enabled: true, heading: 'Our Story', body: 'Tell your customers who you are.' };
     case 'brands_bar':        return { id, type, enabled: true };

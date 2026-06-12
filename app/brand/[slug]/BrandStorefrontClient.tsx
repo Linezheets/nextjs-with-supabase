@@ -356,7 +356,7 @@ export default function BrandStorefrontClient({
     ...DEFAULT_THEME,
     color_accent: '#111111',
     sections: [
-      { id: 'hero',     type: 'hero',             enabled: true,  headline: storefront.display_name, subheadline: storefront.tagline ?? 'Explore our latest collection.', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#0a0a0a', text_color: '#ffffff' },
+      { id: 'hero',     type: 'hero',             enabled: true,  headline: storefront.display_name, subheadline: storefront.tagline ?? 'Explore our latest collection.', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#ffffff', text_color: '#111111' },
       { id: 'featured', type: 'featured_products', enabled: true,  title: 'Collection', count: 12, layout: 'grid' },
       { id: 'contact',  type: 'contact',           enabled: true,  heading: 'Get in Touch' },
     ],

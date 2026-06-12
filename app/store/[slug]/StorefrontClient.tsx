@@ -406,7 +406,7 @@ export default function StorefrontClient({ storefront, items }: {
     ...DEFAULT_THEME,
     color_accent: storefront.accent_color || '#c9a84c',
     sections: [
-      { id: 'hero',     type: 'hero',              enabled: true, headline: storefront.name, subheadline: storefront.tagline ?? '', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#0a0a0a', text_color: '#ffffff' },
+      { id: 'hero',     type: 'hero',              enabled: true, headline: storefront.name, subheadline: storefront.tagline ?? '', cta_label: 'Shop Now', cta_link: '#collection', bg_color: '#ffffff', text_color: '#111111' },
       { id: 'featured', type: 'featured_products',  enabled: true, title: 'Collection', count: 24, layout: 'grid' },
       { id: 'contact',  type: 'contact',            enabled: true, heading: 'Get in Touch' },
     ],
