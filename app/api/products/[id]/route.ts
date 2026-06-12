@@ -13,7 +13,7 @@ export async function GET(
   const { data, error } = await admin
     .from('inventory')
     .select('*')
-    .eq('id', parseInt(id))
+    .eq('id', id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -61,7 +61,7 @@ export async function PATCH(
   const { data, error } = await admin
     .from('inventory')
     .update(patch)
-    .eq('id', parseInt(id))
+    .eq('id', id)
     .eq('brand_name', sf.brand_name)
     .select()
     .maybeSingle();
@@ -96,7 +96,7 @@ export async function DELETE(
   const { error } = await admin
     .from('inventory')
     .update({ status: 'archived', updated_at: new Date().toISOString() })
-    .eq('id', parseInt(id))
+    .eq('id', id)
     .eq('brand_name', sf.brand_name);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

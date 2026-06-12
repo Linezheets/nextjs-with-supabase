@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 type Product = {
-  id           : number;
+  id           : string;   // inventory.id is a UUID
   title        : string;
   sku          : string | null;
   category     : string;
@@ -43,7 +43,7 @@ const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
 const CATEGORIES = ['TOPS','BOTTOMS','DRESSES','OUTERWEAR','KNITWEAR','ACCESSORIES','BAGS','SHOES','GENERAL'];
 
 const EMPTY: Product = {
-  id: 0, title: '', sku: '', category: 'GENERAL', season: '', color: '',
+  id: '', title: '', sku: '', category: 'GENERAL', season: '', color: '',
   wsp_usd: 0, srp: 0, stock_total: 0, moq: 1, status: 'active',
   image_urls: [], description: '', delivery_window: '', tags: [], sizes: {},
 };
@@ -466,7 +466,7 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     }
   }
 
-  async function handleArchive(id: number) {
+  async function handleArchive(id: string) {
     if (!confirm('Archive this product?')) return;
     const res  = await fetch(`/api/products/${id}`, { method: 'DELETE' });
     const json = await res.json();
@@ -474,7 +474,7 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     setProducts(ps => ps.filter(p => p.id !== id));
   }
 
-  async function quickAdjust(id: number, delta: number) {
+  async function quickAdjust(id: string, delta: number) {
     const res  = await fetch('/api/inventory/adjust', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
