@@ -145,18 +145,18 @@ export default function RegisterPage() {
   const gold = '#c9a84c';
 
   if (confirmed) return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center px-4"
+    <div className="min-h-screen bg-white text-black flex items-center justify-center px-4"
          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="text-center max-w-sm">
         <p className="text-[9px] uppercase tracking-[0.6em] mb-6" style={{ color: gold }}>Check your inbox</p>
-        <p className="text-[13px] leading-relaxed" style={{ color: '#888' }}>
-          We sent a confirmation link to <span style={{ color: '#fff' }}>{form.email}</span>.
+        <p className="text-[13px] leading-relaxed" style={{ color: '#555' }}>
+          We sent a confirmation link to <span style={{ color: '#111' }}>{form.email}</span>.
           Click it to activate your account and sign in.
         </p>
         <button
           onClick={() => setConfirmed(false)}
           className="mt-8 text-[8px] uppercase tracking-[0.4em] hover:opacity-60 transition-opacity"
-          style={{ color: '#555' }}
+          style={{ color: '#888' }}
         >
           ← Back
         </button>
@@ -165,17 +165,17 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col"
+    <div className="min-h-screen bg-white text-black flex flex-col"
          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* Nav */}
-      <header className="border-b border-white/10">
+      <header className="border-b border-zinc-200">
         <div className="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-[56px]">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', color: '#fff', fontWeight: 400 }}>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '15px', letterSpacing: '0.5em', color: '#111', fontWeight: 400 }}>
             LINEZHEETS
           </Link>
-          <p className="text-[7.5px] uppercase tracking-[0.5em]" style={{ color: '#555' }}>Wholesale Platform</p>
-          <Link href="/login" className="text-[7.5px] uppercase tracking-[0.4em] hover:opacity-60 transition-opacity" style={{ color: '#888' }}>
+          <p className="text-[7.5px] uppercase tracking-[0.5em]" style={{ color: '#999' }}>Wholesale Platform</p>
+          <Link href="/login" className="text-[7.5px] uppercase tracking-[0.4em] hover:opacity-60 transition-opacity" style={{ color: '#555' }}>
             Sign In
           </Link>
         </div>
@@ -185,14 +185,14 @@ export default function RegisterPage() {
         <div className="w-full max-w-[520px]">
 
           {/* Tabs */}
-          <div className="flex border-b border-white/10 mb-8">
+          <div className="flex border-b border-zinc-200 mb-8">
             {(['login', 'register'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(''); }}
                 className="flex-1 py-3 text-[8px] uppercase tracking-[0.5em] transition-colors"
                 style={{
-                  color      : tab === t ? '#fff' : '#555',
+                  color      : tab === t ? '#111' : '#999',
                   borderBottom: tab === t ? `2px solid ${gold}` : '2px solid transparent',
                   marginBottom: '-1px',
                 }}
@@ -205,14 +205,14 @@ export default function RegisterPage() {
           {/* ── LOGIN ── */}
           {tab === 'login' && (
             <form onSubmit={handleLogin} className="space-y-5">
-              <Field dark label="Email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@brand.com" />
-              <Field dark label="Password" type="password" required value={loginPw} onChange={e => setLoginPw(e.target.value)} placeholder="••••••••" />
+              <Field label="Email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@brand.com" />
+              <Field label="Password" type="password" required value={loginPw} onChange={e => setLoginPw(e.target.value)} placeholder="••••••••" />
               <Turnstile
                 ref={turnstileRef}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
                 onSuccess={setTurnstileToken}
                 onExpire={() => setTurnstileToken('')}
-                options={{ theme: 'dark', size: 'flexible' }}
+                options={{ theme: 'light', size: 'flexible' }}
               />
               {error && <p className="text-[10px] tracking-wide" style={{ color: '#e74c3c' }}>{error}</p>}
               <button type="submit" disabled={loading}
@@ -245,30 +245,30 @@ export default function RegisterPage() {
                     onClick={() => setRole(r.v)}
                     className="p-4 text-left border transition-colors"
                     style={{
-                      borderColor: role === r.v ? gold : '#333',
+                      borderColor: role === r.v ? gold : '#ddd',
                       background : role === r.v ? 'rgba(201,168,76,0.08)' : 'transparent',
                     }}
                   >
                     <div className="text-xl mb-2">{r.icon}</div>
-                    <p className="text-[11px] font-medium" style={{ color: role === r.v ? '#fff' : '#888' }}>{r.title}</p>
+                    <p className="text-[11px] font-medium" style={{ color: role === r.v ? '#111' : '#888' }}>{r.title}</p>
                     <p className="text-[8px] uppercase tracking-[0.35em] mt-0.5" style={{ color: gold }}>{r.sub}</p>
                   </button>
                 ))}
               </div>
 
-              <Field dark label="Brand / Company Name" required value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder="e.g. Maison Verdant" />
+              <Field label="Brand / Company Name" required value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder="e.g. Maison Verdant" />
 
               <div className="grid grid-cols-2 gap-3">
-                <Field dark label="First Name" required value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Isabelle" />
-                <Field dark label="Last Name"  required value={form.lastName}  onChange={e => set('lastName',  e.target.value)} placeholder="Martel" />
+                <Field label="First Name" required value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Isabelle" />
+                <Field label="Last Name"  required value={form.lastName}  onChange={e => set('lastName',  e.target.value)} placeholder="Martel" />
               </div>
 
-              <Field dark label="Work Email"       type="email"    required value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@brand.com" />
-              <Field dark label="Phone (optional)" type="tel"               value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+1 212 555 0100" />
+              <Field label="Work Email"       type="email"    required value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@brand.com" />
+              <Field label="Phone (optional)" type="tel"               value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+1 212 555 0100" />
 
               {/* Password */}
               <div>
-                <label className="block text-[7.5px] uppercase tracking-[0.4em] mb-2" style={{ color: '#666' }}>Password</label>
+                <label className="block text-[7.5px] uppercase tracking-[0.4em] mb-2" style={{ color: '#999' }}>Password</label>
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'}
@@ -277,8 +277,8 @@ export default function RegisterPage() {
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="w-full border-b bg-transparent outline-none py-2 pr-8 text-[13px] placeholder:text-[#333]"
-                    style={{ borderColor: '#333', color: '#fff' }}
+                    className="w-full border-b bg-transparent outline-none py-2 pr-8 text-[13px] placeholder:text-zinc-400"
+                    style={{ borderColor: '#ddd', color: '#333' }}
                   />
                   <button type="button" onClick={() => setShowPw(p => !p)}
                     className="absolute right-0 top-1.5 text-[11px] opacity-40 hover:opacity-70">
@@ -290,8 +290,8 @@ export default function RegisterPage() {
               {/* Plan picker — brand only */}
               {role === 'brand' && (
                 <div>
-                  <p className="text-[7.5px] uppercase tracking-[0.4em] mb-3" style={{ color: '#666' }}>
-                    Choose Your Plan <span style={{ color: '#444' }}>(14-day free trial on all plans)</span>
+                  <p className="text-[7.5px] uppercase tracking-[0.4em] mb-3" style={{ color: '#999' }}>
+                    Choose Your Plan <span style={{ color: '#aaa' }}>(14-day free trial on all plans)</span>
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {PLANS.map(p => (
@@ -301,7 +301,7 @@ export default function RegisterPage() {
                         onClick={() => setPlan(p.id)}
                         className="relative p-3 text-center border transition-colors"
                         style={{
-                          borderColor: plan === p.id ? gold : '#333',
+                          borderColor: plan === p.id ? gold : '#ddd',
                           background : plan === p.id ? 'rgba(201,168,76,0.08)' : 'transparent',
                         }}
                       >
@@ -309,13 +309,13 @@ export default function RegisterPage() {
                           <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[6.5px] uppercase tracking-[0.3em] px-2 py-0.5"
                                 style={{ background: gold, color: '#000' }}>Popular</span>
                         )}
-                        <p className="text-[11px]" style={{ color: plan === p.id ? '#fff' : '#888', fontFamily: 'var(--font-serif), Georgia, serif' }}>{p.label}</p>
+                        <p className="text-[11px]" style={{ color: plan === p.id ? '#111' : '#888', fontFamily: 'var(--font-serif), Georgia, serif' }}>{p.label}</p>
                         <p className="mt-1" style={{ color: gold, fontFamily: 'var(--font-mono), monospace', fontSize: '15px' }}>
-                          {p.price}<span className="text-[9px]" style={{ color: '#555' }}>{p.period}</span>
+                          {p.price}<span className="text-[9px]" style={{ color: '#999' }}>{p.period}</span>
                         </p>
                         <ul className="mt-2 space-y-1">
                           {p.features.map(f => (
-                            <li key={f} className="text-[8px]" style={{ color: '#555' }}>{f}</li>
+                            <li key={f} className="text-[8px]" style={{ color: '#888' }}>{f}</li>
                           ))}
                         </ul>
                       </button>
@@ -332,7 +332,7 @@ export default function RegisterPage() {
                   onChange={e => set('agree', e.target.checked)}
                   className="mt-0.5 accent-[#c9a84c]"
                 />
-                <span className="text-[10px] leading-relaxed" style={{ color: '#666' }}>
+                <span className="text-[10px] leading-relaxed" style={{ color: '#555' }}>
                   I agree to the{' '}
                   <Link href="/terms" style={{ color: gold }} className="hover:opacity-70">Terms of Service</Link>
                   {' '}and{' '}
@@ -345,7 +345,7 @@ export default function RegisterPage() {
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
                 onSuccess={setTurnstileToken}
                 onExpire={() => setTurnstileToken('')}
-                options={{ theme: 'dark', size: 'flexible' }}
+                options={{ theme: 'light', size: 'flexible' }}
               />
 
               {error && <p className="text-[10px] tracking-wide" style={{ color: '#e74c3c' }}>{error}</p>}
@@ -356,7 +356,7 @@ export default function RegisterPage() {
                 {loading ? 'Creating account…' : 'Start Free Trial'}
               </button>
 
-              <p className="text-center text-[8px] uppercase tracking-[0.3em]" style={{ color: '#444' }}>
+              <p className="text-center text-[8px] uppercase tracking-[0.3em]" style={{ color: '#aaa' }}>
                 No credit card required · Cancel anytime
               </p>
             </form>
@@ -381,7 +381,7 @@ function Field({ dark, label, required, ...props }: {
       <input
         {...props}
         required={required}
-        className="w-full border-b bg-transparent outline-none py-2 text-[13px] placeholder:text-[#333]"
+        className="w-full border-b bg-transparent outline-none py-2 text-[13px] placeholder:text-zinc-400"
         style={{ borderColor: dark ? '#333' : '#ddd', color: dark ? '#fff' : '#333' }}
       />
     </div>
