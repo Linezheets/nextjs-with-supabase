@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: '#000', paddingTop: 64 }}>
+    <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', background: '#fff' }}>
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', background: '#fff' }}>
@@ -154,17 +154,17 @@ export default function ResetPasswordPage() {
       </div>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#000' }}>
+      <footer style={{ borderTop: '1px solid #eee', background: '#fff' }}>
         <div style={{
           maxWidth: 1400, margin: '0 auto', padding: '1.5rem 2.5rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
         }}>
-          <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#bbb' }}>
             © {new Date().getFullYear()} MXLLA Agency Ltd.
           </p>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             {[{ label: 'Terms', href: '/terms' }, { label: 'Contact', href: '/contact' }].map(({ label, href }) => (
-              <a key={href} href={href} style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', textDecoration: 'none' }}>
+              <a key={href} href={href} style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#bbb', textDecoration: 'none' }}>
                 {label}
               </a>
             ))}
