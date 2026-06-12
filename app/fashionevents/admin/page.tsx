@@ -68,7 +68,7 @@ export default function AdminPage() {
         <p style={{ fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 8 }}>
           Agency Admin
         </p>
-        <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '2.2rem', fontWeight: 400, color: '#F5F0E8' }}>
+        <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '2.2rem', fontWeight: 400, color: '#111111' }}>
           Event Approval Queue
         </h1>
       </div>
@@ -92,13 +92,13 @@ export default function AdminPage() {
           { label: 'Featured', value: all.filter(e => e.featured).length },
         ].map(({ label, value, highlight }) => (
           <div key={label} style={{
-            background: '#0D0D1A', border: `1px solid ${highlight && value > 0 ? 'rgba(201,168,76,0.25)' : 'rgba(255,255,255,0.06)'}`,
+            background: '#ffffff', border: `1px solid ${highlight && value > 0 ? 'rgba(201,168,76,0.25)' : 'rgba(0,0,0,0.08)'}`,
             padding: '20px 24px',
           }}>
-            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 28, color: highlight && value > 0 ? '#C9A84C' : '#F5F0E8' }}>
+            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 28, color: highlight && value > 0 ? '#C9A84C' : '#111111' }}>
               {value}
             </div>
-            <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', marginTop: 6 }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(17,17,17,0.3)', marginTop: 6 }}>
               {label}
             </div>
           </div>
@@ -106,14 +106,14 @@ export default function AdminPage() {
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
         {(['pending', 'all'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             padding: '10px 24px',
             fontFamily: 'system-ui, sans-serif', fontSize: 9,
             letterSpacing: '0.35em', textTransform: 'uppercase',
-            color: tab === t ? '#C9A84C' : 'rgba(245,240,232,0.3)',
+            color: tab === t ? '#C9A84C' : 'rgba(17,17,17,0.3)',
             borderBottom: `2px solid ${tab === t ? '#C9A84C' : 'transparent'}`,
             marginBottom: -1,
           }}>
@@ -128,21 +128,21 @@ export default function AdminPage() {
           Loading…
         </div>
       ) : displayEvents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, fontFamily: 'system-ui', fontSize: 13, color: 'rgba(245,240,232,0.2)' }}>
+        <div style={{ textAlign: 'center', padding: 60, fontFamily: 'system-ui', fontSize: 13, color: 'rgba(17,17,17,0.2)' }}>
           {tab === 'pending' ? 'No events pending approval.' : 'No events.'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {displayEvents.map(ev => (
             <div key={ev.id} style={{
-              background: '#0D0D1A', border: `1px solid ${ev.status === 'pending' ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.06)'}`,
+              background: '#ffffff', border: `1px solid ${ev.status === 'pending' ? 'rgba(201,168,76,0.15)' : 'rgba(0,0,0,0.08)'}`,
               padding: '20px 24px',
               display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center',
             }}>
               <div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                   <StatusPill status={ev.status} />
-                  <span style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.25)' }}>
+                  <span style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(17,17,17,0.25)' }}>
                     {TYPE_LABELS[ev.type]}
                   </span>
                   {ev.featured && (
@@ -151,10 +151,10 @@ export default function AdminPage() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.05rem', color: '#F5F0E8', marginBottom: 4 }}>
+                <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.05rem', color: '#111111', marginBottom: 4 }}>
                   {ev.title}
                 </div>
-                <div style={{ fontFamily: 'system-ui', fontSize: 11, color: 'rgba(245,240,232,0.35)' }}>
+                <div style={{ fontFamily: 'system-ui', fontSize: 11, color: 'rgba(17,17,17,0.35)' }}>
                   {ev.city} · {format(new Date(ev.date_start), 'MMM d, yyyy')}
                   {ev.host_name ? ` · ${ev.host_name}` : ''}
                   {ev.interest_count > 0 ? ` · ${ev.interest_count} interested` : ''}
@@ -175,8 +175,8 @@ export default function AdminPage() {
                 {ev.status !== 'pending' && (
                   <button onClick={() => toggleFeature(ev.id, !ev.featured)} style={{
                     ...aBtn as React.CSSProperties, cursor: 'pointer',
-                    color: ev.featured ? '#C9A84C' : 'rgba(245,240,232,0.3)',
-                    borderColor: ev.featured ? 'rgba(201,168,76,0.3)' : 'rgba(255,255,255,0.08)',
+                    color: ev.featured ? '#C9A84C' : 'rgba(17,17,17,0.3)',
+                    borderColor: ev.featured ? 'rgba(201,168,76,0.3)' : 'rgba(0,0,0,0.1)',
                   }}>
                     {ev.featured ? '★ Unfeature' : '☆ Feature'}
                   </button>
@@ -209,7 +209,7 @@ function StatusPill({ status }: { status: string }) {
 const aBtn = {
   fontFamily: 'system-ui, sans-serif', fontSize: 9,
   letterSpacing: '0.2em', textTransform: 'uppercase' as const,
-  color: 'rgba(245,240,232,0.35)', textDecoration: 'none',
-  border: '1px solid rgba(255,255,255,0.08)',
+  color: 'rgba(17,17,17,0.35)', textDecoration: 'none',
+  border: '1px solid rgba(0,0,0,0.1)',
   padding: '5px 12px', background: 'transparent',
 };

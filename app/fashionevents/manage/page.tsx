@@ -146,7 +146,7 @@ export default function ManagePage() {
           <p style={{ fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 8 }}>
             Event Management
           </p>
-          <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '2.2rem', fontWeight: 400, color: '#F5F0E8' }}>
+          <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '2.2rem', fontWeight: 400, color: '#111111' }}>
             My Events
           </h1>
         </div>
@@ -173,14 +173,14 @@ export default function ManagePage() {
       {/* ── Create / Edit form ─────────────────────────────────────────────── */}
       {showForm && (
         <div style={{
-          background: '#0D0D1A', border: '1px solid rgba(201,168,76,0.2)',
+          background: '#ffffff', border: '1px solid rgba(201,168,76,0.2)',
           padding: '32px', marginBottom: 32,
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-            <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.4rem', fontWeight: 400, color: '#F5F0E8' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.4rem', fontWeight: 400, color: '#111111' }}>
               {editing ? 'Edit Event' : 'New Event'}
             </h2>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.3)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'rgba(17,17,17,0.3)', cursor: 'pointer', fontSize: 18 }}>✕</button>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -249,7 +249,7 @@ export default function ManagePage() {
               </FormField>
               {/* Access */}
               <FormField label="Access Type" colSpan={2}>
-                <label style={{ display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer', fontSize: 12, color: 'rgba(245,240,232,0.6)' }}>
+                <label style={{ display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer', fontSize: 12, color: 'rgba(17,17,17,0.6)' }}>
                   <input type="checkbox" checked={form.is_public}
                     onChange={e => setForm(prev => ({ ...prev, is_public: e.target.checked }))}
                     style={{ accentColor: '#C9A84C' }} />
@@ -268,8 +268,8 @@ export default function ManagePage() {
                 {saving ? 'Saving…' : editing ? 'Save Changes' : 'Submit Event'}
               </button>
               <button type="button" onClick={() => setShowForm(false)} style={{
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(245,240,232,0.4)', padding: '11px 20px',
+                background: 'transparent', border: '1px solid rgba(0,0,0,0.12)',
+                color: 'rgba(17,17,17,0.4)', padding: '11px 20px',
                 cursor: 'pointer', fontFamily: 'system-ui, sans-serif', fontSize: 9,
               }}>
                 Cancel
@@ -285,7 +285,7 @@ export default function ManagePage() {
           Loading…
         </div>
       ) : events.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, fontFamily: 'system-ui', fontSize: 13, color: 'rgba(245,240,232,0.2)' }}>
+        <div style={{ textAlign: 'center', padding: 60, fontFamily: 'system-ui', fontSize: 13, color: 'rgba(17,17,17,0.2)' }}>
           No events yet. Create your first event above.
         </div>
       ) : (
@@ -293,7 +293,7 @@ export default function ManagePage() {
           {events.map(ev => (
             <div key={ev.id}>
               <div style={{
-                background: '#0D0D1A', border: '1px solid rgba(255,255,255,0.06)',
+                background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)',
                 padding: '18px 24px',
                 display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center',
               }}>
@@ -307,14 +307,14 @@ export default function ManagePage() {
                     }}>
                       {ev.status}
                     </span>
-                    <span style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.25)' }}>
+                    <span style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(17,17,17,0.25)' }}>
                       {TYPE_LABELS[ev.type]}
                     </span>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.05rem', color: '#F5F0E8', marginBottom: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.05rem', color: '#111111', marginBottom: 4 }}>
                     {ev.title}
                   </div>
-                  <div style={{ fontFamily: 'system-ui', fontSize: 11, color: 'rgba(245,240,232,0.35)' }}>
+                  <div style={{ fontFamily: 'system-ui', fontSize: 11, color: 'rgba(17,17,17,0.35)' }}>
                     {ev.city} · {format(new Date(ev.date_start), 'MMM d, yyyy')}
                     {ev.capacity ? ` · Cap: ${ev.capacity}` : ''}
                   </div>
@@ -332,28 +332,28 @@ export default function ManagePage() {
               {/* Attendee panel */}
               {attendeeEventId === ev.id && (
                 <div style={{
-                  background: '#080813', border: '1px solid rgba(255,255,255,0.05)',
+                  background: '#fafafa', border: '1px solid rgba(0,0,0,0.07)',
                   borderTop: 'none', padding: '20px 24px',
                 }}>
-                  <p style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.25)', marginBottom: 16 }}>
+                  <p style={{ fontFamily: 'system-ui', fontSize: 8, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(17,17,17,0.25)', marginBottom: 16 }}>
                     Attendees ({attendees.length})
                   </p>
                   {aLoading ? (
                     <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(201,168,76,0.4)' }}>Loading…</p>
                   ) : attendees.length === 0 ? (
-                    <p style={{ fontFamily: 'system-ui', fontSize: 12, color: 'rgba(245,240,232,0.2)' }}>No RSVPs yet.</p>
+                    <p style={{ fontFamily: 'system-ui', fontSize: 12, color: 'rgba(17,17,17,0.2)' }}>No RSVPs yet.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {attendees.map(a => (
                         <div key={a.id} style={{
                           display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center',
-                          padding: '10px 16px', background: '#0D0D1A',
+                          padding: '10px 16px', background: '#ffffff',
                         }}>
                           <div>
-                            <span style={{ fontSize: 13, color: '#F5F0E8', marginRight: 10 }}>{a.user_name || a.user_email}</span>
-                            {a.company_name && <span style={{ fontSize: 11, color: 'rgba(245,240,232,0.35)' }}>{a.company_name} · </span>}
-                            <span style={{ fontSize: 11, color: 'rgba(245,240,232,0.35)', textTransform: 'capitalize' }}>{a.user_type}</span>
-                            {a.notes && <div style={{ fontSize: 11, color: 'rgba(245,240,232,0.25)', marginTop: 3 }}>"{a.notes}"</div>}
+                            <span style={{ fontSize: 13, color: '#111111', marginRight: 10 }}>{a.user_name || a.user_email}</span>
+                            {a.company_name && <span style={{ fontSize: 11, color: 'rgba(17,17,17,0.35)' }}>{a.company_name} · </span>}
+                            <span style={{ fontSize: 11, color: 'rgba(17,17,17,0.35)', textTransform: 'capitalize' }}>{a.user_type}</span>
+                            {a.notes && <div style={{ fontSize: 11, color: 'rgba(17,17,17,0.25)', marginTop: 3 }}>"{a.notes}"</div>}
                           </div>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <span style={{
@@ -390,14 +390,14 @@ export default function ManagePage() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  color: '#F5F0E8', padding: '8px 12px',
+  background: '#fafafa',
+  border: '1px solid rgba(0,0,0,0.12)',
+  color: '#333333', padding: '8px 12px',
   fontFamily: 'system-ui, sans-serif', fontSize: 12, outline: 'none',
 };
 const btnStyle: React.CSSProperties = {
-  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-  color: 'rgba(245,240,232,0.4)', padding: '5px 12px', cursor: 'pointer',
+  background: 'transparent', border: '1px solid rgba(0,0,0,0.12)',
+  color: 'rgba(17,17,17,0.4)', padding: '5px 12px', cursor: 'pointer',
   fontFamily: 'system-ui, sans-serif', fontSize: 9,
   letterSpacing: '0.2em', textTransform: 'uppercase',
 };
@@ -405,8 +405,8 @@ function Btn({ onClick, children, danger }: { onClick: () => void; children: Rea
   return (
     <button onClick={onClick} style={{
       ...btnStyle,
-      color: danger ? '#C47E7E' : 'rgba(245,240,232,0.4)',
-      borderColor: danger ? 'rgba(196,126,126,0.25)' : 'rgba(255,255,255,0.1)',
+      color: danger ? '#C47E7E' : 'rgba(17,17,17,0.4)',
+      borderColor: danger ? 'rgba(196,126,126,0.25)' : 'rgba(0,0,0,0.12)',
     }}>
       {children}
     </button>
@@ -418,7 +418,7 @@ function FormField({ label, children, colSpan = 1 }: { label: string; children: 
       <label style={{
         fontFamily: 'system-ui, sans-serif', fontSize: 8,
         letterSpacing: '0.3em', textTransform: 'uppercase',
-        color: 'rgba(245,240,232,0.3)', display: 'block', marginBottom: 5,
+        color: 'rgba(17,17,17,0.3)', display: 'block', marginBottom: 5,
       }}>
         {label}
       </label>

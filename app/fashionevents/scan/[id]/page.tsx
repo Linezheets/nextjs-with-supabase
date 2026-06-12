@@ -113,7 +113,7 @@ export default function ScanPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#07070E',
+      minHeight: '100vh', background: '#fafafa',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '48px 24px', fontFamily: 'system-ui, sans-serif',
     }}>
@@ -123,7 +123,7 @@ export default function ScanPage() {
         <p style={{ fontSize: 9, letterSpacing: '0.5em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 8 }}>
           Event Check-in
         </p>
-        <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.8rem', fontWeight: 400, color: '#F5F0E8' }}>
+        <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.8rem', fontWeight: 400, color: '#111111' }}>
           {eventTitle}
         </h1>
       </div>
@@ -134,7 +134,7 @@ export default function ScanPage() {
         {mode === 'token' && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             {!result && !error && (
-              <p style={{ color: 'rgba(245,240,232,0.4)', fontSize: 13 }}>Validating pass…</p>
+              <p style={{ color: 'rgba(17,17,17,0.4)', fontSize: 13 }}>Validating pass…</p>
             )}
           </div>
         )}
@@ -157,19 +157,19 @@ export default function ScanPage() {
             </div>
             {result.attendee && (
               <div>
-                <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.4rem', color: '#F5F0E8', marginBottom: 6 }}>
+                <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.4rem', color: '#111111', marginBottom: 6 }}>
                   {result.attendee.name}
                 </div>
                 {result.attendee.company && (
-                  <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.4)', marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: 'rgba(17,17,17,0.4)', marginBottom: 4 }}>
                     {result.attendee.company}
                   </div>
                 )}
-                <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)' }}>
+                <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(17,17,17,0.3)' }}>
                   {result.attendee.type}
                 </div>
                 {result.already_checked_in && result.attendee.checked_in_at && (
-                  <div style={{ fontSize: 11, color: 'rgba(245,240,232,0.25)', marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: 'rgba(17,17,17,0.25)', marginTop: 8 }}>
                     Checked in at {new Date(result.attendee.checked_in_at).toLocaleTimeString()}
                   </div>
                 )}
@@ -203,8 +203,8 @@ export default function ScanPage() {
         {mode === 'camera' && !result && (
           <div style={{ marginBottom: 24 }}>
             <div style={{
-              position: 'relative', background: '#0D0D1A',
-              border: '1px solid rgba(255,255,255,0.08)',
+              position: 'relative', background: '#f4f4f4',
+              border: '1px solid rgba(0,0,0,0.1)',
               overflow: 'hidden', marginBottom: 16,
               aspectRatio: '4/3',
             }}>
@@ -248,8 +248,8 @@ export default function ScanPage() {
             {scanning && (
               <button onClick={stopCamera} style={{
                 width: '100%', background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(245,240,232,0.4)', padding: '10px',
+                border: '1px solid rgba(0,0,0,0.12)',
+                color: 'rgba(17,17,17,0.4)', padding: '10px',
                 cursor: 'pointer', fontFamily: 'system-ui, sans-serif', fontSize: 9,
                 letterSpacing: '0.3em', textTransform: 'uppercase',
               }}>
@@ -261,11 +261,11 @@ export default function ScanPage() {
 
         {/* ── Manual entry ──────────────────────────────────────────────── */}
         {mode !== 'token' && !result && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 24 }}>
+          <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 24 }}>
             <p style={{
               fontFamily: 'system-ui, sans-serif', fontSize: 9,
               letterSpacing: '0.35em', textTransform: 'uppercase',
-              color: 'rgba(245,240,232,0.25)', marginBottom: 12,
+              color: 'rgba(17,17,17,0.25)', marginBottom: 12,
             }}>
               Manual Token Entry
             </p>
@@ -276,9 +276,9 @@ export default function ScanPage() {
                 placeholder="Paste QR token…"
                 onKeyDown={e => e.key === 'Enter' && manualToken && validateToken(manualToken)}
                 style={{
-                  flex: 1, background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#F5F0E8', padding: '9px 14px',
+                  flex: 1, background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.12)',
+                  color: '#111111', padding: '9px 14px',
                   fontFamily: 'DM Mono, monospace', fontSize: 11, outline: 'none',
                 }}
               />
@@ -303,7 +303,7 @@ export default function ScanPage() {
         {mode === 'camera' && !result && (
           <button onClick={() => { stopCamera(); setMode('manual'); }} style={{
             width: '100%', marginTop: 12, background: 'transparent',
-            border: 'none', color: 'rgba(245,240,232,0.25)',
+            border: 'none', color: 'rgba(17,17,17,0.25)',
             cursor: 'pointer', fontFamily: 'system-ui, sans-serif', fontSize: 10,
           }}>
             Switch to manual entry
