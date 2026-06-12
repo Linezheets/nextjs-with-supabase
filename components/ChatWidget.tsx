@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { isMarketingChrome } from '@/lib/zones';
 
 type Role = 'user' | 'assistant';
 interface Message { role: Role; content: string }
@@ -18,6 +20,7 @@ function getOrCreateToken(): string {
 }
 
 export default function ChatWidget() {
+  const pathname                  = usePathname();
   const [open, setOpen]           = useState(false);
   const [messages, setMessages]   = useState<Message[]>([WELCOME]);
   const [input, setInput]         = useState('');
@@ -105,6 +108,9 @@ export default function ChatWidget() {
   function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
+
+  // Support concierge is marketing chrome — keep it off the app surfaces.
+  if (!isMarketingChrome(pathname)) return null;
 
   return (
     <>

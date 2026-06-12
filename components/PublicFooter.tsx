@@ -10,11 +10,11 @@ const LINKS = [
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-zinc-100 bg-white">
+    <footer className="border-t border-border bg-background text-foreground">
       <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-8 flex flex-wrap items-center justify-between gap-4">
         <p
-          className="text-[9px] uppercase tracking-[0.4em]"
-          style={{ color: '#ccc', fontFamily: 'var(--font-mono), monospace' }}
+          className="text-[9px] uppercase tracking-[0.4em] text-muted-foreground"
+          style={{ fontFamily: 'var(--font-mono), monospace' }}
         >
           © {new Date().getFullYear()} MXLLA Agency Ltd.
         </p>
@@ -24,8 +24,8 @@ export function PublicFooter() {
             <Link
               key={href}
               href={href}
-              className="text-[9px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity"
-              style={{ color: '#999', fontFamily: 'var(--font-mono), monospace', textDecoration: 'none' }}
+              className="text-[9px] uppercase tracking-[0.35em] text-muted-foreground hover:opacity-50 transition-opacity"
+              style={{ fontFamily: 'var(--font-mono), monospace', textDecoration: 'none' }}
             >
               {label}
             </Link>

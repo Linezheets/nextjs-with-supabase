@@ -14,7 +14,7 @@ export default function ContactPage() {
   return (
     <>
       {/* Hero */}
-      <section className="border-b border-zinc-100 bg-black text-white" style={{ paddingTop: 64 }}>
+      <section className="border-b border-white/10 bg-black text-white" style={{ paddingTop: 64 }}>
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-20 md:py-28">
           <p
             className="text-[7.5px] uppercase tracking-[0.7em] mb-8"
@@ -51,7 +51,7 @@ export default function ContactPage() {
         <div className="grid md:grid-cols-2 gap-16 md:gap-24">
 
           {/* Contact methods */}
-          <div className="space-y-px border border-zinc-100">
+          <div className="space-y-px border border-white/10">
             {[
               {
                 label: 'General Enquiries',
@@ -78,7 +78,7 @@ export default function ContactPage() {
                 note : 'Events & showrooms: Paris fashion calendar',
               },
             ].map(({ label, value, href, note }) => (
-              <div key={label} className="border-b border-zinc-100 last:border-b-0 px-5 py-6">
+              <div key={label} className="border-b border-white/10 last:border-b-0 px-5 py-6">
                 <p
                   className="text-[8px] uppercase tracking-[0.45em] mb-2"
                   style={{ color: '#c9a84c', fontFamily: MONO }}
@@ -89,16 +89,16 @@ export default function ContactPage() {
                   <a
                     href={href}
                     className="text-[13px] underline underline-offset-4 hover:opacity-60 transition-opacity"
-                    style={{ color: '#111', fontFamily: MONO }}
+                    style={{ color: 'rgba(255,255,255,0.92)', fontFamily: MONO }}
                   >
                     {value}
                   </a>
                 ) : (
-                  <p className="text-[13px]" style={{ color: '#111', fontFamily: MONO }}>{value}</p>
+                  <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.92)', fontFamily: MONO }}>{value}</p>
                 )}
                 <p
                   className="text-[10px] mt-2 leading-[1.7]"
-                  style={{ color: '#aaa', fontFamily: MONO }}
+                  style={{ color: 'rgba(255,255,255,0.45)', fontFamily: MONO }}
                 >
                   {note}
                 </p>
@@ -134,7 +134,7 @@ export default function ContactPage() {
                 </p>
                 <p
                   className="text-[13px] leading-[2]"
-                  style={{ color: '#444', fontFamily: MONO }}
+                  style={{ color: 'rgba(255,255,255,0.62)', fontFamily: MONO }}
                 >
                   {body}
                 </p>

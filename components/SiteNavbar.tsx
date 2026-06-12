@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavBarAuth } from '@/components/NavBarAuth';
 import { LogoMark } from '@/components/LogoMark';
+import { isMarketingChrome } from '@/lib/zones';
 
 const GOLD        = '#c9a84c';
 const GOLD_BRIGHT = '#e8c56b';
@@ -126,11 +127,11 @@ export function SiteNavbar() {
     return () => window.removeEventListener('scroll', h);
   }, []);
 
-  // The marketing nav must NOT render on app routes — those pages (dashboard,
-  // brand studio, MFA, onboarding) ship their own navigation. Mounted globally in
-  // the root layout at zIndex 1000, this bar otherwise covers them (BrandStoreNav
-  // is zIndex 40, DashboardNav z-50), which made the real dashboard look missing.
-  if (/^\/(dashboard|mfa|onboard)(\/|$)/.test(pathname ?? '')) return null;
+  // This is the DARK marketing navbar. It renders ONLY in the dark marketing zone
+  // (see lib/zones.ts). Every app route — auth, checkout, inquiries, dashboard,
+  // Brand Studio, operational event tools — ships its own light navigation, so the
+  // marketing bar must stay out of their way.
+  if (!isMarketingChrome(pathname)) return null;
 
   const openSolutions  = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setSolutionsOpen(true); };
   const closeSolutions = () => { closeTimer.current = setTimeout(() => setSolutionsOpen(false), 120); };

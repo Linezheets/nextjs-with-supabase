@@ -10,7 +10,7 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <section className="border-b border-zinc-100 bg-black text-white" style={{ paddingTop: 64 }}>
+      <section className="border-b border-white/10 bg-black text-white" style={{ paddingTop: 64 }}>
         <div className="max-w-screen-xl mx-auto px-8 md:px-16 py-20 md:py-28">
           <p
             className="text-[7.5px] uppercase tracking-[0.7em] mb-8"
@@ -71,7 +71,7 @@ export default function AboutPage() {
                 </p>
                 <p
                   className="text-[13px] leading-[2]"
-                  style={{ color: '#444', fontFamily: 'var(--font-mono), monospace' }}
+                  style={{ color: 'rgba(255,255,255,0.62)', fontFamily: 'var(--font-mono), monospace' }}
                 >
                   {body}
                 </p>
@@ -80,7 +80,7 @@ export default function AboutPage() {
           </div>
 
           {/* Right column — stat cards */}
-          <div className="space-y-px border border-zinc-100">
+          <div className="space-y-px border border-white/10">
             {[
               { label: 'Headquarters', value: 'Hong Kong SAR' },
               { label: 'Coverage',     value: 'Paris · Asia-Pacific · Middle East' },
@@ -88,11 +88,11 @@ export default function AboutPage() {
               { label: 'Access',       value: 'By application & invitation' },
               { label: 'Operated by',  value: 'MXLLA Agency' },
             ].map(({ label, value }) => (
-              <div key={label} className="grid grid-cols-[180px_1fr] border-b border-zinc-100 last:border-b-0">
-                <div className="px-5 py-5 border-r border-zinc-100">
+              <div key={label} className="grid grid-cols-[180px_1fr] border-b border-white/10 last:border-b-0">
+                <div className="px-5 py-5 border-r border-white/10">
                   <p
                     className="text-[9px] uppercase tracking-[0.4em]"
-                    style={{ color: '#bbb', fontFamily: 'var(--font-mono), monospace' }}
+                    style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono), monospace' }}
                   >
                     {label}
                   </p>
@@ -100,7 +100,7 @@ export default function AboutPage() {
                 <div className="px-5 py-5">
                   <p
                     className="text-[12px] leading-[1.7]"
-                    style={{ color: '#444', fontFamily: 'var(--font-mono), monospace' }}
+                    style={{ color: 'rgba(255,255,255,0.62)', fontFamily: 'var(--font-mono), monospace' }}
                   >
                     {value}
                   </p>
@@ -111,7 +111,7 @@ export default function AboutPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-20 pt-12 border-t border-zinc-100 flex flex-wrap gap-6 items-center">
+        <div className="mt-20 pt-12 border-t border-white/10 flex flex-wrap gap-6 items-center">
           <Link
             href="/join"
             className="text-[9px] uppercase tracking-[0.4em] px-8 py-4 transition-opacity hover:opacity-70"
@@ -127,8 +127,8 @@ export default function AboutPage() {
           </Link>
           <Link
             href="/contact"
-            className="text-[9px] uppercase tracking-[0.4em] px-8 py-4 border border-zinc-200 transition-opacity hover:opacity-60"
-            style={{ color: '#555', textDecoration: 'none', fontFamily: 'var(--font-mono), monospace' }}
+            className="text-[9px] uppercase tracking-[0.4em] px-8 py-4 border border-white/15 transition-opacity hover:opacity-60"
+            style={{ color: 'rgba(255,255,255,0.62)', textDecoration: 'none', fontFamily: 'var(--font-mono), monospace' }}
           >
             Contact Us
           </Link>

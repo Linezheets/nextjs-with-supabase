@@ -81,6 +81,7 @@ function LoginForm() {
   const redirectTo   = searchParams.get('redirect') ?? '/dashboard';
   const oauthError   = searchParams.get('error');
 
+  const [role,          setRole]          = useState<'buyer' | 'brand'>('buyer');
   const [email,         setEmail]         = useState('');
   const [password,      setPassword]      = useState('');
   const [error,         setError]         = useState(oauthError ?? '');
@@ -153,7 +154,9 @@ function LoginForm() {
     setError('');
     const supabase   = createClient();
     const callbackUrl = `${window.location.origin}/api/auth/callback${redirectTo !== '/dashboard' ? `?next=${encodeURIComponent(redirectTo)}` : ''}`;
-    await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: callbackUrl } });
+    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: callbackUrl } });
+    if (oauthError) { setError(oauthError.message); setSocialLoading(null); return; }
+    if (data.url) window.location.href = data.url;
   }
 
   return (
@@ -172,24 +175,31 @@ function LoginForm() {
           className="lg:flex">
           <div>
             <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.65em', textTransform: 'uppercase', color: GOLD, marginBottom: '2.5rem' }}>
-              VIP Wholesale Access
+              Linezheets Wholesale
             </p>
             <h2 style={{ fontFamily: SERIF, fontSize: '2.6rem', fontWeight: 400, lineHeight: 1.05, color: '#fff', marginBottom: '2rem' }}>
               Welcome back<br />
               <em style={{ color: GOLD, fontStyle: 'italic' }}>to the showroom</em>
             </h2>
             <p style={{ fontFamily: MONO, fontSize: '12px', lineHeight: 2, color: 'rgba(255,255,255,0.35)' }}>
-              Sign in to access your private wholesale dashboard, manage orders, and discover new collections.
+              {role === 'buyer'
+                ? 'Access your private wholesale dashboard, manage orders, and discover new collections from verified luxury brands.'
+                : 'Manage your brand storefront, reach verified wholesale buyers, and grow your B2B distribution channel.'}
             </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {[
+            {(role === 'buyer' ? [
               'Private buyer pricing on all collections',
               'Direct access to luxury brand catalogues',
               'AI-curated brand & product matching',
               'Real-time order and inventory management',
-            ].map(f => (
+            ] : [
+              'List and manage your wholesale catalogue',
+              'Reach verified international buyers',
+              'AI merchandising & analytics tools',
+              'Subscription-based storefront management',
+            ]).map(f => (
               <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{ color: GOLD, fontSize: '10px', marginTop: '3px', flexShrink: 0 }}>✦</span>
                 <span style={{ fontFamily: MONO, fontSize: '11px', lineHeight: 1.8, color: 'rgba(255,255,255,0.35)' }}>{f}</span>
@@ -206,22 +216,46 @@ function LoginForm() {
           <div style={{ width: '100%', maxWidth: 380 }}>
 
             {/* Header */}
-            <div style={{ marginBottom: '2.5rem' }}>
+            <div style={{ marginBottom: '2rem' }}>
               <p style={{ fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.6em', textTransform: 'uppercase', color: GOLD, marginBottom: '1rem' }}>
-                Buyer Portal
+                Linezheets
               </p>
               <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(2rem,5vw,2.8rem)', fontWeight: 400, lineHeight: 1, color: '#0a0a0a' }}>
                 Sign In
               </h1>
             </div>
 
-            {/* Try Demo */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <TryDemoButton loading={demoLoading} onClick={handleDemoLogin} />
-              <p style={{ marginTop: '0.6rem', textAlign: 'center', fontFamily: MONO, fontSize: '7px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#ccc' }}>
-                Explore the platform · No account needed
-              </p>
+            {/* Role toggle */}
+            <div style={{ display: 'flex', marginBottom: '2rem', borderBottom: '1px solid #e8e8e8' }}>
+              {(['buyer', 'brand'] as const).map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  style={{
+                    flex: 1, padding: '0.65rem 0',
+                    fontFamily: MONO, fontSize: '7.5px', letterSpacing: '0.4em', textTransform: 'uppercase',
+                    background: 'none', border: 'none',
+                    borderBottom: role === r ? `2px solid ${GOLD}` : '2px solid transparent',
+                    color: role === r ? GOLD : '#aaa',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                    marginBottom: '-1px',
+                  }}
+                >
+                  {r === 'buyer' ? 'Buyer' : 'Brand / Agency'}
+                </button>
+              ))}
             </div>
+
+            {/* Try Demo (buyers only) */}
+            {role === 'buyer' && (
+              <div style={{ marginBottom: '1.75rem' }}>
+                <TryDemoButton loading={demoLoading} onClick={handleDemoLogin} />
+                <p style={{ marginTop: '0.6rem', textAlign: 'center', fontFamily: MONO, fontSize: '7px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#ccc' }}>
+                  Explore the platform · No account needed
+                </p>
+              </div>
+            )}
 
             <Divider label="or sign in" />
 
@@ -302,11 +336,13 @@ function LoginForm() {
             </form>
 
             <p style={{ marginTop: '2rem', textAlign: 'center', fontFamily: MONO, fontSize: '10px', color: '#bbb' }}>
-              No account?{' '}
-              <a href="/join" style={{ color: '#888', borderBottom: '1px solid #ddd', textDecoration: 'none' }}
+              {role === 'buyer' ? 'No account? ' : 'New brand? '}
+              <a
+                href={role === 'buyer' ? '/join' : '/register'}
+                style={{ color: '#888', borderBottom: '1px solid #ddd', textDecoration: 'none' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = GOLD; (e.currentTarget as HTMLElement).style.borderBottomColor = GOLD; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#888'; (e.currentTarget as HTMLElement).style.borderBottomColor = '#ddd'; }}>
-                Apply for access
+                {role === 'buyer' ? 'Apply for access' : 'Register & subscribe'}
               </a>
             </p>
 

@@ -6,6 +6,7 @@ import { CartProvider } from '@/components/CartDrawer';
 import ChatWidget from '@/components/ChatWidget';
 import { SiteNavbar } from '@/components/SiteNavbar';
 import { PageTransition } from '@/components/PageTransition';
+import { ZoneSync } from '@/components/ZoneSync';
 
 const playfair = Playfair_Display({
   subsets : ['latin'],
@@ -82,17 +83,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Flash-free theme zone: set the dark marketing class on <html> before first
+            paint. MUST stay in sync with isDarkZone() in lib/zones.ts (a raw <script>
+            can't import the module). Uses plain string ops — no regex — on purpose. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: `(function(){try{
+            var p=location.pathname||'/';var parts=p.split('/');var top=parts[1]||'';var sub=parts[2]||'';
+            var darkTops=['about','contact','pricing','marketplace','integrations'];
+            var dark = p==='/' || darkTops.indexOf(top)!==-1 || (top==='fashionevents' && sub!=='manage' && sub!=='admin' && sub!=='scan');
+            var h=document.documentElement;
+            if(dark){h.classList.add('dark');h.style.backgroundColor='#000000';}else{h.style.backgroundColor='#ffffff';}
+          }catch(e){}})();` }}
+        />
       </head>
-      <body className="bg-black text-white antialiased">
-        {/* Inline script — runs before React hydrates, paints black immediately */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            var c=document.createElement('div');
-            c.id='lz-pre-cover';
-            c.style.cssText='position:fixed;inset:0;z-index:99998;background:#0a0a0a;';
-            document.body.appendChild(c);
-          })();
-        `}} />
+      <body className="antialiased">
+        {/* Theme zone: <html> is set dark/light flash-free by the <head> script above;
+            <body> follows shadcn tokens (@layer base in globals.css) so it can never
+            paint the wrong colour. ZoneSync keeps the zone correct across SPA nav. */}
+        <ZoneSync />
         <PageTransition />
         <SiteNavbar />
         <CartProvider>{children}</CartProvider>

@@ -11,7 +11,7 @@ const BUYER_LINKS = [
   { href: '/dashboard/store',        label: 'My Store'     },
   { href: '/dashboard/integrations', label: 'Integrations' },
   { href: '/dashboard/profile',      label: 'Profile'      },
-  { href: '/',                       label: 'Showroom'     },
+  { href: '/marketplace',             label: 'Showroom'     },
 ];
 
 // ── Cart button ───────────────────────────────────────────────────────────────
@@ -76,42 +76,49 @@ export default function DashboardNav({
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-zinc-100">
-      <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center justify-between h-[60px]">
+      {/*
+        3-column layout: [wordmark] [center label] [nav]
+        All three are normal flex children — no absolute positioning —
+        so the label can never overlap the nav links.
+      */}
+      <div className="max-w-screen-xl mx-auto px-8 md:px-16 flex items-center h-[60px] gap-4">
 
-        {/* Wordmark */}
+        {/* Col 1 — Wordmark (fixed width, never shrinks) */}
         <a href="/"
            style={{
-             fontFamily  : 'var(--font-serif), Georgia, "Times New Roman", serif',
-             fontSize    : '15px',
+             fontFamily   : 'var(--font-serif), Georgia, "Times New Roman", serif',
+             fontSize     : '15px',
              letterSpacing: '0.5em',
-             fontWeight  : 400,
-             flexShrink  : 0,
+             fontWeight   : 400,
+             flexShrink   : 0,
            }}>
           LINEZHEETS
         </a>
 
-        {/* Centre label — hidden on small screens */}
-        {portalLabel && (
-          <span className="hidden lg:block text-[8px] uppercase tracking-[0.5em] absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                style={{ color: '#bbb' }}>
-            {portalLabel}
-          </span>
-        )}
+        {/* Col 2 — Portal label (grows to fill middle, text centred) */}
+        <div className="flex-1 hidden lg:flex items-center justify-center pointer-events-none min-w-0">
+          {portalLabel && (
+            <span className="text-[8px] uppercase tracking-[0.5em] truncate"
+                  style={{ color: '#bbb' }}>
+              {portalLabel}
+            </span>
+          )}
+        </div>
 
-        {/* Right nav — scrollable on mobile */}
-        <nav className="flex items-center gap-5 overflow-x-auto scrollbar-none" style={{ flexShrink: 0 }}>
+        {/* Col 3 — Nav links (fixed width, scrollable on mobile, never shrinks) */}
+        <nav className="flex items-center gap-4 overflow-x-auto scrollbar-none" style={{ flexShrink: 0 }}>
           {links.map(({ href, label }) => {
-            const active = isActive(href);
+            const active  = isActive(href);
             const isAdmin = href.includes('/admin');
             return (
               <a
                 key={href}
                 href={href}
-                className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity whitespace-nowrap"
+                className="text-[8px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity whitespace-nowrap"
                 style={{
-                  color      : isAdmin ? '#c9a84c' : active ? '#111' : '#888',
-                  fontFamily : 'system-ui',
-                  fontWeight : active ? 500 : 400,
+                  color       : isAdmin ? '#c9a84c' : active ? '#111' : '#888',
+                  fontFamily  : 'system-ui',
+                  fontWeight  : active ? 500 : 400,
                   borderBottom: active ? '1px solid #111' : 'none',
                   paddingBottom: active ? '1px' : '0',
                 }}
@@ -126,7 +133,7 @@ export default function DashboardNav({
           <form action="/api/auth/signout" method="post">
             <button
               type="submit"
-              className="text-[8px] uppercase tracking-[0.4em] hover:opacity-50 transition-opacity whitespace-nowrap"
+              className="text-[8px] uppercase tracking-[0.35em] hover:opacity-50 transition-opacity whitespace-nowrap"
               style={{ color: '#bbb', fontFamily: 'system-ui' }}
             >
               Sign Out

@@ -13,7 +13,9 @@ export function PageTransition() {
   const router   = useRouter();
   const pathname = usePathname();
 
-  const [visible,  setVisible]  = useState(true);  // true on first render → covers page
+  // The intro overlay only ever plays on the home page. Initialise from the path so
+  // it never paints its dark wash for even one frame on a light app route.
+  const [visible,  setVisible]  = useState(pathname === '/');
   const [frameIdx, setFrameIdx] = useState(0);
   const [zooming,  setZooming]  = useState(false);
 
