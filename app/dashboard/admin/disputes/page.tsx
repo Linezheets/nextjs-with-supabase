@@ -9,7 +9,7 @@ export default async function AdminDisputesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'hello@linezheets.com,info@mxlla.com')
+  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'info@linezheets.com,info@mxlla.com')
     .split(',').map(e => e.trim());
   const role    = user.user_metadata?.role ?? user.app_metadata?.role;
   const isAdmin = role === 'admin' || ADMIN_EMAILS.includes(user.email ?? '');

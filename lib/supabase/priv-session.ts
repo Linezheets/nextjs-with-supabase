@@ -154,7 +154,7 @@ export function clearPrivSession(cookies: ResponseCookies): void {
 
 // ── Role detection ────────────────────────────────────────────────────────────
 
-const ADMIN_EMAILS = ['hello@linezheets.com', 'info@mxlla.com'];
+const ADMIN_EMAILS = ['info@linezheets.com', 'info@mxlla.com'];
 
 export function resolvePrivRole(
   email: string | undefined | null,

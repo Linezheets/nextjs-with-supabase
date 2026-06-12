@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { checkPrivSession, resolvePrivRole, timeoutMessage } from './priv-session';
+import { checkPrivSession, refreshPrivActivity, resolvePrivRole, timeoutMessage } from './priv-session';
 import { logActivity } from '@/lib/audit';
 import { setAuditUser } from './set-audit-user';
 
 // Driven by env so adding/removing admins doesn't require a code deploy.
-// ADMIN_EMAILS is a comma-separated list: "hello@linezheets.com,info@mxlla.com"
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'hello@linezheets.com,info@mxlla.com')
+// ADMIN_EMAILS is a comma-separated list: "info@linezheets.com,info@mxlla.com"
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'info@linezheets.com,info@mxlla.com')
   .split(',').map(e => e.trim()).filter(Boolean);
 
 /**
@@ -18,7 +18,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'hello@linezheets.com,info@mxl
  * Returns { ok: true, user } or { ok: false, response }.
  */
 export async function requireAdmin(req?: NextRequest): Promise<
-  | { ok: true;  user: { id: string; email?: string } }
+  | { ok: true;  user: { id: string; email?: string }; refreshCookies?: (res: NextResponse) => void }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -44,6 +44,8 @@ export async function requireAdmin(req?: NextRequest): Promise<
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
 
+  let cookieRefresher: ((res: NextResponse) => void) | undefined;
+
   if (req) {
     const privRole = resolvePrivRole(user.email, 'admin');
     if (privRole) {
@@ -66,6 +68,8 @@ export async function requireAdmin(req?: NextRequest): Promise<
           ),
         };
       }
+      // Refresh the inactivity window on every successful privileged request.
+      cookieRefresher = (res: NextResponse) => refreshPrivActivity(req, res.cookies, privRole);
     }
   }
 
@@ -73,5 +77,5 @@ export async function requireAdmin(req?: NextRequest): Promise<
   // db_audit_trail trigger records the real admin UUID, not 'postgres'.
   await setAuditUser(supabase, user as import('@supabase/supabase-js').User);
 
-  return { ok: true, user };
+  return { ok: true, user, refreshCookies: cookieRefresher };
 }

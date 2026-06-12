@@ -5,8 +5,8 @@ import { requireAdmin } from '@/lib/supabase/requireAdmin';
 type Params = { params: Promise<{ id: string }> };
 
 // GET  /api/admin/buyers/:id/rules  — list pricing rules for a buyer
-export async function GET(_req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin();
+export async function GET(req: NextRequest, { params }: Params) {
+  const guard = await requireAdmin(req);
   if (!guard.ok) return guard.response;
   const supabase = await createClient();
 
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 // POST  /api/admin/buyers/:id/rules  — create a pricing rule
 // Body: { rule_type, target?, discount_pct?, fixed_price?, note? }
 export async function POST(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin();
+  const guard = await requireAdmin(req);
   if (!guard.ok) return guard.response;
   const supabase = await createClient();
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 // PATCH  /api/admin/buyers/:id/rules  — update a rule
 // Body: { rule_id, ...fields }
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin();
+  const guard = await requireAdmin(req);
   if (!guard.ok) return guard.response;
   const supabase = await createClient();
 
@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 // DELETE  /api/admin/buyers/:id/rules?rule_id=xxx
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const guard = await requireAdmin();
+  const guard = await requireAdmin(req);
   if (!guard.ok) return guard.response;
   const supabase = await createClient();
 

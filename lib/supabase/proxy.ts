@@ -83,17 +83,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If user is logged in but hasn't completed MFA challenge, redirect to /mfa
-  if (user && isProtected) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/mfa';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
-    }
-  }
-
   // Redirect already-logged-in users away from auth pages
   if (user && ['/login', '/join', '/register'].includes(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();

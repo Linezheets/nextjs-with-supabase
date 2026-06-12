@@ -21,7 +21,7 @@
 
 import type { User } from '@supabase/supabase-js';
 
-const ADMIN_EMAILS = ['hello@linezheets.com', 'info@mxlla.com'];
+const ADMIN_EMAILS = ['info@linezheets.com', 'info@mxlla.com'];
 
 function resolveRole(user: User): string {
   const meta = user.user_metadata?.role ?? user.app_metadata?.role;
