@@ -94,82 +94,113 @@ export default function AIStudioPage() {
 
   const currentTask = TASK_DETAILS[activeTask];
 
+  const GOLD  = '#c9a84c';
+  const SERIF = 'var(--font-serif), Georgia, serif';
+  const MONO  = 'var(--font-mono), "DM Mono", monospace';
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Brand AI Studio</h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-[7.5px] uppercase tracking-[0.5em] mb-3" style={{ color: GOLD, fontFamily: MONO }}>
+          Brand Studio · AI
+        </p>
+        <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(26px,3.5vw,34px)', fontWeight: 400, letterSpacing: '-0.01em', color: '#111' }}>
+          Brand AI Studio
+        </h1>
+        <p className="text-[12px] leading-[1.9] mt-3" style={{ color: '#777', fontFamily: MONO, maxWidth: 560 }}>
           Deploy AI assets optimized specifically for B2B wholesale workflows and boutique retail pitching.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side: Navigation Links */}
-        <div className="space-y-2">
-          <label className="text-sm font-semibold uppercase tracking-wider text-slate-400 block px-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Left Side: Tool suite */}
+        <div>
+          <p className="text-[7.5px] uppercase tracking-[0.5em] mb-4 px-1" style={{ color: '#999', fontFamily: MONO }}>
             AI Tool Suite
-          </label>
-          {Object.entries(TASK_DETAILS).map(([key, value]) => (
-            <button
-              key={key}
-              onClick={() => {
-                setActiveTask(key as AITask);
-                setPrompt('');
-                setResult('');
-                setError(null);
-              }}
-              className={`w-full text-left p-3 rounded-lg transition-all border ${
-                activeTask === key
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <div className="font-medium text-sm">{value.title}</div>
-            </button>
-          ))}
+          </p>
+          <div className="space-y-px">
+            {Object.entries(TASK_DETAILS).map(([key, value]) => {
+              const active = activeTask === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setActiveTask(key as AITask);
+                    setPrompt('');
+                    setResult('');
+                    setError(null);
+                  }}
+                  className="w-full text-left px-4 py-3 border transition-colors"
+                  style={{
+                    fontFamily : MONO,
+                    fontSize   : 11,
+                    borderColor: active ? GOLD : '#eee',
+                    background : active ? 'rgba(201,168,76,0.08)' : '#fff',
+                    color      : active ? '#111' : '#777',
+                  }}
+                >
+                  {value.title}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Right Side: Inputs & Workspace Options */}
+        {/* Right Side: Inputs & Workspace */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-slate-900 mb-1">{currentTask.title}</h2>
-            <p className="text-sm text-slate-500 mb-6">{currentTask.description}</p>
+          <div className="bg-white border p-6" style={{ borderColor: '#eee' }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: '#111', marginBottom: 4 }}>
+              {currentTask.title}
+            </h2>
+            <p className="text-[12px] leading-[1.7] mb-6" style={{ color: '#777', fontFamily: MONO }}>
+              {currentTask.description}
+            </p>
 
-            <form onSubmit={handleGenerate} className="space-y-4">
+            <form onSubmit={handleGenerate} className="space-y-5">
               {/* Provider Selection */}
-              <div className="grid grid-cols-3 gap-3 p-1 bg-slate-100 rounded-lg">
-                {(['claude', 'openai', 'gemini'] as AIProvider[]).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setProvider(p)}
-                    className={`py-1.5 text-xs font-medium rounded-md capitalize transition-all ${
-                      provider === p
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    {p === 'claude' ? 'Claude' : p === 'openai' ? 'OpenAI GPT' : 'Gemini'}
-                  </button>
-                ))}
+              <div>
+                <p className="text-[7.5px] uppercase tracking-[0.4em] mb-2" style={{ color: '#999', fontFamily: MONO }}>
+                  AI Provider
+                </p>
+                <div className="grid grid-cols-3 border" style={{ borderColor: '#eee' }}>
+                  {(['claude', 'openai', 'gemini'] as AIProvider[]).map((p, i) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setProvider(p)}
+                      className="py-2 text-[10px] uppercase tracking-[0.2em] transition-colors"
+                      style={{
+                        fontFamily : MONO,
+                        borderLeft : i === 0 ? 'none' : '1px solid #eee',
+                        background : provider === p ? '#111' : '#fff',
+                        color      : provider === p ? '#fff' : '#777',
+                      }}
+                    >
+                      {p === 'claude' ? 'Claude' : p === 'openai' ? 'OpenAI' : 'Gemini'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Input Workspace */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-700">{currentTask.label}</label>
+              <div className="space-y-2">
+                <label className="block text-[7.5px] uppercase tracking-[0.4em]" style={{ color: '#999', fontFamily: MONO }}>
+                  {currentTask.label}
+                </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={currentTask.placeholder}
                   rows={5}
-                  className="w-full rounded-lg border border-slate-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
+                  className="w-full border p-3 text-[13px] outline-none resize-none focus:border-[#c9a84c] transition-colors placeholder:text-zinc-400"
+                  style={{ borderColor: '#ddd', color: '#222', fontFamily: MONO }}
                 />
               </div>
 
               {/* Error Output Banner */}
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                <div className="p-3 border text-[12px]" style={{ background: '#fff5f5', borderColor: '#f0d4d4', color: '#c0392b', fontFamily: MONO }}>
                   {error}
                 </div>
               )}
@@ -179,39 +210,41 @@ export default function AIStudioPage() {
                 <button
                   type="submit"
                   disabled={loading || !prompt.trim()}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm py-2.5 px-5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="text-[8px] uppercase tracking-[0.4em] py-3 px-7 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-80"
+                  style={{ background: '#111', color: '#fff', fontFamily: MONO, fontWeight: 500 }}
                 >
-                  {loading ? 'Generating Strategy...' : 'Generate Copy'}
+                  {loading ? 'Generating…' : 'Generate Copy'}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Execution Copy Result Viewer */}
+          {/* Result Viewer */}
           {(result || loading) && (
-            <div className="bg-slate-50 rounded-xl border border-slate-200 p-6 space-y-3 animate-fadeIn">
+            <div className="bg-white border p-6 space-y-3" style={{ borderColor: '#eee' }}>
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+                <p className="text-[7.5px] uppercase tracking-[0.5em]" style={{ color: GOLD, fontFamily: MONO }}>
                   AI Generated Output
-                </h3>
+                </p>
                 {result && (
                   <button
                     onClick={() => navigator.clipboard.writeText(result)}
-                    className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 py-1 px-2.5 rounded shadow-sm transition-all"
+                    className="text-[8px] uppercase tracking-[0.3em] py-1.5 px-3 border transition-colors hover:bg-[#fafafa]"
+                    style={{ color: '#555', borderColor: '#eee', fontFamily: MONO }}
                   >
-                    Copy to Clipboard
+                    Copy
                   </button>
                 )}
               </div>
-              
+
               {loading ? (
                 <div className="space-y-2 py-4">
-                  <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4"></div>
-                  <div className="h-4 bg-slate-200 rounded animate-pulse w-5/6"></div>
-                  <div className="h-4 bg-slate-200 rounded animate-pulse w-2/3"></div>
+                  <div className="h-3 animate-pulse w-3/4" style={{ background: '#f0f0f0' }} />
+                  <div className="h-3 animate-pulse w-5/6" style={{ background: '#f0f0f0' }} />
+                  <div className="h-3 animate-pulse w-2/3" style={{ background: '#f0f0f0' }} />
                 </div>
               ) : (
-                <div className="text-slate-800 text-sm whitespace-pre-wrap leading-relaxed bg-white p-4 rounded-lg border border-slate-150">
+                <div className="text-[13px] whitespace-pre-wrap leading-relaxed p-4 border" style={{ background: '#fafafa', borderColor: '#eee', color: '#222', fontFamily: MONO }}>
                   {result}
                 </div>
               )}
