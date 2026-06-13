@@ -45,8 +45,8 @@ export async function PATCH(
   if (!sf) return NextResponse.json({ error: 'Brand storefront not found' }, { status: 404 });
 
   const ALLOWED = ['title','sku','category','gender','season','wsp_usd','srp','cost','margin',
-                   'color','sizes','stock_total','image_urls','description','delivery_window',
-                   'tags','moq','status','material','product_notes'];
+                   'color','color_hex','sizes','stock_total','image_urls','video_urls','style_id',
+                   'description','delivery_window','tags','moq','status','material','product_notes'];
 
   const body = await req.json() as Record<string, unknown>;
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };

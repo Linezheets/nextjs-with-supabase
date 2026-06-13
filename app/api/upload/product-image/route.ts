@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     // Allow unauthenticated for now (dashboard already guards the page)
 
     const formData = await req.formData();
-    const files = formData.getAll('images') as File[];
+    // Accept both field names: 'images' (multi) and 'file' (the editor's per-file loop).
+    const files = [...formData.getAll('images'), ...formData.getAll('file')]
+      .filter((f): f is File => f instanceof File);
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
         name: f.name,
         size: f.size,
       }));
-      return NextResponse.json({ urls: mockUrls });
+      return NextResponse.json({ urls: mockUrls, url: mockUrls[0]?.url });
     }
 
     const supabase = createSupabaseAdmin(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
       uploaded.push({ url: publicUrl, name: file.name, size: file.size });
     }
 
-    return NextResponse.json({ urls: uploaded });
+    return NextResponse.json({ urls: uploaded, url: uploaded[0]?.url });
   } catch (err) {
     console.error('product-image upload error:', err);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

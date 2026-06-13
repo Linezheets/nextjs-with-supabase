@@ -19,6 +19,8 @@ type Product = {
   delivery_window: string | null;
   tags         : string[];
   sizes        : Record<string, number>;
+  color_hex    : string | null;
+  video_urls   : string[];
   [key: string]: unknown;
 };
 
@@ -46,6 +48,7 @@ const EMPTY: Product = {
   id: '', title: '', sku: '', category: 'GENERAL', season: '', color: '',
   wsp_usd: 0, srp: 0, stock_total: 0, moq: 1, status: 'active',
   image_urls: [], description: '', delivery_window: '', tags: [], sizes: {},
+  color_hex: '', video_urls: [],
 };
 
 const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'OS'];
@@ -108,6 +111,64 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
             </>
         }
         <input ref={fileInput} type="file" multiple accept="image/*" style={{ display: 'none' }}
+          onChange={e => e.target.files && uploadFiles(e.target.files)} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Video Upload ─────────────────────────────────────────────────────────────
+
+function VideoUploadArea({ videos, onChange }: { videos: string[]; onChange: (urls: string[]) => void }) {
+  const fileInput  = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFiles = useCallback(async (files: FileList | File[]) => {
+    const arr = Array.from(files).filter(f => f.type.startsWith('video/'));
+    if (!arr.length) return;
+    setUploading(true);
+    try {
+      const newUrls: string[] = [];
+      for (const file of arr) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res  = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (res.ok && json.url) newUrls.push(json.url);
+      }
+      onChange([...videos, ...newUrls]);
+    } catch { alert('Video upload failed.'); }
+    finally { setUploading(false); }
+  }, [videos, onChange]);
+
+  return (
+    <div style={{ gridColumn: '1 / -1' }}>
+      <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: 10 }}>
+        Product Video <span style={{ color: '#bbb', letterSpacing: 0, textTransform: 'none' }}>(optional)</span>
+      </span>
+      {videos.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+          {videos.map((url, i) => (
+            <div key={i} style={{ position: 'relative', width: 120, height: 80 }}>
+              <video src={url} muted style={{ width: 120, height: 80, objectFit: 'cover', border: '1px solid #e5e5e5', background: '#000' }} />
+              <button type="button" onClick={() => onChange(videos.filter((_, j) => j !== i))}
+                style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#df1b41', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div
+        onClick={() => fileInput.current?.click()}
+        onDrop={e => { e.preventDefault(); uploadFiles(e.dataTransfer.files); }}
+        onDragOver={e => e.preventDefault()}
+        style={{ border: '2px dashed #e0e0e0', background: '#fafafa', padding: '18px 20px', textAlign: 'center', cursor: 'pointer' }}>
+        {uploading
+          ? <p style={{ fontFamily: SANS, fontSize: 12, color: '#888' }}>Uploading…</p>
+          : <p style={{ fontFamily: SANS, fontSize: 12, color: '#555' }}>Drop a video or <span style={{ color: GOLD, textDecoration: 'underline' }}>click to browse</span> · MP4/WEBM · up to 50MB</p>
+        }
+        <input ref={fileInput} type="file" multiple accept="video/*" style={{ display: 'none' }}
           onChange={e => e.target.files && uploadFiles(e.target.files)} />
       </div>
     </div>
@@ -427,7 +488,8 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     const sizes = (p.sizes && typeof p.sizes === 'object' && !Array.isArray(p.sizes))
       ? p.sizes as Record<string, number>
       : {};
-    setForm({ ...p, sizes });
+    const video_urls = Array.isArray(p.video_urls) ? p.video_urls as string[] : [];
+    setForm({ ...p, sizes, video_urls });
     setErr('');
     setModal('edit');
   }
@@ -616,6 +678,7 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <ImageUploadArea images={form.image_urls} onChange={urls => setForm(f => ({ ...f, image_urls: urls }))} />
+              <VideoUploadArea videos={form.video_urls} onChange={urls => setForm(f => ({ ...f, video_urls: urls }))} />
               {([
                 ['Title *', 'title', 'text', true],
                 ['SKU', 'sku', 'text', false],
@@ -651,6 +714,16 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
                   style={{ padding: '8px 12px', border: '1px solid #e5e5e5', fontSize: '13px', fontFamily: SANS, outline: 'none' }}>
                   {['active','draft','archived'].map(s => <option key={s}>{s}</option>)}
                 </select>
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontFamily: SANS, fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>Colour Swatch</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="color" value={form.color_hex || '#000000'} onChange={e => setForm(f => ({ ...f, color_hex: e.target.value }))}
+                    style={{ width: 40, height: 34, border: '1px solid #e5e5e5', padding: 2, cursor: 'pointer', background: '#fff' }} />
+                  <input type="text" value={form.color_hex ?? ''} onChange={e => setForm(f => ({ ...f, color_hex: e.target.value }))} placeholder="#000000"
+                    style={{ flex: 1, padding: '8px 12px', border: '1px solid #e5e5e5', fontSize: '13px', fontFamily: MONO, outline: 'none' }} />
+                </div>
               </label>
 
               <SizeStockEditor sizes={form.sizes} onChange={sizes => setForm(f => ({ ...f, sizes }))} />

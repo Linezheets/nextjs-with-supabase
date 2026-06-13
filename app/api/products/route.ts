@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { title, sku, category = 'GENERAL', gender = 'UNISEX', season, wsp_usd, srp,
-          color, sizes, stock_total = 0, description, delivery_window, tags, moq = 1 } = body as Record<string, unknown>;
+          color, color_hex, video_urls, sizes, stock_total = 0, description, delivery_window, tags, moq = 1 } = body as Record<string, unknown>;
 
   if (!title) return NextResponse.json({ error: 'title is required' }, { status: 400 });
 
@@ -101,9 +101,11 @@ export async function POST(req: NextRequest) {
     wsp_usd       : wsp_usd ? Number(wsp_usd) : 0,
     srp           : srp     ? Number(srp)     : 0,
     color         : color   ? String(color)   : null,
+    color_hex     : color_hex ? String(color_hex) : null,
     sizes         : (sizes && typeof sizes === 'object') ? sizes : {},
     stock_total   : Number(stock_total),
     image_urls    : imageUrls,
+    video_urls    : Array.isArray(video_urls) ? video_urls : [],
     description   : description ? String(description) : null,
     delivery_window: delivery_window ? String(delivery_window) : null,
     tags          : Array.isArray(tags) ? tags : [],
