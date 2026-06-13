@@ -53,6 +53,31 @@ const EMPTY: Product = {
 
 const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'OS'];
 
+// A colourway = one inventory row in the style group (shared style_id).
+type Colorway = {
+  id?        : string;
+  color      : string;
+  color_hex  : string;
+  sku        : string;
+  image_urls : string[];
+  video_urls : string[];
+  sizes      : Record<string, number>;
+};
+function blankColorway(): Colorway {
+  return { color: '', color_hex: '', sku: '', image_urls: [], video_urls: [], sizes: {} };
+}
+function rowToColorway(p: Product): Colorway {
+  return {
+    id        : p.id,
+    color     : (p.color as string) ?? '',
+    color_hex : (p.color_hex as string) ?? '',
+    sku       : p.sku ?? '',
+    image_urls: Array.isArray(p.image_urls) ? p.image_urls : [],
+    video_urls: Array.isArray(p.video_urls) ? p.video_urls : [],
+    sizes     : (p.sizes && typeof p.sizes === 'object' && !Array.isArray(p.sizes)) ? p.sizes as Record<string, number> : {},
+  };
+}
+
 // ─── Image Upload ─────────────────────────────────────────────────────────────
 
 function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (urls: string[]) => void }) {
@@ -268,6 +293,46 @@ function SizeStockEditor({ sizes, onChange }: { sizes: Record<string, number>; o
   );
 }
 
+// ─── Colourway card (an additional colour of the same style) ──────────────────
+
+function ColorwayCard({ cw, label, onChange, onRemove }: { cw: Colorway; label: string; onChange: (c: Colorway) => void; onRemove: () => void }) {
+  const set = (patch: Partial<Colorway>) => onChange({ ...cw, ...patch });
+  const inputStyle: React.CSSProperties = { padding: '8px 12px', border: '1px solid #e5e5e5', fontSize: 13, fontFamily: SANS, outline: 'none' };
+  return (
+    <div style={{ border: '1px solid #eee', padding: 16, marginTop: 12, background: '#fcfcfc' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.35em', textTransform: 'uppercase', color: GOLD }}>{label}</span>
+        <button type="button" onClick={onRemove}
+          style={{ background: 'none', border: 'none', color: '#df1b41', cursor: 'pointer', fontFamily: SANS, fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+          Remove
+        </button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>Colour Name</span>
+          <input value={cw.color} onChange={e => set({ color: e.target.value })} placeholder="e.g. Ivory" style={inputStyle} />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>Colour Swatch</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="color" value={cw.color_hex || '#000000'} onChange={e => set({ color_hex: e.target.value })}
+              style={{ width: 40, height: 34, border: '1px solid #e5e5e5', padding: 2, cursor: 'pointer', background: '#fff' }} />
+            <input type="text" value={cw.color_hex} onChange={e => set({ color_hex: e.target.value })} placeholder="#000000"
+              style={{ ...inputStyle, flex: 1, fontFamily: MONO }} />
+          </div>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: '1 / -1' }}>
+          <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888' }}>SKU <span style={{ color: '#bbb', letterSpacing: 0, textTransform: 'none' }}>(per colour)</span></span>
+          <input value={cw.sku} onChange={e => set({ sku: e.target.value })} placeholder="e.g. DRESS-IVORY" style={inputStyle} />
+        </label>
+        <ImageUploadArea images={cw.image_urls} onChange={urls => set({ image_urls: urls })} />
+        <VideoUploadArea videos={cw.video_urls} onChange={urls => set({ video_urls: urls })} />
+        <SizeStockEditor sizes={cw.sizes} onChange={sizes => set({ sizes })} />
+      </div>
+    </div>
+  );
+}
+
 // ─── AI Mass Upload Modal ─────────────────────────────────────────────────────
 
 function AIMassUploadModal({ onClose, onDone }: { onClose: () => void; onDone: (p: Product[]) => void }) {
@@ -468,6 +533,10 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
   const [err, setErr]             = useState('');
   const [search, setSearch]       = useState('');
   const [filterStatus, setFilter] = useState('all');
+  // Additional colourways (beyond the primary one held in `form`) + the style
+  // group being edited. Each colourway saves as its own inventory row.
+  const [extraColorways, setExtraColorways] = useState<Colorway[]>([]);
+  const [editStyleId, setEditStyleId]       = useState<string | null>(null);
 
   const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency ?? 'USD', maximumFractionDigits: 0 }).format(n);
 
@@ -477,19 +546,32 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     return matchSearch && matchStatus;
   });
 
+  // All products sharing a style group (a "product" = its colourways).
+  function groupOf(p: Product): Product[] {
+    const sid = (p.style_id as string) || p.id;
+    return products.filter(q => ((q.style_id as string) || q.id) === sid);
+  }
+
   function openCreate() {
     setForm(EMPTY);
+    setExtraColorways([]);
+    setEditStyleId(null);
     setErr('');
     setModal('create');
   }
 
   function openEdit(p: Product) {
-    // `sizes` comes back from the DB as JSONB; guarantee it's a plain object for the grid
-    const sizes = (p.sizes && typeof p.sizes === 'object' && !Array.isArray(p.sizes))
-      ? p.sizes as Record<string, number>
+    // Load the whole style group: the primary colourway goes in `form`, the rest
+    // become additional colourway cards.
+    const group   = groupOf(p);
+    const primary = group[0] ?? p;
+    const sizes = (primary.sizes && typeof primary.sizes === 'object' && !Array.isArray(primary.sizes))
+      ? primary.sizes as Record<string, number>
       : {};
-    const video_urls = Array.isArray(p.video_urls) ? p.video_urls as string[] : [];
-    setForm({ ...p, sizes, video_urls });
+    const video_urls = Array.isArray(primary.video_urls) ? primary.video_urls as string[] : [];
+    setForm({ ...primary, sizes, video_urls });
+    setExtraColorways(group.slice(1).map(rowToColorway));
+    setEditStyleId((primary.style_id as string) || primary.id);
     setErr('');
     setModal('edit');
   }
@@ -498,28 +580,45 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     setSaving(true);
     setErr('');
     try {
-      const isEdit = modal === 'edit' && form.id;
-      const url    = isEdit ? `/api/products/${form.id}` : '/api/products';
-      const method = isEdit ? 'PATCH' : 'POST';
+      const isEdit = modal === 'edit';
+      const primary: Colorway = {
+        id        : isEdit && form.id ? form.id : undefined,
+        color     : (form.color as string) ?? '',
+        color_hex : form.color_hex ?? '',
+        sku       : form.sku ?? '',
+        image_urls: form.image_urls,
+        video_urls: form.video_urls,
+        sizes     : form.sizes || {},
+      };
+      const shared = {
+        title          : form.title,
+        category       : form.category,
+        gender         : (form.gender as string) ?? 'UNISEX',
+        season         : form.season,
+        description    : form.description,
+        delivery_window: form.delivery_window,
+        tags           : typeof form.tags === 'string' ? (form.tags as string).split(',').map(t => t.trim()).filter(Boolean) : form.tags,
+        wsp_usd        : form.wsp_usd,
+        srp            : form.srp,
+        moq            : form.moq,
+        status         : form.status,
+        material       : (form.material as string) ?? null,
+      };
 
-      const res  = await fetch(url, {
-        method,
+      const res  = await fetch('/api/products/group', {
+        method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({
-          ...form,
-          tags: typeof form.tags === 'string' ? (form.tags as string).split(',').map(t => t.trim()).filter(Boolean) : form.tags,
-          // stock_total is derived from the per-size grid so it always matches the sizes map
-          stock_total: sizeTotal(form.sizes || {}),
-        }),
+        body   : JSON.stringify({ style_id: editStyleId || undefined, shared, colorways: [primary, ...extraColorways] }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Save failed');
 
-      if (isEdit) {
-        setProducts(ps => ps.map(p => p.id === form.id ? json.product : p));
-      } else {
-        setProducts(ps => [json.product, ...ps]);
-      }
+      const rows: Product[] = json.products ?? [];
+      const sid = json.style_id as string;
+      setProducts(ps => {
+        const without = ps.filter(p => ((p.style_id as string) || p.id) !== sid);
+        return [...rows, ...without];
+      });
       setModal('none');
     } catch (e) {
       setErr((e as Error).message);
@@ -528,12 +627,14 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
     }
   }
 
-  async function handleArchive(id: string) {
-    if (!confirm('Archive this product?')) return;
-    const res  = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (!res.ok) { alert(json.error); return; }
-    setProducts(ps => ps.filter(p => p.id !== id));
+  async function handleArchive(p: Product) {
+    const group = groupOf(p);
+    if (!confirm(group.length > 1 ? `Archive this product and all ${group.length} colourways?` : 'Archive this product?')) return;
+    for (const row of group) {
+      await fetch(`/api/products/${row.id}`, { method: 'DELETE' });
+    }
+    const ids = new Set(group.map(r => r.id));
+    setProducts(ps => ps.filter(q => !ids.has(q.id)));
   }
 
   async function quickAdjust(id: string, delta: number) {
@@ -648,7 +749,7 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button onClick={() => openEdit(p)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#666', fontFamily: SANS }}>Edit</button>
-                        <button onClick={() => handleArchive(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#bbb', fontFamily: SANS }}>Archive</button>
+                        <button onClick={() => handleArchive(p)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#bbb', fontFamily: SANS }}>Archive</button>
                       </div>
                     </td>
                   </tr>
@@ -727,6 +828,26 @@ export default function ProductsClient({ initialProducts, brandName, tier, curre
               </label>
 
               <SizeStockEditor sizes={form.sizes} onChange={sizes => setForm(f => ({ ...f, sizes }))} />
+            </div>
+
+            {/* Additional colourways — each saves as its own inventory row sharing this style's group */}
+            <div style={{ marginTop: 18 }}>
+              {extraColorways.length > 0 && (
+                <p style={{ fontFamily: SANS, fontSize: '8px', letterSpacing: '0.4em', textTransform: 'uppercase', color: '#bbb' }}>Additional Colourways</p>
+              )}
+              {extraColorways.map((cw, i) => (
+                <ColorwayCard
+                  key={i}
+                  cw={cw}
+                  label={`Colourway ${i + 2}`}
+                  onChange={c => setExtraColorways(arr => arr.map((x, j) => j === i ? c : x))}
+                  onRemove={() => setExtraColorways(arr => arr.filter((_, j) => j !== i))}
+                />
+              ))}
+              <button type="button" onClick={() => setExtraColorways(arr => [...arr, blankColorway()])}
+                style={{ marginTop: 12, background: '#fff', border: `1px solid ${GOLD}`, color: GOLD, padding: '9px 18px', fontFamily: SANS, fontSize: '9px', letterSpacing: '0.25em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                + Add Colourway
+              </button>
             </div>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
