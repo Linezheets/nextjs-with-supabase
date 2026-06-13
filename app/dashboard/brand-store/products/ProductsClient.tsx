@@ -103,6 +103,23 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
     finally { setUploading(false); }
   }, [images, onChange]);
 
+  const [genOpen, setGenOpen]       = useState(false);
+  const [genPrompt, setGenPrompt]   = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [genErr, setGenErr]         = useState('');
+
+  const generate = async () => {
+    if (!genPrompt.trim()) return;
+    setGenerating(true); setGenErr('');
+    try {
+      const res  = await fetch('/api/ai/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: genPrompt.trim() }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Generation failed');
+      if (json.url) { onChange([...images, json.url]); setGenPrompt(''); setGenOpen(false); }
+    } catch (e) { setGenErr((e as Error).message); }
+    finally { setGenerating(false); }
+  };
+
   return (
     <div style={{ gridColumn: '1 / -1' }}>
       <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: 10 }}>
@@ -138,6 +155,24 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
         <input ref={fileInput} type="file" multiple accept="image/*" style={{ display: 'none' }}
           onChange={e => e.target.files && uploadFiles(e.target.files)} />
       </div>
+
+      {/* AI image generation (Linezheets AI / your own key) */}
+      <button type="button" onClick={() => setGenOpen(o => !o)}
+        style={{ marginTop: 8, background: 'none', border: 'none', color: GOLD, fontFamily: SANS, fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', padding: 0 }}>
+        ✦ {genOpen ? 'Close' : 'Generate with AI'}
+      </button>
+      {genOpen && (
+        <div style={{ marginTop: 8, border: '1px solid #eee', padding: 12 }}>
+          <textarea value={genPrompt} onChange={e => setGenPrompt(e.target.value)} rows={2}
+            placeholder="Describe the shot — e.g. 'ivory silk slip dress on a clean white studio background, editorial lighting'"
+            style={{ width: '100%', border: '1px solid #ddd', padding: 8, fontSize: 12, fontFamily: SANS, outline: 'none', resize: 'vertical' }} />
+          {genErr && <p style={{ color: '#c0392b', fontFamily: SANS, fontSize: 11, marginTop: 6, lineHeight: 1.5 }}>{genErr}</p>}
+          <button type="button" onClick={generate} disabled={generating || !genPrompt.trim()}
+            style={{ marginTop: 8, background: '#111', color: '#fff', border: 'none', padding: '8px 16px', fontFamily: SANS, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', opacity: generating || !genPrompt.trim() ? 0.4 : 1 }}>
+            {generating ? 'Generating…' : 'Generate Image'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

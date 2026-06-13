@@ -23,6 +23,20 @@ export function aiMonthlyLimit(tier: string | null | undefined): number {
   return AI_MONTHLY_LIMITS[(tier ?? 'starter').toLowerCase()] ?? 0;
 }
 
+// In-house IMAGE generation is far pricier than text, so it has its own monthly
+// allowance (see docs/AI-ROADMAP.md). BYO image keys are unlimited.
+export const AI_IMAGE_MONTHLY_LIMITS: Record<string, number> = {
+  starter   : 0,
+  free      : 0,
+  brand     : 50,
+  agent     : 50,
+  enterprise: 300,
+};
+
+export function aiImageMonthlyLimit(tier: string | null | undefined): number {
+  return AI_IMAGE_MONTHLY_LIMITS[(tier ?? 'starter').toLowerCase()] ?? 0;
+}
+
 /** Current usage period key, e.g. "2026-06" (UTC). */
 export function currentPeriod(d: Date = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
