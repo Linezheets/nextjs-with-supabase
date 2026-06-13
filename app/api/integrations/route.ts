@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin'; // Your admin client from Step 2 of the last message
+import { encryptSecret } from '@/lib/secret-crypto';
 
 export async function GET() {
   const supabase = await createClient();
@@ -47,6 +48,12 @@ export async function POST(req: NextRequest) {
   const { platform, access_token, shop_domain, external_id, config } = body;
   if (!platform) return NextResponse.json({ error: 'platform required' }, { status: 400 });
 
+  // Encrypt provider API keys at rest (BYO AI keys) instead of storing plaintext.
+  let storedConfig = config ?? {};
+  if (platform === 'ai_provider' && storedConfig && typeof storedConfig === 'object' && storedConfig.api_key) {
+    storedConfig = { ...storedConfig, api_key: encryptSecret(String(storedConfig.api_key)) };
+  }
+
   const { data, error } = await supabase
     .from('integration_configs')
     .upsert({
@@ -55,7 +62,7 @@ export async function POST(req: NextRequest) {
       access_token: access_token ?? null,
       shop_domain: shop_domain ?? null,
       external_id: external_id ?? null,
-      config: config ?? {},
+      config: storedConfig,
       active: true,
       connected_at: new Date().toISOString(),
     }, { onConflict: 'brand_id,platform' })

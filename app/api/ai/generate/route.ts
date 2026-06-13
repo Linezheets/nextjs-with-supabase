@@ -4,6 +4,7 @@ import { getUserFromRequest } from '@/lib/supabase/bearer';
 import { createAdminClient } from '@/lib/supabase/server';
 import { generateAI, type AITask, type AIProvider } from '@/lib/ai-provider';
 import { aiMonthlyLimit, currentPeriod } from '@/lib/ai-limits';
+import { decryptSecret } from '@/lib/secret-crypto';
 
 export const runtime = 'nodejs';
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (config?.config) {
       const cfg = config.config as { provider?: AIProvider; api_key?: string };
       provider = bodyProvider ?? cfg.provider ?? 'claude';
-      apiKey   = cfg.api_key;
+      apiKey   = decryptSecret(cfg.api_key); // legacy plaintext passes through unchanged
     }
   }
 
