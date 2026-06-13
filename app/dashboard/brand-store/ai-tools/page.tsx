@@ -58,6 +58,35 @@ export default function AIStudioPage() {
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // AI engine: in-house usage meter + bring-your-own-key
+  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [mode, setMode]   = useState<'linezheets' | 'byok' | null>(null);
+  const [showConnect, setShowConnect]         = useState(false);
+  const [connectProvider, setConnectProvider] = useState<AIProvider>('claude');
+  const [connectKey, setConnectKey]           = useState('');
+  const [savingKey, setSavingKey]             = useState(false);
+  const [keySaved, setKeySaved]               = useState(false);
+
+  const saveKey = async () => {
+    if (!connectKey.trim()) return;
+    setSavingKey(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: 'ai_provider', config: { provider: connectProvider, api_key: connectKey.trim() } }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error ?? 'Failed to save key'); }
+      setKeySaved(true);
+      setShowConnect(false);
+      setConnectKey('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save key');
+    } finally {
+      setSavingKey(false);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +114,8 @@ export default function AIStudioPage() {
       }
 
       setResult(data.result);
+      setUsage(data.usage ?? null);
+      setMode(data.mode ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
@@ -144,6 +175,57 @@ export default function AIStudioPage() {
                 </button>
               );
             })}
+          </div>
+
+          {/* AI Engine — in-house meter + bring-your-own-key */}
+          <div style={{ marginTop: 28 }}>
+            <p className="text-[7.5px] uppercase tracking-[0.5em] mb-3 px-1" style={{ color: '#999', fontFamily: MONO }}>
+              AI Engine
+            </p>
+            {keySaved ? (
+              <div style={{ border: '1px solid #eee', padding: 12, fontFamily: MONO, fontSize: 11, color: '#111', lineHeight: 1.6 }}>
+                ✓ Using your own <strong style={{ textTransform: 'capitalize' }}>{connectProvider}</strong> key — unlimited.
+                <button onClick={() => { setKeySaved(false); setShowConnect(true); }}
+                  style={{ display: 'block', marginTop: 8, color: GOLD, fontFamily: MONO, fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  Change key
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ border: '1px solid #eee', padding: 12, fontFamily: MONO, fontSize: 11, color: '#555', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#111' }}>Linezheets AI</strong> — included on Brand &amp; Enterprise plans.
+                  {usage && mode === 'linezheets' && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ height: 4, background: '#eee' }}>
+                        <div style={{ height: 4, background: GOLD, width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: '#999' }}>{usage.used} / {usage.limit} this month</span>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowConnect(s => !s)}
+                  style={{ marginTop: 8, width: '100%', border: `1px solid ${GOLD}`, color: GOLD, background: '#fff', padding: 8, fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  {showConnect ? 'Cancel' : 'Connect your own key'}
+                </button>
+                {showConnect && (
+                  <div style={{ border: '1px solid #eee', padding: 12, marginTop: 8 }}>
+                    <select value={connectProvider} onChange={e => setConnectProvider(e.target.value as AIProvider)}
+                      style={{ width: '100%', padding: 7, border: '1px solid #ddd', fontFamily: MONO, fontSize: 12, marginBottom: 8, background: '#fff' }}>
+                      <option value="claude">Claude (Anthropic)</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Gemini</option>
+                    </select>
+                    <input type="password" value={connectKey} onChange={e => setConnectKey(e.target.value)} placeholder="Paste API key…"
+                      style={{ width: '100%', padding: 7, border: '1px solid #ddd', fontFamily: MONO, fontSize: 12, marginBottom: 8, outline: 'none' }} />
+                    <button onClick={saveKey} disabled={savingKey || !connectKey.trim()}
+                      style={{ width: '100%', background: '#111', color: '#fff', padding: 8, fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', opacity: savingKey || !connectKey.trim() ? 0.4 : 1 }}>
+                      {savingKey ? 'Saving…' : 'Save Key'}
+                    </button>
+                    <p style={{ fontSize: 9, color: '#aaa', marginTop: 6, lineHeight: 1.5 }}>Used only for your own generations — unlimited, your cost.</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
