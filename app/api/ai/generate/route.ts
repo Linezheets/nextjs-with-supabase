@@ -73,11 +73,19 @@ export async function POST(req: NextRequest) {
   }
 
   const period = currentPeriod();
-  const { count } = await admin
+  const { count, error: usageErr } = await admin
     .from('ai_usage')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .eq('period', period);
+  // Fail CLOSED: if usage can't be read (e.g. the ai_usage migration isn't applied
+  // yet), refuse in-house rather than burn platform tokens un-metered.
+  if (usageErr) {
+    return NextResponse.json({
+      error: 'Linezheets AI is being set up. Please connect your own API key for now.',
+      code : 'metering_unavailable',
+    }, { status: 503 });
+  }
   const used = count ?? 0;
 
   if (used >= limit) {
