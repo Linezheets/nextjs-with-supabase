@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/supabase/bearer';
 import { createAdminClient } from '@/lib/supabase/server';
-import { generateImage, type ImageProvider } from '@/lib/ai-image';
+import { generateImage, editImage, type ImageProvider } from '@/lib/ai-image';
 import { decryptSecret } from '@/lib/secret-crypto';
 import { aiImageMonthlyLimit, currentPeriod } from '@/lib/ai-limits';
 import { randomUUID } from 'crypto';
@@ -13,11 +13,12 @@ export async function POST(req: NextRequest) {
   const { user, supabase } = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { prompt?: string; apiKey?: string; provider?: ImageProvider };
+  let body: { prompt?: string; apiKey?: string; provider?: ImageProvider; sourceUrl?: string };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const prompt = body.prompt?.trim();
+  const prompt    = body.prompt?.trim();
+  const sourceUrl = body.sourceUrl?.trim();
   if (!prompt) return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
 
   // ── Resolve an image-capable key (Claude can't make images) ─────────────────
@@ -84,7 +85,16 @@ export async function POST(req: NextRequest) {
   // ── Generate ────────────────────────────────────────────────────────────────
   let png: Buffer;
   try {
-    png = await generateImage(prompt, { apiKey, provider });
+    if (sourceUrl) {
+      // Phase 2 — transform an existing product photo (on-model / scene / bg swap)
+      if (provider !== 'openai') throw new Error('Image transform needs an OpenAI key (gpt-image-1).');
+      const srcRes = await fetch(sourceUrl);
+      if (!srcRes.ok) throw new Error('Could not load the source image.');
+      const srcBuf = Buffer.from(await srcRes.arrayBuffer());
+      png = await editImage(srcBuf, prompt, { apiKey });
+    } else {
+      png = await generateImage(prompt, { apiKey, provider });
+    }
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Image generation failed' }, { status: 500 });
   }

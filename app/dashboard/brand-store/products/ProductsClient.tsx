@@ -107,12 +107,18 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
   const [genPrompt, setGenPrompt]   = useState('');
   const [generating, setGenerating] = useState(false);
   const [genErr, setGenErr]         = useState('');
+  const [useBase, setUseBase]       = useState(false);   // transform first image (mockup) vs generate fresh
 
   const generate = async () => {
     if (!genPrompt.trim()) return;
     setGenerating(true); setGenErr('');
     try {
-      const res  = await fetch('/api/ai/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: genPrompt.trim() }) });
+      const useSource = useBase && images.length > 0;
+      const res  = await fetch('/api/ai/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: genPrompt.trim(), ...(useSource ? { sourceUrl: images[0] } : {}) }),
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Generation failed');
       if (json.url) { onChange([...images, json.url]); setGenPrompt(''); setGenOpen(false); }
@@ -166,10 +172,16 @@ function ImageUploadArea({ images, onChange }: { images: string[]; onChange: (ur
           <textarea value={genPrompt} onChange={e => setGenPrompt(e.target.value)} rows={2}
             placeholder="Describe the shot — e.g. 'ivory silk slip dress on a clean white studio background, editorial lighting'"
             style={{ width: '100%', border: '1px solid #ddd', padding: 8, fontSize: 12, fontFamily: SANS, outline: 'none', resize: 'vertical' }} />
+          {images.length > 0 && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontFamily: SANS, fontSize: 11, color: '#555', cursor: 'pointer' }}>
+              <input type="checkbox" checked={useBase} onChange={e => setUseBase(e.target.checked)} style={{ accentColor: GOLD }} />
+              Transform my first image (on-model · scene · background)
+            </label>
+          )}
           {genErr && <p style={{ color: '#c0392b', fontFamily: SANS, fontSize: 11, marginTop: 6, lineHeight: 1.5 }}>{genErr}</p>}
           <button type="button" onClick={generate} disabled={generating || !genPrompt.trim()}
             style={{ marginTop: 8, background: '#111', color: '#fff', border: 'none', padding: '8px 16px', fontFamily: SANS, fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', opacity: generating || !genPrompt.trim() ? 0.4 : 1 }}>
-            {generating ? 'Generating…' : 'Generate Image'}
+            {generating ? 'Working…' : (useBase && images.length > 0 ? 'Generate Mockup' : 'Generate Image')}
           </button>
         </div>
       )}
