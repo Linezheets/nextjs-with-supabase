@@ -66,6 +66,18 @@ export async function updateOrderStatus(admin: any, opts: { orderId: string; bra
   if (error) return { ok: false, httpStatus: 500, error: error.message };
   if (!data)  return { ok: false, httpStatus: 404, error: 'Order not found' };
 
+  // Restore inventory when an order is cancelled (idempotent — the RPC no-ops if
+  // already restored). FUTURE_ALLOCATION lines never decremented, so the RPC
+  // skips them. Non-fatal: a restore failure must not block the cancellation.
+  if (toStatus === 'cancelled' && fromStatus !== 'cancelled') {
+    try {
+      const { error: restoreErr } = await admin.rpc('restore_order_stock', { p_order_id: orderId });
+      if (restoreErr) console.error('[order-status] stock restore failed for', orderId, restoreErr);
+    } catch (err) {
+      console.error('[order-status] stock restore threw for', orderId, err);
+    }
+  }
+
   // Auto-release escrow when delivered and payment is fully captured.
   let escrowRelease: EscrowRelease | null = null;
   if (shouldAutoRelease(toStatus, data.payment_status, data.escrow_status)) {
