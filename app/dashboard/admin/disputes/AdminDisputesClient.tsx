@@ -199,7 +199,7 @@ export default function AdminDisputesClient() {
             {err && <p style={{ color: '#df1b41', fontSize: '10px', fontFamily: SANS, marginBottom: 8 }}>{err}</p>}
             {resolution === 'resolved_refund' && (
               <p style={{ fontSize: '9px', color: GOLD, fontFamily: SANS, marginBottom: 12 }}>
-                ⚠ This will mark the order as refund_approved. Process the actual Stripe refund manually via the Stripe dashboard.
+                ⚠ This will issue the buyer's Stripe refund automatically — reversing the brand payout if it was already released, refunding each charge, and restoring stock. The order is marked refunded.
               </p>
             )}
             <div style={{ display: 'flex', gap: 8 }}>

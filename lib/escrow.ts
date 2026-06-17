@@ -48,6 +48,12 @@ export async function releaseEscrow(orderId: string): Promise<ReleaseResult> {
 
   if (!order) throw new Error(`Order ${orderId} not found`);
 
+  // Never release a refunded order to the brand. (The atomic claim below also
+  // blocks this — it only matches held/releasing — but fail fast and clearly.)
+  if (order.escrow_status === 'refunded') {
+    throw new Error(`Cannot release escrow for ${orderId}: order has been refunded`);
+  }
+
   // Idempotent — already released
   if (order.escrow_status === 'released' && order.stripe_transfer_id) {
     return {

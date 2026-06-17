@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email';
-import { releaseEscrow } from '@/lib/escrow';
-import stripe from '@/lib/stripe';
+import { refundOrder } from '@/lib/refunds';
 
 const VALID_RESOLUTIONS = [
   'under_review',
@@ -116,37 +115,31 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // If resolved_refund: release escrow back (admin will handle actual Stripe refund separately)
-  // We update order status to indicate admin action needed — no automatic Stripe refund.
-  // (Wholesale refunds are case-by-case — admin handles via Stripe dashboard.)
+  // If resolved_refund: actually issue the buyer refund (reverse the brand
+  // transfer if escrow was released, then stripe.refunds.create per payment,
+  // restore stock, mark the order refunded). refundOrder is idempotent.
   let escrowNote = '';
   if (status === 'resolved_refund') {
-    // If escrow already paid the brand, claw it back so the buyer can be refunded
-    // from the platform balance. If still escrowed, funds are already with the platform.
-    const { data: ord } = await admin
-      .from('buyer_orders')
-      .select('escrow_status, stripe_transfer_id')
-      .eq('id', dispute.order_id)
-      .maybeSingle() as { data: { escrow_status: string | null; stripe_transfer_id: string | null } | null };
-
-    if (ord?.escrow_status === 'released' && ord.stripe_transfer_id) {
-      try {
-        await stripe.transfers.createReversal(
-          ord.stripe_transfer_id, {}, { idempotencyKey: `dispute-reversal-${dispute.id}` },
-        );
-        escrowNote = ' Brand payout reversed (clawed back). Issue the buyer refund from the platform balance.';
-      } catch (e) {
-        escrowNote = ` Auto-reversal of brand payout FAILED: ${(e as Error).message}. Resolve the clawback manually before refunding.`;
-        console.error('[dispute] transfer reversal failed', dispute.order_id, e);
+    try {
+      const refund = await refundOrder(dispute.order_id, { reason: 'requested_by_customer' });
+      if (refund.alreadyRefunded) {
+        escrowNote = ' Order was already refunded.';
+      } else {
+        escrowNote =
+          ` Buyer refunded $${refund.refundedUsd.toFixed(2)}` +
+          (refund.reversedTransfer ? ' (brand payout reversed).' : '.') +
+          (refund.refundIds.length ? ` Stripe refund id(s): ${refund.refundIds.join(', ')}.` : '');
       }
-    } else {
-      escrowNote = ' Funds still in escrow — process the buyer refund from the platform balance.';
+    } catch (e) {
+      // Auto-refund failed (e.g. no captured payment). Fall back to the old
+      // behaviour: flag the order for manual action.
+      escrowNote = ` Automatic refund FAILED: ${(e as Error).message}. Process the refund manually via Stripe; order marked refund_approved.`;
+      console.error('[dispute] auto-refund failed', dispute.order_id, e);
+      await admin
+        .from('buyer_orders')
+        .update({ status: 'refund_approved', updated_at: now })
+        .eq('id', dispute.order_id);
     }
-
-    await admin
-      .from('buyer_orders')
-      .update({ status: 'refund_approved', updated_at: now })
-      .eq('id', dispute.order_id);
   }
 
   // Notify the user who raised the dispute
