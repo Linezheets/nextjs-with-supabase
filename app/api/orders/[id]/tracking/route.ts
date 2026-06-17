@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { updateOrderStatus } from '@/lib/orders/update-status';
 
 export async function PATCH(
   req: NextRequest,
@@ -44,14 +45,18 @@ export async function PATCH(
   const trackingNote = `Tracking: ${tracking_number}${carrier ? ` (${carrier})` : ''}${tracking_url ? ` — ${tracking_url}` : ''}`;
   const updatedNotes = order.notes ? `${order.notes}\n${trackingNote}` : trackingNote;
 
-  const { data, error } = await admin
-    .from('buyer_orders')
-    .update({ status: 'shipped', notes: updatedNotes, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .maybeSingle();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Route the status change through the canonical state machine so adding
+  // tracking can't force an order from an illegal state into 'shipped'
+  // (e.g. 'new' → 'shipped' or un-cancelling). Re-adding tracking to an
+  // already-shipped order is allowed (same-status update).
+  const result = await updateOrderStatus(admin, {
+    orderId  : id,
+    brandName: sf.brand_name,
+    toStatus : 'shipped',
+    notes    : updatedNotes,
+  });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.httpStatus });
+  const data = result.order;
 
   // Notify the buyer their order shipped (non-blocking — never fail the update on email).
   try {

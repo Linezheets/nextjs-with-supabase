@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { updateOrderStatus } from '@/lib/orders/update-status';
 
 export async function GET(
   _req: NextRequest,
@@ -52,13 +53,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json() as { status?: string; notes?: string };
 
-  const allowed = ['status', 'notes'];
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  for (const key of allowed) {
-    if (body[key as keyof typeof body] !== undefined) patch[key] = body[key as keyof typeof body];
-  }
-
-  if (Object.keys(patch).length === 1) {
+  if (body.status === undefined && body.notes === undefined) {
     return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
   }
 
@@ -72,15 +67,29 @@ export async function PATCH(
     .eq('user_id', user.id)
     .maybeSingle();
 
-  let query = admin.from('buyer_orders').update(patch).eq('id', id);
-
-  if (sf) {
-    query = query.eq('brand_name', sf.brand_name);
-  } else {
-    // Buyers can only update notes, not status
-    delete patch['status'];
-    query = admin.from('buyer_orders').update(patch).eq('id', id).eq('buyer_id', user.id);
+  // Brand changing status → route through the canonical state machine so it
+  // validates the transition, restores stock on cancel, and releases escrow on
+  // delivered (this generic PATCH previously wrote any status string raw).
+  if (sf && body.status !== undefined) {
+    const result = await updateOrderStatus(admin, {
+      orderId  : id,
+      brandName: sf.brand_name,
+      toStatus : body.status,
+      notes    : body.notes ?? null,
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.httpStatus });
+    return NextResponse.json({ order: result.order });
   }
+
+  // Notes-only update (brand or buyer). Buyers can never change status.
+  if (body.notes === undefined) {
+    return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
+  }
+  const patch = { notes: body.notes, updated_at: new Date().toISOString() };
+
+  const query = sf
+    ? admin.from('buyer_orders').update(patch).eq('id', id).eq('brand_name', sf.brand_name)
+    : admin.from('buyer_orders').update(patch).eq('id', id).eq('buyer_id', user.id);
 
   const { data, error } = await query.select().maybeSingle();
 

@@ -44,22 +44,28 @@ type SortDir = 'asc' | 'desc';
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = {
-  offer    : '#c9a84c',
-  new      : '#c9a84c',
-  confirmed: '#52b788',
-  preparing: '#7cb9e8',
-  shipped  : '#a8dadc',
-  delivered: '#52b788',
-  cancelled: '#4a4a4a',
+  offer               : '#c9a84c',
+  new                 : '#c9a84c',
+  confirmed           : '#52b788',
+  processing          : '#7cb9e8',
+  preparing           : '#7cb9e8',   // legacy alias for processing
+  allocation_confirmed: '#7cb9e8',
+  shipped             : '#a8dadc',
+  delivered           : '#52b788',
+  cancelled           : '#4a4a4a',
 };
 
-// Which status a brand can advance to, and which can be cancelled
+// Which status a brand can advance to, and which can be cancelled. These mirror
+// the canonical TRANSITIONS in lib/orders/update-status.ts — advancing all the
+// way to 'delivered' is what triggers escrow auto-release to the brand.
 const NEXT_STATUS: Record<string, { label: string; to: string } | null> = {
-  new      : { label: 'Confirm',  to: 'confirmed' },
-  confirmed: { label: 'Preparing', to: 'preparing' },
-  preparing: { label: 'Shipped',  to: 'shipped'   },
+  new       : { label: 'Confirm',    to: 'confirmed'  },
+  confirmed : { label: 'Processing', to: 'processing' },
+  preparing : { label: 'Shipped',    to: 'shipped'    },   // legacy rows
+  processing: { label: 'Shipped',    to: 'shipped'    },
+  shipped   : { label: 'Delivered',  to: 'delivered'  },
 };
-const CAN_CANCEL = new Set(['new', 'confirmed']);
+const CAN_CANCEL = new Set(['new', 'confirmed', 'processing']);
 
 const PAYMENT_INFO: Record<string, { label: string; color: string }> = {
   unpaid            : { label: 'Unpaid',       color: '#e87c7c' },
@@ -69,7 +75,7 @@ const PAYMENT_INFO: Record<string, { label: string; color: string }> = {
   payment_failed    : { label: 'Failed',        color: '#e87c7c' },
 };
 
-const STATUS_ORDER = ['new', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'offer'];
+const STATUS_ORDER = ['new', 'confirmed', 'processing', 'preparing', 'allocation_confirmed', 'shipped', 'delivered', 'cancelled', 'offer'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { updateOrderStatus } from '@/lib/orders/update-status';
 
 // Resolve the brand_name for the authenticated user
 async function getBrandName(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
@@ -86,32 +87,15 @@ export async function PATCH(req: NextRequest) {
   const { order_id, status } = body;
   if (!order_id || !status) return NextResponse.json({ error: 'order_id and status required' }, { status: 400 });
 
-  const ALLOWED: Record<string, string[]> = {
-    new      : ['confirmed', 'cancelled'],
-    confirmed: ['preparing', 'cancelled'],
-    preparing: ['shipped'],
-  };
+  // Delegate to the single canonical state machine instead of a private
+  // transition table. This previously wrote 'preparing' and topped out at
+  // 'shipped', bypassing TRANSITIONS, the stock-restore-on-cancel hook, and the
+  // 'delivered' escrow auto-release. updateOrderStatus enforces all three and
+  // scopes the order to the brand via buyer_orders.brand_name.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin = createAdminClient() as any;
+  const result = await updateOrderStatus(admin, { orderId: order_id, brandName, toStatus: status });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.httpStatus });
 
-  // Verify the order belongs to this brand before mutating
-  const { data: existing } = await supabase
-    .from('buyer_orders')
-    .select('id, status')
-    .eq('id', order_id)
-    .filter('items', 'cs', JSON.stringify([{ brand_name: brandName }]))
-    .maybeSingle();
-
-  if (!existing) return NextResponse.json({ error: 'Order not found or not your brand' }, { status: 404 });
-
-  const allowed = ALLOWED[(existing as unknown as { status: string }).status] ?? [];
-  if (!allowed.includes(status)) {
-    return NextResponse.json(
-      { error: `Cannot transition '${(existing as unknown as { status: string }).status}' → '${status}'` },
-      { status: 422 },
-    );
-  }
-
-  const { error } = await supabase.from('buyer_orders').update({ status }).eq('id', order_id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ ok: true, order_id, status });
+  return NextResponse.json({ ok: true, order_id, status, escrow_release: result.escrowRelease });
 }
