@@ -39,9 +39,9 @@ export default async function BrandStorefrontPage({ params }: { params: Promise<
   if (inventoryIds.length) {
     const { data } = await supabase
       .from('inventory')
-      .select('id,title,description,brand_name,category,color,season,srp,image_urls,material,gender')
+      .select('id,title,description,brand_name,category,color,color_hex,style_id,season,srp,image_urls,material,gender')
       .in('id', inventoryIds);
-    inventoryItems = (data ?? []) as Record<string, unknown>[];
+    inventoryItems = (data ?? []) as unknown as Record<string, unknown>[];
   }
 
   // Merge consumer_price (SRP override) into items — never expose wsp_usd

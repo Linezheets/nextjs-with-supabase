@@ -294,7 +294,14 @@ function SectionRenderer({ section, theme, items, onEnquire, onOpen }: {
       );
 
     case 'featured_products': {
-      const shown = items.slice(0, section.count);
+      // Group a style's colourways into one product card (keyed by style_id).
+      const styleGroups = new Map<string, StoreItem[]>();
+      for (const it of items) {
+        const k = String((it as Record<string, unknown>).style_id || it.id);
+        if (!styleGroups.has(k)) styleGroups.set(k, []);
+        styleGroups.get(k)!.push(it);
+      }
+      const shown = Array.from(styleGroups.values()).slice(0, section.count);
       const cols  = theme.grid_columns ?? (section.layout === 'row' ? 2 : 3);
       return (
         <div id="collection" style={{ padding: `${vPad} ${hPad}`, background: theme.color_bg }}>
@@ -303,7 +310,8 @@ function SectionRenderer({ section, theme, items, onEnquire, onOpen }: {
               <p style={{ fontSize: `${7*scale}px`, textTransform: 'uppercase', letterSpacing: '0.55em', color: theme.color_accent, fontFamily: 'system-ui', marginBottom: '40px' }}>{section.title}</p>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols},1fr)`, gap: `clamp(16px,3vw,${32*scale}px) clamp(12px,2vw,${28*scale}px)` }}>
-              {shown.map(item => {
+              {shown.map(group => {
+                const item  = group[0];
                 const imgs  = getImages(item);
                 const price = Number(item.consumer_price ?? item.retail_price ?? 0);
                 const cardStyle = theme.product_card_style ?? 'editorial';
@@ -342,6 +350,19 @@ function SectionRenderer({ section, theme, items, onEnquire, onOpen }: {
                     <p style={{ ...headingCss(theme, `${13*scale}px`), color: theme.color_text, marginBottom: '3px' }}>{String(item.title??'')}</p>
                     <p style={{ fontSize: `${7*scale}px`, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#bbb', fontFamily: 'system-ui' }}>{String(item.brand_name??'')}</p>
                     {price > 0 && <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: `${11*scale}px`, color: theme.color_accent, marginTop: '5px' }}>${price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2})}</p>}
+                    {group.length > 1 && (
+                      <div style={{ display: 'flex', gap: '5px', marginTop: '8px' }}>
+                        {group.map((cw, ci) => {
+                          const hex = String((cw as Record<string, unknown>).color_hex || '') || '#ddd';
+                          return (
+                            <button key={ci} onClick={e => { e.stopPropagation(); onOpen(cw); }}
+                              title={String((cw as Record<string, unknown>).color ?? '')}
+                              aria-label={`Colour ${ci + 1}`}
+                              style={{ width: '13px', height: '13px', borderRadius: '50%', background: hex, border: '1px solid rgba(0,0,0,0.18)', cursor: 'pointer', padding: 0 }} />
+                          );
+                        })}
+                      </div>
+                    )}
                   </article>
                 );
               })}

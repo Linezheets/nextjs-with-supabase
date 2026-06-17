@@ -253,8 +253,16 @@ function SectionRenderer({
 
     case 'featured_products': {
       const featured = items.filter(i => i.featured);
-      const shown    = featured.length ? featured.slice(0, section.count) : items.slice(0, section.count);
-      const cols     = section.layout === 'row' ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(220px,1fr))';
+      const base     = featured.length ? featured : items;
+      // Group a style's colourways into one product card (keyed by style_id).
+      const gmap = new Map<string, typeof items>();
+      for (const it of base) {
+        const k = String((it as Record<string, unknown>).style_id || it.id);
+        if (!gmap.has(k)) gmap.set(k, []);
+        gmap.get(k)!.push(it);
+      }
+      const shown = Array.from(gmap.values()).slice(0, section.count);
+      const cols  = section.layout === 'row' ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(220px,1fr))';
       return (
         <div id="collection" style={{ padding: '80px 48px', background: theme.color_bg }}>
           {section.title && (
@@ -263,7 +271,8 @@ function SectionRenderer({
             </p>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '24px' }}>
-            {shown.map(item => {
+            {shown.map(group => {
+              const item = group[0];
               const imgs = getImages(item);
               const price = item.consumer_price ?? 0;
               return (
@@ -288,6 +297,19 @@ function SectionRenderer({
                     <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '12px', color: accent }}>
                       ${price.toLocaleString()}
                     </p>
+                  )}
+                  {group.length > 1 && (
+                    <div style={{ display: 'flex', gap: '5px', marginTop: '8px' }}>
+                      {group.map((cw, ci) => {
+                        const hex = String((cw as Record<string, unknown>).color_hex || '') || '#ddd';
+                        return (
+                          <button key={ci} onClick={e => { e.stopPropagation(); onOpenProduct(cw); }}
+                            title={String((cw as Record<string, unknown>).color ?? '')}
+                            aria-label={`Colour ${ci + 1}`}
+                            style={{ width: '13px', height: '13px', borderRadius: '50%', background: hex, border: '1px solid rgba(0,0,0,0.18)', cursor: 'pointer', padding: 0 }} />
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               );
