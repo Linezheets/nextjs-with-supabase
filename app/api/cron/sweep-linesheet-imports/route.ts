@@ -5,6 +5,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 // Serverless functions can be frozen/timed-out mid-import, leaving the job
 // hanging forever and the UI polling indefinitely. Protected by CRON_SECRET.
 export async function GET(req: NextRequest) {
+  // Fail closed when CRON_SECRET is unset (avoid accepting "Bearer undefined").
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Cron not configured' }, { status: 503 });
+  }
   const auth = req.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

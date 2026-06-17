@@ -73,8 +73,30 @@ export async function updateOrderStatus(admin: any, opts: { orderId: string; bra
       const result = await releaseEscrow(orderId);
       escrowRelease = { transfer_id: result.transferId, transferred: result.transferred / 100 };
     } catch (err) {
-      // Log but don't fail the status change — admin can release manually.
+      // Don't fail the status change — releaseEscrow already rolled the escrow
+      // claim back to a retryable state, and an admin can release manually via
+      // POST /api/payments/release. But this must NOT be silent: a delivered,
+      // fully-paid order whose payout failed (e.g. brand never completed Stripe
+      // Connect onboarding) would otherwise sit with funds stuck and no signal.
+      // Alert an admin so it gets actioned.
       console.error('[order-status] escrow auto-release failed for', orderId, err);
+      try {
+        const adminTo = process.env.NOTIFY_EMAIL
+          ?? process.env.ADMIN_EMAILS?.split(',')[0]?.trim()
+          ?? 'info@mxlla.com';
+        const { sendEmail } = await import('@/lib/email');
+        await sendEmail({
+          to     : adminTo,
+          subject: `⚠ Escrow auto-release FAILED — order ${orderId}`,
+          html   : `<p>Order <strong>${orderId}</strong> (brand <strong>${brandName}</strong>) was marked
+                    <strong>delivered</strong> but the automatic escrow release to the brand failed.</p>
+                    <p><strong>Reason:</strong> ${(err as Error)?.message ?? String(err)}</p>
+                    <p>Funds remain held. Resolve the cause (commonly the brand has no active Stripe Connect
+                    account) and release manually via <code>POST /api/payments/release/${orderId}</code>.</p>`,
+        });
+      } catch (mailErr) {
+        console.error('[order-status] failed to send escrow-failure admin alert for', orderId, mailErr);
+      }
     }
   }
 

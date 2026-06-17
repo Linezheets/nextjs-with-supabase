@@ -28,6 +28,11 @@ type OrderRow = {
 // Vercel Cron calls this daily at 08:00 UTC.
 // Protected by CRON_SECRET to prevent unauthenticated triggers.
 export async function GET(req: NextRequest) {
+  // Fail closed: if CRON_SECRET is unset, refuse rather than accept the literal
+  // "Bearer undefined" — this endpoint charges customer cards.
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Cron not configured' }, { status: 503 });
+  }
   const auth = req.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

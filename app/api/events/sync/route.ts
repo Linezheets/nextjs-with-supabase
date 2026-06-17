@@ -4,12 +4,26 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 export const maxDuration = 300; // 5 min Vercel timeout
 
-export async function POST(req: NextRequest) {
-  // Verify cron secret
-  const auth = req.headers.get('authorization');
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
+/**
+ * Fail-closed cron auth. If CRON_SECRET is not configured, the endpoint refuses
+ * to run rather than becoming publicly open (it triggers an AI sync job that
+ * burns API quota). The previous `CRON_SECRET && ...` short-circuit silently
+ * disabled the check whenever the secret was unset.
+ */
+function authorize(provided: string | null): NextResponse | null {
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'Cron not configured' }, { status: 503 });
+  }
+  if (provided !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
+  return null;
+}
+
+export async function POST(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  const denied = authorize(auth?.startsWith('Bearer ') ? auth.slice(7) : null);
+  if (denied) return denied;
 
   try {
     // Dynamic import so the heavy sync module is not bundled into main edge chunk
@@ -25,9 +39,8 @@ export async function POST(req: NextRequest) {
 // Allow GET for manual trigger from browser (still requires secret via ?secret=)
 export async function GET(req: NextRequest) {
   const secret = new URL(req.url).searchParams.get('secret');
-  if (CRON_SECRET && secret !== CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
-  }
+  const denied = authorize(secret);
+  if (denied) return denied;
 
   try {
     const { runSync } = await import('@/lib/events/ai-sync');
