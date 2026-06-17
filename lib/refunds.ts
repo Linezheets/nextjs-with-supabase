@@ -38,12 +38,13 @@ export async function refundOrder(
 
   const { data: order } = await admin
     .from('buyer_orders')
-    .select('id, total_usd, escrow_status, stripe_transfer_id, status, refund_status')
+    .select('id, total_usd, escrow_status, stripe_transfer_id, status, refund_status, buyer_id, buyer_name')
     .eq('id', orderId)
     .single() as {
       data: {
         id: string; total_usd: number; escrow_status: string | null;
         stripe_transfer_id: string | null; status: string | null; refund_status: string | null;
+        buyer_id: string | null; buyer_name: string | null;
       } | null;
     };
   if (!order) throw new Error(`Order ${orderId} not found`);
@@ -142,6 +143,28 @@ export async function refundOrder(
     } catch (e) {
       console.error('[refund] stock restore threw for', orderId, e);
     }
+  }
+
+  // Notify the buyer of the refund (non-blocking).
+  if (refundIds.length > 0) {
+    try {
+      const { resolveBuyerEmail } = await import('@/lib/orders/buyer-email');
+      const buyerEmail = await resolveBuyerEmail(admin, order.buyer_name, order.buyer_id);
+      if (buyerEmail) {
+        const { sendEmail, orderStatusUpdateHtml } = await import('@/lib/email');
+        await sendEmail({
+          to     : buyerEmail,
+          subject: `Refund issued — order ${orderId}`,
+          html   : orderStatusUpdateHtml({
+            buyer_name  : order.buyer_name ?? 'there',
+            order_id    : orderId,
+            status      : fullyRefunded ? 'refunded' : 'partially refunded',
+            message     : `A refund of $${refundedUsd.toFixed(2)} has been issued to your original payment method. It may take 5–10 business days to appear.`,
+            platform_url: process.env.NEXT_PUBLIC_SITE_URL,
+          }),
+        });
+      }
+    } catch (e) { console.error('[refund] buyer email failed', orderId, e); }
   }
 
   return { orderId, refundedUsd, refundIds, reversedTransfer, fullyRefunded };

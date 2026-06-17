@@ -76,6 +76,26 @@ export async function updateOrderStatus(admin: any, opts: { orderId: string; bra
     } catch (err) {
       console.error('[order-status] stock restore threw for', orderId, err);
     }
+
+    // Notify the buyer of the cancellation (non-blocking).
+    try {
+      const { resolveBuyerEmail } = await import('@/lib/orders/buyer-email');
+      const buyerEmail = await resolveBuyerEmail(admin, current.buyer_name, current.buyer_id);
+      if (buyerEmail) {
+        const { sendEmail, orderStatusUpdateHtml } = await import('@/lib/email');
+        await sendEmail({
+          to     : buyerEmail,
+          subject: `Your order was cancelled — ${orderId}`,
+          html   : orderStatusUpdateHtml({
+            buyer_name  : current.buyer_name ?? 'there',
+            order_id    : orderId,
+            status      : 'cancelled',
+            message     : 'Your order has been cancelled and any reserved stock released. If a payment was captured, a refund will follow separately.',
+            platform_url: process.env.NEXT_PUBLIC_SITE_URL,
+          }),
+        });
+      }
+    } catch (e) { console.error('[order-status] cancel email failed', orderId, e); }
   }
 
   // Auto-release escrow when delivered and payment is fully captured.

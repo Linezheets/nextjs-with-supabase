@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email';
 
 // POST — trigger an alert for all users who favorited item_id
 // Sends in-app alert row + email if pref enabled
@@ -61,33 +62,25 @@ export async function POST(req: NextRequest) {
   });
 
   let emailsSent = 0;
-  if (emailUserIds.length && process.env.RESEND_API_KEY) {
+  if (emailUserIds.length) {
     const { data: users } = await supabase.auth.admin.listUsers();
     const emailMap = Object.fromEntries(
       (users?.users ?? []).map((u: { id: string; email?: string }) => [u.id, u.email])
     );
 
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       emailUserIds.map(async (uid: string) => {
         const email = emailMap[uid];
-        if (!email) return;
-
-        await fetch('https://api.resend.com/emails', {
-          method : 'POST',
-          headers: {
-            Authorization : `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from   : 'Linezheets <alerts@linezheets.com>',
-            to     : [email],
-            subject: title,
-            html   : buildEmailHtml({ title, body: body ?? '', item_label: item_label ?? item_id, alert_type }),
-          }),
+        if (!email) return false;
+        const res = await sendEmail({
+          to     : email,
+          subject: title,
+          html   : buildEmailHtml({ title, body: body ?? '', item_label: item_label ?? item_id, alert_type }),
         });
-        emailsSent++;
+        return res.ok;
       })
     );
+    emailsSent = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
   }
 
   return NextResponse.json({ sent: inAppRows.length, emails: emailsSent });

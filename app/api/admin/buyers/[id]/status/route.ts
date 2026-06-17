@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/supabase/requireAdmin';
+import { sendEmail } from '@/lib/email';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -41,47 +42,32 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const name       = buyer?.first_name ?? buyer?.store_name ?? 'there';
 
   if (buyerEmail && (status === 'active' || status === 'rejected')) {
+    // Previously invoked a Supabase edge function 'send-email' that does not
+    // exist, then fell back to /api/alerts/send with a mismatched payload — so
+    // approval/rejection emails never actually sent. Send via SendGrid directly.
     try {
-      const supabase = await createClient();
-      await (supabase as any).functions.invoke('send-email', {
-        body: {
-          to     : buyerEmail,
-          subject: status === 'active'
-            ? 'Your Linezheets application has been approved'
-            : 'Update on your Linezheets application',
-          html: status === 'active'
-            ? `
-              <p>Dear ${name},</p>
-              <p>Congratulations — your Linezheets buyer account has been approved.</p>
-              <p>You can now sign in and access the full wholesale platform.</p>
-              <p><a href="${siteUrl}/login">Sign In to Linezheets →</a></p>
-            `
-            : `
-              <p>Dear ${name},</p>
-              <p>Thank you for your interest in Linezheets.</p>
-              <p>Unfortunately, we are unable to approve your application at this time.</p>
-              ${note ? `<p>Reason: ${note}</p>` : ''}
-              <p>If you have any questions, please contact us at <a href="mailto:info@mxlla.com">info@mxlla.com</a>.</p>
-            `,
-        },
-      }).catch(() => {
-        // fallback: try alerts/send endpoint
-        return fetch(`${siteUrl}/api/alerts/send`, {
-          method : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body   : JSON.stringify({
-            to     : buyerEmail,
-            subject: status === 'active'
-              ? 'Your Linezheets application has been approved'
-              : 'Update on your Linezheets application',
-            html: status === 'active'
-              ? `<p>Dear ${name},</p><p>Your buyer account has been approved. <a href="${siteUrl}/login">Sign in →</a></p>`
-              : `<p>Dear ${name},</p><p>We could not approve your application at this time.${note ? ` Reason: ${note}` : ''}</p>`,
-          }),
-        });
+      await sendEmail({
+        to     : buyerEmail,
+        subject: status === 'active'
+          ? 'Your Linezheets application has been approved'
+          : 'Update on your Linezheets application',
+        html: status === 'active'
+          ? `
+            <p>Dear ${name},</p>
+            <p>Congratulations — your Linezheets buyer account has been approved.</p>
+            <p>You can now sign in and access the full wholesale platform.</p>
+            <p><a href="${siteUrl}/login">Sign In to Linezheets →</a></p>
+          `
+          : `
+            <p>Dear ${name},</p>
+            <p>Thank you for your interest in Linezheets.</p>
+            <p>Unfortunately, we are unable to approve your application at this time.</p>
+            ${note ? `<p>Reason: ${note}</p>` : ''}
+            <p>If you have any questions, please contact us at <a href="mailto:info@mxlla.com">info@mxlla.com</a>.</p>
+          `,
       });
-    } catch {
-      // non-fatal
+    } catch (e) {
+      console.error('[admin/buyers/status] notification email failed', id, e);
     }
   }
 

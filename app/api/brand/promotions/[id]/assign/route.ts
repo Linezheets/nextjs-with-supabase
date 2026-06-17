@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { buildPromotionEmail } from '@/lib/recommendations';
 import { getTier } from '@/lib/top-accounts';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(
   req: NextRequest,
@@ -120,15 +121,11 @@ export async function POST(
           marketplaceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://linezheets.com'}/marketplace`,
         });
 
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-          body: JSON.stringify({
-            from: 'Linezheets <alerts@linezheets.com>',
-            to: buyer.email,
-            subject: `${promo.headline} — Exclusive Offer from ${promo.brand_name}`,
-            html,
-          }),
+        const emailRes = await sendEmail({
+          from   : `${promo.brand_name} via Linezheets <alerts@linezheets.com>`,
+          to     : buyer.email,
+          subject: `${promo.headline} — Exclusive Offer from ${promo.brand_name}`,
+          html,
         });
 
         if (emailRes.ok) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { scoreBuyer, buildRecommendationEmail } from '@/lib/recommendations';
+import { sendEmail } from '@/lib/email';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,8 +24,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (cErr || !campaign) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
   if (campaign.status === 'sent') return NextResponse.json({ error: 'Already sent' }, { status: 400 });
 
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
+  if (!process.env.SENDGRID_API_KEY) {
+    return NextResponse.json({ error: 'SENDGRID_API_KEY not configured' }, { status: 500 });
   }
 
   // Optional: allow caller to pass explicit buyer_ids to override matching
@@ -114,18 +115,11 @@ export async function POST(req: NextRequest, { params }: Params) {
         marketplaceUrl,
       });
 
-      const res = await fetch('https://api.resend.com/emails', {
-        method : 'POST',
-        headers: {
-          Authorization : `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from   : `${campaign.brand_name} via Linezheets <alerts@linezheets.com>`,
-          to     : [buyer.email],
-          subject: campaign.subject,
-          html,
-        }),
+      const res = await sendEmail({
+        from   : `${campaign.brand_name} via Linezheets <alerts@linezheets.com>`,
+        to     : buyer.email,
+        subject: campaign.subject,
+        html,
       });
 
       if (res.ok) {

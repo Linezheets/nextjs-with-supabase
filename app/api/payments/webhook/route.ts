@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import stripe from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, orderStatusUpdateHtml } from '@/lib/email';
 import { reconcileOrderPaymentStatus } from '@/lib/payments-status';
+import { resolveBuyerEmail } from '@/lib/orders/buyer-email';
 import type Stripe from 'stripe';
 
 // Grant or revoke brand role in Supabase auth metadata
@@ -87,6 +88,8 @@ export async function POST(req: NextRequest) {
       }
 
       await notifySeller(admin, pi.metadata.order_id, 'paid');
+      // Buyer payment receipt — previously only the platform/admin was notified.
+      await notifyBuyerReceipt(admin, pi.metadata.order_id, pi.amount_received ?? pi.amount, pi.currency);
       break;
     }
 
@@ -262,4 +265,36 @@ async function notifySeller(admin: any, orderId: string, event: string, detail?:
   `;
 
   await sendEmail({ to: NOTIFY_EMAIL, subject, html }).catch(console.error);
+}
+
+// Buyer-facing payment receipt on a successful charge.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function notifyBuyerReceipt(admin: any, orderId: string, amountMinor: number, currency: string) {
+  if (!orderId) return;
+  const { data: order } = await admin
+    .from('buyer_orders')
+    .select('id, buyer_id, buyer_name')
+    .eq('id', orderId)
+    .single();
+  if (!order) return;
+
+  const buyerEmail = await resolveBuyerEmail(admin, order.buyer_name, order.buyer_id);
+  if (!buyerEmail) return;
+
+  const amount = (Number(amountMinor ?? 0) / 100).toLocaleString('en-US', {
+    style: 'currency', currency: (currency || 'usd').toUpperCase(),
+  });
+  const buyerName = order.buyer_name && !String(order.buyer_name).includes('@') ? order.buyer_name : 'there';
+
+  await sendEmail({
+    to     : buyerEmail,
+    subject: `Payment received — order ${orderId}`,
+    html   : orderStatusUpdateHtml({
+      buyer_name  : buyerName,
+      order_id    : orderId,
+      status      : 'payment received',
+      message     : `We've received your payment of ${amount}. Thank you — order ${orderId} is confirmed.`,
+      platform_url: process.env.NEXT_PUBLIC_SITE_URL,
+    }),
+  }).catch(console.error);
 }

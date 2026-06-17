@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse }        from 'next/server';
 import { createClient }                    from '@/lib/supabase/server';
 import { encryptBuyerPii }                 from '@/lib/crypto/pii';
+import { sendEmail }                       from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -59,25 +60,24 @@ export async function POST(req: NextRequest) {
   const adminEmail = process.env.NOTIFY_EMAIL ?? process.env.ADMIN_EMAIL;
   const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://linezheets.com';
   if (adminEmail) {
+    // Was POSTing to /api/alerts/send with a {to,subject,html} payload that
+    // endpoint doesn't accept (and without the required internal secret), so the
+    // admin was never notified. Send via SendGrid directly.
     try {
-      await fetch(`${siteUrl}/api/alerts/send`, {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({
-          to     : adminEmail,
-          subject: `New buyer application — ${buyer.store_name ?? user.email}`,
-          html   : `
-            <p>A new buyer has completed their application and is awaiting approval.</p>
-            <ul>
-              <li><strong>Name:</strong> ${buyer.first_name ?? ''} ${buyer.last_name ?? ''}</li>
-              <li><strong>Store:</strong> ${buyer.store_name ?? '—'}</li>
-              <li><strong>Email:</strong> ${user.email}</li>
-              <li><strong>Country:</strong> ${buyer.country ?? '—'}</li>
-              <li><strong>Store type:</strong> ${buyer.store_type ?? '—'}</li>
-            </ul>
-            <p><a href="${siteUrl}/pages/brand-admin.html#buyers">Review application →</a></p>
-          `,
-        }),
+      await sendEmail({
+        to     : adminEmail,
+        subject: `New buyer application — ${buyer.store_name ?? user.email}`,
+        html   : `
+          <p>A new buyer has completed their application and is awaiting approval.</p>
+          <ul>
+            <li><strong>Name:</strong> ${buyer.first_name ?? ''} ${buyer.last_name ?? ''}</li>
+            <li><strong>Store:</strong> ${buyer.store_name ?? '—'}</li>
+            <li><strong>Email:</strong> ${user.email}</li>
+            <li><strong>Country:</strong> ${buyer.country ?? '—'}</li>
+            <li><strong>Store type:</strong> ${buyer.store_type ?? '—'}</li>
+          </ul>
+          <p><a href="${siteUrl}/pages/brand-admin.html#buyers">Review application →</a></p>
+        `,
       });
     } catch {
       // non-fatal — application still saved

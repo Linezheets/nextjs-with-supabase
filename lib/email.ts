@@ -7,6 +7,7 @@ export async function sendEmail(opts: {
   subject: string;
   html   : string;
   text?  : string;
+  from?  : string;   // optional override (e.g. "Brand via Linezheets <…>")
 }): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
@@ -16,7 +17,7 @@ export async function sendEmail(opts: {
   sgMail.setApiKey(apiKey);
   try {
     await sgMail.send({
-      from   : FROM,
+      from   : opts.from ?? FROM,
       to     : opts.to,
       subject: opts.subject,
       html   : opts.html,
